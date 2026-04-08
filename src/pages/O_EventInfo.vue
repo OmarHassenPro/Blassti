@@ -345,8 +345,8 @@
                         <span>Seats left</span>
                       </div>
                       <div class="detail-value">
-                        <v-chip size="small" color="primary" variant="tonal" rounded="pill">
-                          {{ event.seats_left }} remaining
+                        <v-chip size="small" :color="bookingStateColor" variant="tonal" rounded="pill">
+                          {{ bookingStateText }}
                         </v-chip>
                       </div>
                     </div>
@@ -433,27 +433,28 @@
                       </div>
                     </v-sheet>
 
-                    <div class="booking-highlight mb-5">
+                    <div class="booking-highlight mb-5" :class="bookingHighlightClass">
                       <div class="d-flex align-center ga-2 mb-2">
-                        <v-icon size="18" color="success">mdi-check-decagram-outline</v-icon>
-                        <span class="text-subtitle-2 font-weight-bold">Ready to reserve?</span>
+                        <v-icon size="18" :color="bookingStateColor">{{ bookingStateIcon }}</v-icon>
+                        <span class="text-subtitle-2 font-weight-bold">{{ bookingHeadline }}</span>
                       </div>
 
                       <div class="text-body-2 text-medium-emphasis">
-                        Pick your preferred seat and continue to booking in a smoother, guided flow.
+                        {{ bookingMessage }}
                       </div>
                     </div>
 
                     <v-btn
-                      color="primary"
+                      :color="bookingButtonColor"
                       size="large"
                       block
                       rounded="lg"
                       class="book-btn text-none"
+                      :disabled="!canBuyTicket"
                       @click="goToSeatSelection"
                     >
-                      <v-icon start>mdi-ticket-outline</v-icon>
-                      Book your ticket now!
+                      <v-icon start>{{ bookingButtonIcon }}</v-icon>
+                      {{ bookingButtonText }}
                     </v-btn>
                   </div>
                 </v-card>
@@ -511,7 +512,7 @@ import AppNavbar from "@/components/AppNavbar.vue"
 import { ref, computed, watch, onMounted, onBeforeUnmount } from "vue"
 import { useRoute, useRouter } from "vue-router"
 import { useTheme } from "vuetify"
-import { get_Event_By_Id } from "@/dataModel/event"
+import { can_Buy_Event_Tickets, get_Event_By_Id, is_Event_Past } from "@/dataModel/event"
 import { get_User_By_Id } from "@/dataModel/user"
 import { get_All_Venues } from "@/dataModel/venue"
 
@@ -553,6 +554,77 @@ const matchedVenue = computed(() => {
 const browserThemeClass = computed(() => {
   return prefersDark.value ? "browser-dark" : "browser-light"
 })
+const canBuyTicket = computed(() => {
+  return can_Buy_Event_Tickets(event.value)
+})
+
+const isPastEvent = computed(() => {
+  return is_Event_Past(event.value)
+})
+
+const bookingStateText = computed(() => {
+  if (!event.value) return "Unavailable"
+  if (isPastEvent.value) return "Event ended"
+  if (event.value.seats_left <= 0) return "Sold out"
+  return `${event.value.seats_left} remaining`
+})
+
+const bookingStateColor = computed(() => {
+  if (isPastEvent.value) return "grey-darken-1"
+  if (!event.value) return "grey"
+  if (event.value.seats_left <= 0) return "error"
+  if (event.value.seats_left <= 20) return "warning"
+  return "primary"
+})
+
+const bookingStateIcon = computed(() => {
+  if (isPastEvent.value) return "mdi-calendar-remove-outline"
+  if (!event.value) return "mdi-alert-circle-outline"
+  if (event.value.seats_left <= 0) return "mdi-close-circle-outline"
+  return "mdi-check-decagram-outline"
+})
+
+const bookingHeadline = computed(() => {
+  if (!event.value) return "Booking unavailable"
+  if (isPastEvent.value) return "This event is over"
+  if (event.value.seats_left <= 0) return "This event is sold out"
+  return "Ready to reserve?"
+})
+
+const bookingMessage = computed(() => {
+  if (!event.value) return "This event is no longer available."
+  if (isPastEvent.value) return "Ticket sales are closed because this event has already ended."
+  if (event.value.seats_left <= 0) return "All tickets for this event have already been purchased."
+  return "Pick your preferred seat and continue to booking in a smoother, guided flow."
+})
+
+const bookingButtonText = computed(() => {
+  if (!event.value) return "Unavailable"
+  if (isPastEvent.value) return "Event Ended"
+  if (event.value.seats_left <= 0) return "Sold Out"
+  return "Book your ticket now!"
+})
+
+const bookingButtonIcon = computed(() => {
+  if (!event.value) return "mdi-alert-circle-outline"
+  if (isPastEvent.value) return "mdi-calendar-remove-outline"
+  if (event.value.seats_left <= 0) return "mdi-close-circle-outline"
+  return "mdi-ticket-outline"
+})
+
+const bookingButtonColor = computed(() => {
+  if (!event.value) return "grey"
+  if (isPastEvent.value) return "grey-darken-1"
+  if (event.value.seats_left <= 0) return "error"
+  return "primary"
+})
+
+const bookingHighlightClass = computed(() => {
+  if (isPastEvent.value) return "booking-highlight-disabled"
+  if (event.value?.seats_left <= 0) return "booking-highlight-soldout"
+  return ""
+})
+
 
 function applyBrowserTheme() {
   if (typeof window === "undefined") return
@@ -590,7 +662,7 @@ function goToVenue() {
 }
 
 function goToSeatSelection() {
-  if (!event.value) return
+  if (!event.value || !canBuyTicket.value) return
 
   router.push({
     path: "/seatselection",
@@ -965,6 +1037,16 @@ onBeforeUnmount(() => {
   padding: 16px;
   border: 1px dashed rgba(var(--v-theme-primary), 0.35);
   background: rgba(var(--v-theme-primary), 0.04);
+}
+
+.booking-highlight-disabled {
+  border-color: rgba(var(--v-theme-on-surface), 0.18);
+  background: rgba(var(--v-theme-on-surface), 0.04);
+}
+
+.booking-highlight-soldout {
+  border-color: rgba(var(--v-theme-error), 0.28);
+  background: rgba(var(--v-theme-error), 0.06);
 }
 
 .book-btn {

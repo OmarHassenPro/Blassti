@@ -2,7 +2,7 @@ import { reactive } from "vue"
 
 const EVENTS_STORAGE_KEY = "events"
 const EVENTS_VERSION_KEY = "events_seed_version"
-const EVENTS_SEED_VERSION = "v3_events_with_creator_and_persistence_16week_timeline"
+const EVENTS_SEED_VERSION = "v4_events_with_ticket_guardrails_and_status_helpers"
 
 export class Event {
   constructor({
@@ -64,6 +64,85 @@ export class Event {
 
 function normalizeEvents(eventArray) {
   return eventArray.map(event => new Event(event))
+}
+
+const MONTH_INDEX = {
+  jan: 0,
+  feb: 1,
+  mar: 2,
+  apr: 3,
+  may: 4,
+  jun: 5,
+  jul: 6,
+  aug: 7,
+  sep: 8,
+  oct: 9,
+  nov: 10,
+  dec: 11,
+}
+
+function parseTimeParts(timeText = "") {
+  const [rawHour = "0", rawMinute = "0"] = String(timeText || "").trim().split(":")
+  const hour = Number.parseInt(rawHour, 10)
+  const minute = Number.parseInt(rawMinute, 10)
+
+  return {
+    hour: Number.isFinite(hour) ? hour : 0,
+    minute: Number.isFinite(minute) ? minute : 0,
+  }
+}
+
+export function parse_Event_DateTime(dateText, timeText = "00:00") {
+  if (!dateText) return null
+
+  const cleanedDate = String(dateText).trim().replace(/,/g, "")
+  const parts = cleanedDate.split(/\s+/)
+
+  if (parts.length < 3) {
+    const fallback = new Date(`${cleanedDate} ${timeText || "00:00"}`)
+    return Number.isNaN(fallback.getTime()) ? null : fallback
+  }
+
+  const day = Number.parseInt(parts[0], 10)
+  const month = MONTH_INDEX[String(parts[1]).slice(0, 3).toLowerCase()]
+  const year = Number.parseInt(parts[2], 10)
+
+  if (!Number.isFinite(day) || month == null || !Number.isFinite(year)) {
+    const fallback = new Date(`${cleanedDate} ${timeText || "00:00"}`)
+    return Number.isNaN(fallback.getTime()) ? null : fallback
+  }
+
+  const { hour, minute } = parseTimeParts(timeText)
+  const parsed = new Date(year, month, day, hour, minute, 0, 0)
+  return Number.isNaN(parsed.getTime()) ? null : parsed
+}
+
+export function get_Event_End_DateTime(event) {
+  if (!event?.date) return null
+  return parse_Event_DateTime(event.date, event.end_time || event.time || "23:59")
+}
+
+export function is_Event_Past(event) {
+  const eventEnd = get_Event_End_DateTime(event)
+  if (!eventEnd) return false
+  return eventEnd.getTime() < Date.now()
+}
+
+export function is_Event_Sold_Out(event) {
+  if (!event) return false
+  return Math.max(0, Number(event.capacity || 0) - Number(event.tickets_sold || 0)) <= 0
+}
+
+export function can_Buy_Event_Tickets(event) {
+  if (!event) return false
+  return !is_Event_Past(event) && !is_Event_Sold_Out(event)
+}
+
+export function get_Event_Sales_Status(event) {
+  if (is_Event_Past(event)) return "past"
+  if (is_Event_Sold_Out(event)) return "sold_out"
+  if (event?.seats_left <= 20) return "almost_sold_out"
+  return "available"
 }
 
 function defaultEvents() {
@@ -866,4 +945,19 @@ export function delete_Event(id) {
 
 export function get_Event_Count() {
   return EVENT_LIST.length
+}
+
+export function increment_Event_Tickets_Sold(id, quantity = 1) {
+  const event = get_Event_By_Id(id)
+  if (!event) return null
+
+  const safeQuantity = Math.max(0, Number(quantity || 0))
+  const nextTicketsSold = Math.min(
+    Number(event.capacity || 0),
+    Number(event.tickets_sold || 0) + safeQuantity
+  )
+
+  return update_Event(id, {
+    tickets_sold: nextTicketsSold,
+  })
 }

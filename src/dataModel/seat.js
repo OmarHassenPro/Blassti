@@ -19,14 +19,18 @@ export class Seat {
     this.row = row ?? ""
     this.number = number ?? ""
 
-    // 🔥 NEW: structured seat labeling
+    // ✅ clean seat label
     this.seat_number = this.row && this.number ? `${this.row}${this.number}` : ""
     this.location = location ?? `${this.row}-${this.number}`
 
-    this.x = Number(x ?? 0)
-    this.y = Number(y ?? 0)
-    this.width = Number(width ?? 1)
-    this.height = Number(height ?? 1)
+    // 🔥 SNAP TO GRID
+    const GRID_SIZE = 1.4
+    this.x = Math.round(Number(x ?? 0) / GRID_SIZE) * GRID_SIZE
+    this.y = Math.round(Number(y ?? 0) / GRID_SIZE) * GRID_SIZE
+
+    // 🔥 FIXED SIZE (NO MORE RESIZE)
+    this.width = 1.2
+    this.height = 1.2
 
     this.seat_class = seat_class ?? "Regular"
     this.price = Number(price ?? 0)
@@ -50,6 +54,16 @@ export function get_Seat_By_Location(location) {
 }
 
 export function add_Seat(seat) {
+  // ❌ prevent overlapping seats
+  const exists = SEAT_LIST.find(
+    s => s.x === seat.x && s.y === seat.y
+  )
+
+  if (exists) {
+    console.warn("Seat already exists in this grid cell")
+    return null
+  }
+
   SEAT_LIST.push(seat)
   return seat
 }
@@ -60,11 +74,21 @@ export function update_Seat(idOrLocation, updatedSeatData) {
   )
 
   if (seatIndex !== -1) {
-    SEAT_LIST[seatIndex] = {
+    const updated = {
       ...SEAT_LIST[seatIndex],
       ...updatedSeatData,
     }
-    return SEAT_LIST[seatIndex]
+
+    // 🔥 re-snap
+    const GRID_SIZE = 1.4
+    updated.x = Math.round(updated.x / GRID_SIZE) * GRID_SIZE
+    updated.y = Math.round(updated.y / GRID_SIZE) * GRID_SIZE
+
+    updated.width = 1.2
+    updated.height = 1.2
+
+    SEAT_LIST[seatIndex] = updated
+    return updated
   }
 
   return null

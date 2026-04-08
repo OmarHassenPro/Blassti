@@ -731,14 +731,10 @@ import AppNavbar from "@/components/AppNavbar.vue"
 import { get_Current_User, get_User_By_Id } from "@/dataModel/user"
 import {
   get_All_Venue_Requests,
-  update_Venue_Request,
+  approve_Venue_Request,
+  deny_Venue_Request,
   delete_Venue_Request,
 } from "@/dataModel/venue_request"
-import { add_Venue, get_Venue_By_Title } from "@/dataModel/venue"
-import {
-  create_Venue_Request_Approved_Notification,
-  create_Venue_Request_Denied_Notification,
-} from "@/dataModel/notification"
 
 const theme = useTheme()
 
@@ -939,56 +935,18 @@ function approveRequest(request) {
     return
   }
 
-  const existingVenue = get_Venue_By_Title(request.title)
-  let venue = existingVenue
+  const result = approve_Venue_Request(
+    request.id,
+    currentUser.value?.id ?? null
+  )
 
-  if (!existingVenue) {
-    venue = add_Venue({
-      title: request.title,
-      location: request.location,
-      exact_address: request.exact_address,
-      availability: request.availability,
-      price_per_hour: request.price_per_hour,
-      capacity: request.seat_count || request.capacity,
-      status: "Active",
-      category: request.category,
-      type: request.type,
-      review_rating: request.review_rating || 0,
-      description: request.description,
-      image: request.image,
-      extra_images: request.extra_images ?? [],
-      contact_info: {
-        address: request.contact_info?.address || request.exact_address || "",
-        phone: request.contact_info?.phone || "",
-        email: request.contact_info?.email || "",
-        website: request.contact_info?.website || "",
-        instagram: request.contact_info?.instagram || "",
-      },
-      featured: false,
-      owner_user_id: request.owner_user_id ?? null,
-      source_request_id: request.id ?? null,
-      dimensions: request.dimensions ?? { width_m: 20, height_m: 12, shape: "rectangle" },
-      design: request.design ?? { seats: [], stages: [], screens: [], audio_sources: [], elements: [], shapes: [], notes: "" },
-    })
+  if (!result?.success) {
+    notify(result?.message || "Could not approve this request.", "error")
+    return
   }
 
-  update_Venue_Request(request.id, {
-    status: "Approved",
-    status_label: "Approved",
-    reviewed_at: new Date().toISOString(),
-    reviewed_by_user_id: currentUser.value?.id ?? null,
-    denial_reason: "",
-  })
-
-  create_Venue_Request_Approved_Notification({
-    userId: request.owner_user_id,
-    venueTitle: request.title,
-    venueId: venue?.id ?? null,
-    venueRequestId: request.id,
-  })
-
   detailsDialog.value = false
-  notify(existingVenue ? "Request approved. Venue already existed." : "Venue approved and published.", "success")
+  notify(result.message || "Venue approved and published.", "success")
 }
 
 function openDenyDialog(request) {
@@ -1029,30 +987,22 @@ function denyRequestConfirmed() {
     return
   }
 
-  const finalReason =
-    denyReason.value === "Other"
-      ? denyCustomReason.value.trim()
-      : denyReason.value
-
-  update_Venue_Request(requestToDeny.value.id, {
-    status: "Denied",
-    status_label: "Denied",
-    reviewed_at: new Date().toISOString(),
-    reviewed_by_user_id: currentUser.value?.id ?? null,
-    denial_reason: finalReason,
-  })
-
-  create_Venue_Request_Denied_Notification({
-    userId: requestToDeny.value.owner_user_id,
-    venueTitle: requestToDeny.value.title,
-    venueRequestId: requestToDeny.value.id,
-    reason: denyReason.value,
-    customReason: denyCustomReason.value.trim(),
-  })
+  const result = deny_Venue_Request(
+    requestToDeny.value.id,
+    currentUser.value?.id ?? null,
+    denyReason.value,
+    denyCustomReason.value.trim()
+  )
 
   closeDenyDialog()
+
+  if (!result?.success) {
+    notify(result?.message || "Could not deny this request.", "error")
+    return
+  }
+
   detailsDialog.value = false
-  notify("Venue request denied.", "warning")
+  notify(result.message || "Venue request denied.", "warning")
 }
 
 function clearSingleProcessedRequest(request) {

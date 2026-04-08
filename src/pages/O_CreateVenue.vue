@@ -490,6 +490,15 @@
                       color="primary"
                       inset
                       hide-details
+                      class="mb-3"
+                    />
+
+                    <v-switch
+                      v-model="showGridAddresses"
+                      label="Show seat address helpers"
+                      color="secondary"
+                      inset
+                      hide-details
                       class="mb-4"
                     />
 
@@ -612,7 +621,7 @@
                       />
 
                       <div class="text-caption text-medium-emphasis mb-3">
-                        Resize directly from the corner handles on the selected item.
+                        Seats keep a fixed size for cleaner numbering. Only venue blocks and other elements can be resized.
                       </div>
                     </div>
 
@@ -623,7 +632,7 @@
                     </div>
 
                     <div v-else class="text-body-2 text-medium-emphasis">
-                      Click one item to edit it, or drag a selection box to select many items.
+                      Click one item to edit it, drag a selection box to select many items, or right-click for quick actions.
                     </div>
                   </v-card>
                 </v-col>
@@ -693,6 +702,7 @@
                           @mousemove="onCanvasMouseMove"
                           @mouseup="onCanvasMouseUp"
                           @mouseleave="onCanvasMouseUp"
+                          @contextmenu.prevent="openContextMenu($event)"
                         >
                           <div
                             v-if="selectionBox.visible"
@@ -711,11 +721,13 @@
                             :style="getItemStyle(item)"
                             @mousedown.stop="startItemMouseDown($event, item)"
                             @click.stop="onItemClick($event, item)"
+                            @contextmenu.prevent.stop="openContextMenu($event, item)"
                           >
                             <template v-if="item.kind === 'seat'">
                               <div class="seat-shape" :style="{ backgroundColor: seatBg(item) }">
                                 <v-icon size="18">mdi-seat</v-icon>
                               </div>
+                              <div v-if="showGridAddresses" class="seat-mini-label">{{ item.location || item.label || "Seat" }}</div>
                             </template>
 
                             <template v-else>
@@ -725,14 +737,45 @@
                               </div>
                             </template>
 
-                            <template v-if="selectedItems.length === 1 && selectedIds.includes(item.id)">
+                            <template v-if="selectedItems.length === 1 && selectedIds.includes(item.id) && canResizeItem(item)">
                               <div class="resize-handle resize-br" @mousedown.stop="startResize($event, item, 'br')"></div>
                             </template>
                           </div>
                         </div>
+
+                        <transition name="context-menu-pop">
+                          <div
+                            v-if="contextMenu.visible"
+                            class="designer-context-menu"
+                            :style="{ left: `${contextMenu.x}px`, top: `${contextMenu.y}px` }"
+                          >
+                            <button type="button" class="context-menu-btn" @click="duplicateSelected">
+                              <v-icon size="18">mdi-content-duplicate</v-icon>
+                              Duplicate selected
+                            </button>
+                            <button type="button" class="context-menu-btn" @click="removeSelected">
+                              <v-icon size="18">mdi-delete-outline</v-icon>
+                              Delete selected
+                            </button>
+                            <button type="button" class="context-menu-btn" @click="undoLastAction">
+                              <v-icon size="18">mdi-undo</v-icon>
+                              Undo last action
+                            </button>
+                            <button type="button" class="context-menu-btn" @click="closeContextMenu">
+                              <v-icon size="18">mdi-close</v-icon>
+                              Close menu
+                            </button>
+                          </div>
+                        </transition>
                       </div>
 
-                      <div class="d-flex flex-wrap ga-4 mt-4">
+                      <div class="d-flex flex-wrap ga-4 mt-4 align-center">
+                        <v-chip color="secondary" variant="outlined">
+                          Fixed seat size: {{ MANUAL_SEAT_SIZE }}px
+                        </v-chip>
+                        <v-chip color="secondary" variant="outlined">
+                          Seat spacing: {{ MANUAL_SEAT_SPACING }}px
+                        </v-chip>
                         <v-chip color="primary" variant="tonal">
                           Regular: {{ seatCounts.Regular || 0 }}
                         </v-chip>
@@ -751,7 +794,7 @@
                       </div>
 
                       <div class="text-caption text-medium-emphasis mt-3">
-                        Single click selects. Drag on empty space makes a selection box. Double-click a seat, keep the second click pressed, and drag to clone a row.
+                        Single click selects. Drag on empty space makes a selection box. Seats snap with breathing room, keep a fixed size, and right-click opens quick actions.
                       </div>
                     </div>
 
@@ -904,7 +947,7 @@
         {{ snackbar.text }}
       </v-snackbar>
 
-      <v-dialog v-model="submitDialog" max-width="560" persistent>
+      <v-dialog v-model="submitDialog" max-width="560" persistent content-class="success-dialog-pop">
         <v-card rounded="xl">
           <v-card-title class="text-h6 font-weight-bold d-flex align-center ga-2">
             <v-icon color="success">mdi-check-circle</v-icon>
@@ -986,6 +1029,12 @@ const paintModes = ["Select", "Regular", "Special", "VIP", "Erase"]
 
 const paintMode = ref("Select")
 const snapToGrid = ref(true)
+const showGridAddresses = ref(true)
+
+const MANUAL_SEAT_SIZE = 32
+const MANUAL_SEAT_SPACING = 8
+const MANUAL_SEAT_STEP = MANUAL_SEAT_SIZE + MANUAL_SEAT_SPACING
+const BLOCK_GRID_SIZE = 24
 
 const snackbar = reactive({
   show: false,
@@ -1083,6 +1132,13 @@ const selectionBox = reactive({
   startY: 0,
   currentX: 0,
   currentY: 0,
+})
+
+const contextMenu = reactive({
+  visible: false,
+  x: 0,
+  y: 0,
+  itemId: null,
 })
 
 const singleSelectedTitle = ref("")
@@ -1280,6 +1336,7 @@ function undoLastAction() {
   if (!historyStack.value.length) return
   const previous = historyStack.value.pop()
   restoreDesignSnapshot(previous)
+  closeContextMenu()
   notify("Last design action undone.", "success")
 }
 
@@ -1296,32 +1353,51 @@ function seatColor(seatClass) {
 }
 
 function gridSize() {
-  return 24
+  return BLOCK_GRID_SIZE
 }
 
-function snap(value) {
-  const g = gridSize()
-  return Math.round(value / g) * g
+function seatStep() {
+  return MANUAL_SEAT_STEP
+}
+
+function snap(value, customGrid = gridSize()) {
+  return Math.round(value / customGrid) * customGrid
+}
+
+function snapSeat(value) {
+  return snap(value, seatStep())
 }
 
 function clamp(value, min, max) {
   return Math.min(Math.max(value, min), max)
 }
 
-function normalizePoint(x, y) {
+function normalizePoint(x, y, options = {}) {
   if (!canvasRef.value) return { x, y }
 
   const rect = canvasRef.value.getBoundingClientRect()
+  const isSeat = Boolean(options.isSeat)
+  const itemWidth = Number(options.width ?? (isSeat ? MANUAL_SEAT_SIZE : 28))
+  const itemHeight = Number(options.height ?? (isSeat ? MANUAL_SEAT_SIZE : 28))
+
   let nx = x
   let ny = y
 
-  nx = clamp(nx, 0, rect.width - 10)
-  ny = clamp(ny, 0, rect.height - 10)
+  nx = clamp(nx, 0, Math.max(0, rect.width - itemWidth))
+  ny = clamp(ny, 0, Math.max(0, rect.height - itemHeight))
 
   if (snapToGrid.value) {
-    nx = snap(nx)
-    ny = snap(ny)
+    if (isSeat) {
+      nx = snapSeat(nx)
+      ny = snapSeat(ny)
+    } else {
+      nx = snap(nx)
+      ny = snap(ny)
+    }
   }
+
+  nx = clamp(nx, 0, Math.max(0, rect.width - itemWidth))
+  ny = clamp(ny, 0, Math.max(0, rect.height - itemHeight))
 
   return { x: nx, y: ny }
 }
@@ -1331,6 +1407,62 @@ function getCanvasRelativePoint(event) {
   return {
     x: event.clientX - rect.left,
     y: event.clientY - rect.top,
+  }
+}
+
+function getItemCollisionPadding(item) {
+  return item?.kind === "seat" ? MANUAL_SEAT_SPACING : 0
+}
+
+function itemsOverlap(a, b, padding = 0) {
+  return !((a.x + a.width + padding) <= b.x || (b.x + b.width + padding) <= a.x || (a.y + a.height + padding) <= b.y || (b.y + b.height + padding) <= a.y)
+}
+
+function canPlaceSeatAt(x, y, ignoreIds = []) {
+  const ignoreSet = new Set(Array.isArray(ignoreIds) ? ignoreIds : [ignoreIds])
+  const candidate = {
+    x,
+    y,
+    width: MANUAL_SEAT_SIZE,
+    height: MANUAL_SEAT_SIZE,
+  }
+
+  return !form.design.seats.some(seat => {
+    if (ignoreSet.has(seat.id)) return false
+    return itemsOverlap(candidate, seat, MANUAL_SEAT_SPACING)
+  })
+}
+
+function closeContextMenu() {
+  contextMenu.visible = false
+  contextMenu.x = 0
+  contextMenu.y = 0
+  contextMenu.itemId = null
+}
+
+function openContextMenu(event, item = null) {
+  if (item && !isSelected(item.id)) {
+    setSingleSelection(item)
+  }
+
+  const rect = canvasRef.value?.getBoundingClientRect()
+  if (rect) {
+    contextMenu.x = clamp(event.clientX - rect.left, 8, Math.max(8, rect.width - 208))
+    contextMenu.y = clamp(event.clientY - rect.top, 8, Math.max(8, rect.height - 196))
+  } else {
+    contextMenu.x = 16
+    contextMenu.y = 16
+  }
+
+  contextMenu.itemId = item?.id ?? null
+  contextMenu.visible = true
+}
+
+function handleGlobalPointerDown(event) {
+  const menu = event.target?.closest?.(".designer-context-menu")
+  const item = event.target?.closest?.(".canvas-item")
+  if (!menu && !item) {
+    closeContextMenu()
   }
 }
 
@@ -1346,6 +1478,7 @@ function setSingleSelection(item) {
 function clearSelection() {
   selectedIds.value = []
   singleSelectedTitle.value = ""
+  closeContextMenu()
 }
 
 function syncSelectedSeatColor() {
@@ -1433,11 +1566,16 @@ function createSeat(x, y, seatClass = "Regular") {
     kind: "seat",
     x,
     y,
-    width: 28,
-    height: 28,
+    width: MANUAL_SEAT_SIZE,
+    height: MANUAL_SEAT_SIZE,
     seat_class: seatClass,
     color: seatColor(seatClass),
     title: "",
+    location_key: "",
+    location: "",
+    seat_number: "",
+    row: "",
+    number: "",
   }
 }
 
@@ -1465,11 +1603,8 @@ function createBlock({
 }
 
 function addSeatAtPosition(x, y, seatClass, skipHistory = false) {
-  const p = normalizePoint(x, y)
-  const exists = form.design.seats.some(
-    seat => Math.abs(seat.x - p.x) < 8 && Math.abs(seat.y - p.y) < 8
-  )
-  if (exists) return null
+  const p = normalizePoint(x, y, { isSeat: true, width: MANUAL_SEAT_SIZE, height: MANUAL_SEAT_SIZE })
+  if (!canPlaceSeatAt(p.x, p.y)) return null
 
   if (!skipHistory) pushHistory()
 
@@ -1479,9 +1614,9 @@ function addSeatAtPosition(x, y, seatClass, skipHistory = false) {
 }
 
 function eraseAtPosition(x, y) {
-  const p = normalizePoint(x, y)
+  const p = normalizePoint(x, y, { isSeat: true, width: MANUAL_SEAT_SIZE, height: MANUAL_SEAT_SIZE })
   const index = form.design.seats.findIndex(
-    seat => Math.abs(seat.x - p.x) < 14 && Math.abs(seat.y - p.y) < 14
+    seat => Math.abs(seat.x - p.x) < MANUAL_SEAT_SIZE / 2 && Math.abs(seat.y - p.y) < MANUAL_SEAT_SIZE / 2
   )
   if (index !== -1) {
     pushHistory()
@@ -1491,8 +1626,8 @@ function eraseAtPosition(x, y) {
 
 function addSeatButton(seatClass) {
   const seat = addSeatAtPosition(
-    40 + form.design.seats.length * 8,
-    40 + form.design.seats.length * 6,
+    40 + (form.design.seats.length % 12) * MANUAL_SEAT_STEP,
+    56 + Math.floor(form.design.seats.length / 12) * MANUAL_SEAT_STEP,
     seatClass
   )
   if (seat) setSingleSelection(seat)
@@ -1501,8 +1636,8 @@ function addSeatButton(seatClass) {
 function addSeatRow(count = 20, seatClass = "Regular") {
   pushHistory()
   const startX = 80
-  const startY = 100 + Math.max(0, form.design.seats.length * 2 % 180)
-  const gap = 34
+  const startY = 100 + Math.max(0, Math.floor(form.design.seats.length / 12) * MANUAL_SEAT_STEP)
+  const gap = MANUAL_SEAT_STEP
   const ids = []
 
   for (let i = 0; i < count; i += 1) {
@@ -1688,33 +1823,87 @@ function addPodium() {
 function applyCinemaPreset() {
   pushHistory()
   resetDesign(false, true)
+
   addScreen(true)
   if (singleSelectedItem.value) {
-    singleSelectedItem.value.x = 400
-    singleSelectedItem.value.y = 30
+    singleSelectedItem.value.x = 240
+    singleSelectedItem.value.y = 24
+    singleSelectedItem.value.width = 360
+    singleSelectedItem.value.height = 54
+    singleSelectedItem.value.title = "Main Screen"
   }
+
+  addAudioSource(true)
+  if (singleSelectedItem.value) {
+    singleSelectedItem.value.x = 120
+    singleSelectedItem.value.y = 28
+    singleSelectedItem.value.width = 88
+    singleSelectedItem.value.height = 46
+    singleSelectedItem.value.title = "Left Speaker"
+  }
+
+  addAudioSource(true)
+  if (singleSelectedItem.value) {
+    singleSelectedItem.value.x = 640
+    singleSelectedItem.value.y = 28
+    singleSelectedItem.value.width = 88
+    singleSelectedItem.value.height = 46
+    singleSelectedItem.value.title = "Right Speaker"
+  }
+
   for (let row = 0; row < 7; row += 1) {
     for (let col = 0; col < 14; col += 1) {
-      addSeatAtPosition(90 + col * 34, 120 + row * 38, row < 2 ? "VIP" : "Regular", true)
+      if (col === 6 || col === 7) continue
+      addSeatAtPosition(80 + col * MANUAL_SEAT_STEP, 140 + row * MANUAL_SEAT_STEP, row < 2 ? "VIP" : "Regular", true)
     }
   }
-  notify("Cinema preset applied.", "success")
+
+  clearSelection()
+  notify("Cinema preset applied with cleaner spacing.", "success")
 }
 
 function applyTheatrePreset() {
   pushHistory()
   resetDesign(false, true)
+
   addStage(true)
   if (singleSelectedItem.value) {
-    singleSelectedItem.value.x = 360
-    singleSelectedItem.value.y = 25
+    singleSelectedItem.value.x = 260
+    singleSelectedItem.value.y = 440
+    singleSelectedItem.value.width = 320
+    singleSelectedItem.value.height = 72
+    singleSelectedItem.value.title = "Main Stage"
   }
+
+  addAudioSource(true)
+  if (singleSelectedItem.value) {
+    singleSelectedItem.value.x = 170
+    singleSelectedItem.value.y = 450
+    singleSelectedItem.value.width = 80
+    singleSelectedItem.value.height = 46
+    singleSelectedItem.value.title = "Front Left"
+  }
+
+  addAudioSource(true)
+  if (singleSelectedItem.value) {
+    singleSelectedItem.value.x = 590
+    singleSelectedItem.value.y = 450
+    singleSelectedItem.value.width = 80
+    singleSelectedItem.value.height = 46
+    singleSelectedItem.value.title = "Front Right"
+  }
+
   for (let row = 0; row < 8; row += 1) {
-    for (let col = 0; col < 12; col += 1) {
-      addSeatAtPosition(120 + col * 38, 120 + row * 40, row < 2 ? "VIP" : "Regular", true)
+    const seatClass = row < 2 ? "VIP" : row < 4 ? "Special" : "Regular"
+
+    for (let col = 0; col < 15; col += 1) {
+      if (col === 4 || col === 10) continue
+      addSeatAtPosition(96 + col * MANUAL_SEAT_STEP, 72 + row * MANUAL_SEAT_STEP, seatClass, true)
     }
   }
-  notify("Theatre preset applied.", "success")
+
+  clearSelection()
+  notify("Theatre preset applied with stage at the bottom.", "success")
 }
 
 function applyBarPreset() {
@@ -1726,8 +1915,8 @@ function applyBarPreset() {
   addExit(true)
 
   const layouts = [
-    [140, 180], [320, 180], [500, 180],
-    [140, 340], [320, 340], [500, 340],
+    [120, 150], [320, 150], [520, 150],
+    [120, 320], [320, 320], [520, 320],
   ]
 
   layouts.forEach(([x, y], i) => {
@@ -1737,30 +1926,56 @@ function applyBarPreset() {
       y,
       width: 120,
       height: 120,
-      title: `Table ${i + 1}`,
+      title: `Lounge Table ${i + 1}`,
       color: "linear-gradient(135deg, #795548, #5D4037)",
       icon: "mdi-table-furniture",
     }, true)
   })
 
-  notify("Bar preset applied.", "success")
+  clearSelection()
+  notify("Bar preset polished and applied.", "success")
 }
 
 function applyConferencePreset() {
   pushHistory()
   resetDesign(false, true)
+  addScreen(true)
+  if (singleSelectedItem.value) {
+    singleSelectedItem.value.x = 270
+    singleSelectedItem.value.y = 24
+    singleSelectedItem.value.width = 300
+    singleSelectedItem.value.height = 52
+    singleSelectedItem.value.title = "Presentation Screen"
+  }
+
   addStage(true)
+  if (singleSelectedItem.value) {
+    singleSelectedItem.value.x = 310
+    singleSelectedItem.value.y = 94
+    singleSelectedItem.value.width = 220
+    singleSelectedItem.value.height = 48
+    singleSelectedItem.value.title = "Conference Stage"
+  }
+
   addPodium(true)
+  if (singleSelectedItem.value) {
+    singleSelectedItem.value.x = 390
+    singleSelectedItem.value.y = 154
+  }
+
   addEntrance(true)
   addExit(true)
 
   for (let row = 0; row < 6; row += 1) {
-    for (let col = 0; col < 10; col += 1) {
-      addSeatAtPosition(160 + col * 42, 160 + row * 42, "Regular", true)
+    const seatClass = row === 0 ? "VIP" : row < 3 ? "Special" : "Regular"
+    for (let col = 0; col < 12; col += 1) {
+      if (col === 5 || col === 6) continue
+      addSeatAtPosition(120 + col * MANUAL_SEAT_STEP, 230 + row * MANUAL_SEAT_STEP, seatClass, true)
     }
   }
 
-  notify("Conference preset applied.", "success")
+  clearSelection()
+  notify("Conference preset applied with cleaner structure.", "success")
 }
 
 function seatBg(item) {
@@ -1774,6 +1989,10 @@ function getItemStyle(item) {
     width: `${item.width}px`,
     height: `${item.height}px`,
   }
+}
+
+function canResizeItem(item) {
+  return item?.kind !== "seat"
 }
 
 function findItemById(id) {
@@ -1848,13 +2067,25 @@ function onWindowMouseMove(event) {
       let newX = base.x + dx
       let newY = base.y + dy
 
-      if (snapToGrid.value) {
-        newX = snap(newX)
-        newY = snap(newY)
+      if (item.kind === "seat") {
+        const normalized = normalizePoint(newX, newY, { isSeat: true, width: item.width, height: item.height })
+        newX = normalized.x
+        newY = normalized.y
+
+        if (!canPlaceSeatAt(newX, newY, dragState.basePositions.map(position => position.id))) {
+          return
+        }
+      } else {
+        if (snapToGrid.value) {
+          newX = snap(newX)
+          newY = snap(newY)
+        }
+        newX = clamp(newX, 0, rect.width - item.width)
+        newY = clamp(newY, 0, rect.height - item.height)
       }
 
-      item.x = clamp(newX, 0, rect.width - item.width)
-      item.y = clamp(newY, 0, rect.height - item.height)
+      item.x = newX
+      item.y = newY
     })
   }
 
@@ -1883,6 +2114,7 @@ function onWindowMouseMove(event) {
 }
 
 function startResize(event, item) {
+  if (!canResizeItem(item)) return
   pushHistory()
   dragState.active = true
   dragState.mode = "resize"
@@ -1897,21 +2129,15 @@ function startResize(event, item) {
 }
 
 function cloneTrailAt(x, y, sourceSeat) {
-  const p = normalizePoint(x, y)
+  const p = normalizePoint(x, y, { isSeat: true, width: MANUAL_SEAT_SIZE, height: MANUAL_SEAT_SIZE })
   const key = `${p.x}-${p.y}`
 
   if (dragState.cloneTrailLastKey === key) return
   dragState.cloneTrailLastKey = key
 
-  const exists = form.design.seats.some(
-    seat => Math.abs(seat.x - p.x) < 8 && Math.abs(seat.y - p.y) < 8
-  )
-
-  if (exists) return
+  if (!canPlaceSeatAt(p.x, p.y)) return
 
   const clone = createSeat(p.x, p.y, sourceSeat.seat_class)
-  clone.width = sourceSeat.width
-  clone.height = sourceSeat.height
   form.design.seats.push(clone)
   selectedIds.value = [...selectedIds.value, clone.id]
 }
@@ -1982,7 +2208,7 @@ function onCanvasMouseUp() {
 }
 
 function paintAt(x, y) {
-  const p = normalizePoint(x, y)
+  const p = normalizePoint(x, y, { isSeat: true, width: MANUAL_SEAT_SIZE, height: MANUAL_SEAT_SIZE })
 
   if (paintMode.value === "Regular" || paintMode.value === "Special" || paintMode.value === "VIP") {
     addSeatAtPosition(p.x, p.y, paintMode.value, true)
@@ -2013,6 +2239,7 @@ function duplicateSelected() {
   if (!selectedItems.value.length) return
 
   pushHistory()
+  closeContextMenu()
   const duplicatedIds = []
 
   selectedItems.value.forEach(item => {
@@ -2043,6 +2270,7 @@ function removeSelected() {
   if (!selectedItems.value.length) return
 
   pushHistory()
+  closeContextMenu()
   const idsToDelete = new Set(selectedIds.value)
 
   form.design.seats = form.design.seats.filter(item => !idsToDelete.has(item.id))
@@ -2086,8 +2314,8 @@ function sortItemsTopLeft(items = []) {
 function buildSeatRecord({
   x,
   y,
-  width = 28,
-  height = 28,
+  width = MANUAL_SEAT_SIZE,
+  height = MANUAL_SEAT_SIZE,
   seatClass = "Regular",
   sourceType = "manual-seat",
   sourceId = null,
@@ -2103,8 +2331,8 @@ function buildSeatRecord({
     table_seat_index: tableSeatIndex,
     x: Number(x || 0),
     y: Number(y || 0),
-    width: Number(width || 28),
-    height: Number(height || 28),
+    width: Number(width || MANUAL_SEAT_SIZE),
+    height: Number(height || MANUAL_SEAT_SIZE),
     seat_class: seatClass,
     color: seatColor(seatClass),
     title: "",
@@ -2123,7 +2351,7 @@ function buildGeneratedSeatsFromTables() {
       generatedSeats.push(
         buildSeatRecord({
           x: Number(element.x || 0) + 8,
-          y: Number(element.y || 0) + Math.max(8, Number(element.height || 72) / 2 - 14),
+          y: Number(element.y || 0) + Math.max(8, Number(element.height || 72) / 2 - MANUAL_SEAT_SIZE / 2),
           seatClass: "Regular",
           sourceType: "table2",
           sourceId: element.id,
@@ -2131,8 +2359,8 @@ function buildGeneratedSeatsFromTables() {
           tableSeatIndex: 1,
         }),
         buildSeatRecord({
-          x: Number(element.x || 0) + Math.max(8, Number(element.width || 96) - 36),
-          y: Number(element.y || 0) + Math.max(8, Number(element.height || 72) / 2 - 14),
+          x: Number(element.x || 0) + Math.max(8, Number(element.width || 96) - (MANUAL_SEAT_SIZE + 4)),
+          y: Number(element.y || 0) + Math.max(8, Number(element.height || 72) / 2 - MANUAL_SEAT_SIZE / 2),
           seatClass: "Regular",
           sourceType: "table2",
           sourceId: element.id,
@@ -2150,7 +2378,7 @@ function buildGeneratedSeatsFromTables() {
 
       generatedSeats.push(
         buildSeatRecord({
-          x: baseX + blockWidth / 2 - 14,
+          x: baseX + blockWidth / 2 - MANUAL_SEAT_SIZE / 2,
           y: baseY + 6,
           seatClass: "VIP",
           sourceType: "table4",
@@ -2159,8 +2387,8 @@ function buildGeneratedSeatsFromTables() {
           tableSeatIndex: 1,
         }),
         buildSeatRecord({
-          x: baseX + blockWidth - 34,
-          y: baseY + blockHeight / 2 - 14,
+          x: baseX + blockWidth - (MANUAL_SEAT_SIZE + 2),
+          y: baseY + blockHeight / 2 - MANUAL_SEAT_SIZE / 2,
           seatClass: "VIP",
           sourceType: "table4",
           sourceId: element.id,
@@ -2168,8 +2396,8 @@ function buildGeneratedSeatsFromTables() {
           tableSeatIndex: 2,
         }),
         buildSeatRecord({
-          x: baseX + blockWidth / 2 - 14,
-          y: baseY + blockHeight - 34,
+          x: baseX + blockWidth / 2 - MANUAL_SEAT_SIZE / 2,
+          y: baseY + blockHeight - (MANUAL_SEAT_SIZE + 2),
           seatClass: "VIP",
           sourceType: "table4",
           sourceId: element.id,
@@ -2178,7 +2406,7 @@ function buildGeneratedSeatsFromTables() {
         }),
         buildSeatRecord({
           x: baseX + 6,
-          y: baseY + blockHeight / 2 - 14,
+          y: baseY + blockHeight / 2 - MANUAL_SEAT_SIZE / 2,
           seatClass: "VIP",
           sourceType: "table4",
           sourceId: element.id,
@@ -2206,39 +2434,84 @@ function buildNumberedDesignerSeats() {
     ...buildGeneratedSeatsFromTables(),
   ])
 
+  if (!combinedSeats.length) return []
+
   const rowMap = new Map()
   const rowLetters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
 
-  combinedSeats.forEach((seat, index) => {
-    const rowKey = Math.round(Number(seat.y || 0) / 36)
-    if (!rowMap.has(rowKey)) {
-      rowMap.set(rowKey, [])
-    }
-    rowMap.get(rowKey).push(seat)
+  // 🔥 group seats by vertical band so nearby seats become same row
+  // works better than exact y matching and stays stable after dragging
+  const ROW_GROUPING_TOLERANCE = 24
+
+  const sortedByYThenX = [...combinedSeats].sort((a, b) => {
+    const yDiff = Number(a.y || 0) - Number(b.y || 0)
+    if (Math.abs(yDiff) > 6) return yDiff
+    return Number(a.x || 0) - Number(b.x || 0)
   })
 
-  const orderedRowKeys = [...rowMap.keys()].sort((a, b) => a - b)
-  let globalSeatNumber = 1
+  const detectedRows = []
 
-  orderedRowKeys.forEach((rowKey, rowIndex) => {
-    const rowSeats = sortItemsTopLeft(rowMap.get(rowKey) || [])
-    const rowLabel = rowLetters[rowIndex] || `R${rowIndex + 1}`
+  sortedByYThenX.forEach(seat => {
+    const seatY = Number(seat.y || 0)
 
+    let matchedRow = detectedRows.find(rowGroup =>
+      Math.abs(rowGroup.anchorY - seatY) <= ROW_GROUPING_TOLERANCE
+    )
+
+    if (!matchedRow) {
+      matchedRow = {
+        anchorY: seatY,
+        seats: [],
+      }
+      detectedRows.push(matchedRow)
+    }
+
+    matchedRow.seats.push(seat)
+
+    // keep row anchor stable and smooth
+    matchedRow.anchorY =
+      matchedRow.seats.reduce((sum, item) => sum + Number(item.y || 0), 0) /
+      matchedRow.seats.length
+  })
+
+  detectedRows
+    .sort((a, b) => a.anchorY - b.anchorY)
+    .forEach((rowGroup, rowIndex) => {
+      const rowLabel = rowLetters[rowIndex] || `R${rowIndex + 1}`
+
+      const rowSeats = [...rowGroup.seats].sort((a, b) => {
+        return Number(a.x || 0) - Number(b.x || 0)
+      })
+
+      rowMap.set(rowLabel, rowSeats)
+    })
+
+  const finalSeats = []
+
+  ;[...rowMap.entries()].forEach(([rowLabel, rowSeats]) => {
     rowSeats.forEach((seat, seatIndex) => {
-      seat.row = rowLabel
-      seat.number = seatIndex + 1
-      seat.seat_number = globalSeatNumber
-      seat.location_key = `${rowLabel}-${seatIndex + 1}`
-      seat.location = `${rowLabel}${seatIndex + 1}`
-      seat.label = `${rowLabel}${seatIndex + 1}`
-      seat.title =
-        seat.title ||
-        `${seat.seat_class} Seat ${rowLabel}${seatIndex + 1}`
-      globalSeatNumber += 1
+      const number = seatIndex + 1
+      const autoCode = `${rowLabel}${number}`
+
+      const normalizedSeat = {
+        ...seat,
+        row: rowLabel,
+        number,
+        seat_number: autoCode,
+        location_key: `${rowLabel}-${number}`,
+        location: autoCode,
+        label: autoCode,
+        title:
+          seat.source_type === "table-generated"
+            ? `${seat.seat_class || "Regular"} Seat ${autoCode}`
+            : `${seat.seat_class || "Regular"} Seat ${autoCode}`,
+      }
+
+      finalSeats.push(normalizedSeat)
     })
   })
 
-  return combinedSeats
+  return sortItemsTopLeft(finalSeats)
 }
 
 function buildManualSeatDefinitions() {
@@ -2266,14 +2539,14 @@ function buildManualSeatDefinitions() {
         table_seat_index: null,
         x: 0,
         y: 0,
-        width: 28,
-        height: 28,
+        width: MANUAL_SEAT_SIZE,
+        height: MANUAL_SEAT_SIZE,
         seat_class: group.seatClass,
         color: seatColor(group.seatClass),
         title: `${group.seatClass} Seat ${rowLabel}${number}`,
         row: rowLabel,
         number,
-        seat_number: globalSeatNumber,
+        seat_number: `${rowLabel}${number}`,
         location_key: `${rowLabel}-${number}`,
         location: `${rowLabel}${number}`,
         label: `${rowLabel}${number}`,
@@ -2564,6 +2837,8 @@ function resetForm() {
 
 onMounted(() => {
   applyBrowserThemePreference()
+  window.addEventListener("pointerdown", handleGlobalPointerDown)
+  window.addEventListener("keydown", onGlobalKeyDown)
 
   if (typeof window !== "undefined" && typeof window.matchMedia === "function") {
     browserThemeMedia = window.matchMedia("(prefers-color-scheme: light)")
@@ -2576,8 +2851,29 @@ onMounted(() => {
   }
 })
 
+function onGlobalKeyDown(event) {
+  if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "z") {
+    event.preventDefault()
+    undoLastAction()
+  }
+
+  if (event.key === "Delete" || event.key === "Backspace") {
+    if (selectedItems.value.length) {
+      event.preventDefault()
+      removeSelected()
+    }
+  }
+
+  if (event.key === "Escape") {
+    clearSelection()
+    closeContextMenu()
+  }
+}
+
 onBeforeUnmount(() => {
   stopGlobalDrag()
+  window.removeEventListener("pointerdown", handleGlobalPointerDown)
+  window.removeEventListener("keydown", onGlobalKeyDown)
 
   if (browserThemeMedia) {
     if (typeof browserThemeMedia.removeEventListener === "function") {
@@ -2989,4 +3285,166 @@ onBeforeUnmount(() => {
     position: static;
   }
 }
+
+.designer-canvas {
+  position: relative;
+  overflow: hidden;
+  border-radius: 28px;
+  border: 1px solid var(--card-border);
+  background:
+    linear-gradient(180deg, var(--canvas-top), var(--canvas-bottom)),
+    linear-gradient(90deg, var(--grid-line) 1px, transparent 1px),
+    linear-gradient(180deg, var(--grid-line) 1px, transparent 1px);
+  background-size: auto, 24px 24px, 24px 24px;
+  min-height: 580px;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.03), 0 16px 40px rgba(0,0,0,0.18);
+}
+
+.canvas-item {
+  position: absolute;
+  transition: transform 0.14s ease, box-shadow 0.18s ease, filter 0.18s ease;
+  user-select: none;
+}
+
+.canvas-item:hover {
+  transform: translateY(-1px);
+  filter: brightness(1.03);
+}
+
+.canvas-item.selected {
+  z-index: 3;
+}
+
+.seat-shape {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 12px 12px 9px 9px;
+  border: 2px solid rgba(255,255,255,0.22);
+  box-shadow: 0 10px 20px rgba(0,0,0,0.22), inset 0 1px 0 rgba(255,255,255,0.18);
+}
+
+.seat-mini-label {
+  position: absolute;
+  left: 50%;
+  top: calc(100% + 4px);
+  transform: translateX(-50%);
+  font-size: 10px;
+  line-height: 1;
+  padding: 3px 6px;
+  border-radius: 999px;
+  background: rgba(15, 23, 42, 0.78);
+  color: white;
+  white-space: nowrap;
+  pointer-events: none;
+}
+
+.browser-theme-light .seat-mini-label {
+  background: rgba(255,255,255,0.96);
+  color: #18212f;
+  border: 1px solid rgba(15,23,42,0.08);
+}
+
+.block {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  color: white;
+  font-weight: 700;
+  border-radius: 18px;
+  border: 1px solid rgba(255,255,255,0.14);
+  box-shadow: 0 12px 24px rgba(0,0,0,0.18);
+  text-align: center;
+  padding: 10px;
+}
+
+.resize-handle {
+  position: absolute;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: white;
+  border: 2px solid #1976d2;
+  box-shadow: 0 6px 14px rgba(25,118,210,0.28);
+}
+
+.resize-br {
+  right: -8px;
+  bottom: -8px;
+  cursor: nwse-resize;
+}
+
+.selection-box {
+  position: absolute;
+  border: 1px dashed #42a5f5;
+  background: rgba(66,165,245,0.12);
+  border-radius: 14px;
+  z-index: 4;
+}
+
+.designer-context-menu {
+  position: absolute;
+  z-index: 10;
+  width: 220px;
+  border-radius: 18px;
+  padding: 8px;
+  border: 1px solid var(--card-border);
+  background: rgba(10, 14, 22, 0.94);
+  backdrop-filter: blur(16px);
+  box-shadow: 0 24px 60px rgba(0,0,0,0.28);
+}
+
+.browser-theme-light .designer-context-menu {
+  background: rgba(255,255,255,0.96);
+}
+
+.context-menu-btn {
+  width: 100%;
+  border: 0;
+  background: transparent;
+  color: var(--text-main);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.18s ease, transform 0.12s ease;
+}
+
+.context-menu-btn:hover {
+  background: rgba(255,255,255,0.06);
+  transform: translateX(2px);
+}
+
+.browser-theme-light .context-menu-btn:hover {
+  background: rgba(15,23,42,0.05);
+}
+
+.context-menu-pop-enter-active,
+.context-menu-pop-leave-active {
+  transition: all 0.16s ease;
+}
+
+.context-menu-pop-enter-from,
+.context-menu-pop-leave-to {
+  opacity: 0;
+  transform: translateY(6px) scale(0.98);
+}
+
+.success-dialog-pop :deep(.v-overlay__content) {
+  animation: successBounce 0.34s ease;
+}
+
+@keyframes successBounce {
+  0% { transform: translateY(10px) scale(0.96); opacity: 0; }
+  100% { transform: translateY(0) scale(1); opacity: 1; }
+}
+
 </style>

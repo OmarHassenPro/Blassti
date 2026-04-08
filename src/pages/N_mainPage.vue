@@ -5,8 +5,11 @@
     <v-main class="mainpage-root">
       <v-container class="mainpage-container">
         <div class="page-top-glow"></div>
+        <div class="page-top-glow page-top-glow-secondary"></div>
 
         <section class="hero-section hero-section-minimal mb-8">
+          <div class="hero-accent hero-accent-primary"></div>
+          <div class="hero-accent hero-accent-secondary"></div>
           <div class="hero-copy">
             <h1 class="hero-title">
               Welcome, {{ currentUser ? currentUserName : "Guest" }}
@@ -117,12 +120,14 @@
           <div v-else>
             <v-row class="mt-1">
               <v-col
-                v-for="event in recommendedPreview"
+                v-for="(event, index) in recommendedPreview"
                 :key="event.id"
                 cols="12"
                 sm="6"
                 md="4"
                 lg="3"
+                class="stagger-col"
+                :style="getStaggerStyle(index)"
               >
                 <v-card
                   class="content-card event-card"
@@ -151,6 +156,13 @@
                         <v-icon start size="14">mdi-star-four-points</v-icon>
                         Recommended
                       </v-chip>
+                    </div>
+
+                    <div class="card-media-overlay">
+                      <div class="card-media-overlay-content">
+                        <span class="card-media-overlay-label">View Event</span>
+                        <v-icon size="18" class="card-media-overlay-icon">mdi-arrow-top-right</v-icon>
+                      </div>
                     </div>
                   </div>
 
@@ -187,12 +199,14 @@
               <div v-show="showMoreRecommended">
                 <v-row class="mt-0">
                   <v-col
-                    v-for="event in recommendedExtra"
+                    v-for="(event, index) in recommendedExtra"
                     :key="event.id"
                     cols="12"
                     sm="6"
                     md="4"
                     lg="3"
+                    class="stagger-col stagger-col-delayed"
+                    :style="getStaggerStyle(index + 4)"
                   >
                     <v-card
                       class="content-card event-card"
@@ -289,12 +303,14 @@
 
           <v-row>
             <v-col
-              v-for="venue in featuredVenuesPreview"
+              v-for="(venue, index) in featuredVenuesPreview"
               :key="venue.id"
               cols="12"
               sm="6"
               md="4"
               lg="3"
+              class="stagger-col"
+              :style="getStaggerStyle(index)"
             >
               <v-card
                 class="content-card venue-card"
@@ -359,12 +375,14 @@
             <div v-show="showMoreVenues">
               <v-row class="mt-0">
                 <v-col
-                  v-for="venue in featuredVenuesExtra"
+                  v-for="(venue, index) in featuredVenuesExtra"
                   :key="venue.id"
                   cols="12"
                   sm="6"
                   md="4"
                   lg="3"
+                  class="stagger-col stagger-col-delayed"
+                  :style="getStaggerStyle(index + 4)"
                 >
                   <v-card
                     class="content-card venue-card"
@@ -393,6 +411,13 @@
                           <v-icon start size="14">mdi-check-decagram-outline</v-icon>
                           Featured
                         </v-chip>
+                      </div>
+
+                      <div class="card-media-overlay">
+                        <div class="card-media-overlay-content">
+                          <span class="card-media-overlay-label">View Venue</span>
+                          <v-icon size="18" class="card-media-overlay-icon">mdi-arrow-top-right</v-icon>
+                        </div>
                       </div>
                     </div>
 
@@ -460,12 +485,14 @@
 
           <v-row>
             <v-col
-              v-for="event in lastCallEventsPreview"
+              v-for="(event, index) in lastCallEventsPreview"
               :key="event.id"
               cols="12"
               sm="6"
               md="4"
               lg="3"
+              class="stagger-col"
+              :style="getStaggerStyle(index)"
             >
               <v-card
                 class="content-card event-card last-call-card"
@@ -494,6 +521,13 @@
                       <v-icon start size="14">mdi-fire</v-icon>
                       Last Call
                     </v-chip>
+                  </div>
+
+                  <div class="card-media-overlay">
+                    <div class="card-media-overlay-content">
+                      <span class="card-media-overlay-label">View Event</span>
+                      <v-icon size="18" class="card-media-overlay-icon">mdi-arrow-top-right</v-icon>
+                    </div>
                   </div>
                 </div>
 
@@ -530,12 +564,14 @@
             <div v-show="showMoreLastCall">
               <v-row class="mt-0">
                 <v-col
-                  v-for="event in lastCallEventsExtra"
+                  v-for="(event, index) in lastCallEventsExtra"
                   :key="event.id"
                   cols="12"
                   sm="6"
                   md="4"
                   lg="3"
+                  class="stagger-col stagger-col-delayed"
+                  :style="getStaggerStyle(index + 4)"
                 >
                   <v-card
                     class="content-card event-card last-call-card"
@@ -564,6 +600,13 @@
                           <v-icon start size="14">mdi-fire</v-icon>
                           Last Call
                         </v-chip>
+                      </div>
+
+                      <div class="card-media-overlay">
+                        <div class="card-media-overlay-content">
+                          <span class="card-media-overlay-label">View Event</span>
+                          <v-icon size="18" class="card-media-overlay-icon">mdi-arrow-top-right</v-icon>
+                        </div>
                       </div>
                     </div>
 
@@ -631,12 +674,14 @@
 
           <v-row>
             <v-col
-              v-for="event in soldOutEventsPreview"
+              v-for="(event, index) in soldOutEventsPreview"
               :key="event.id"
               cols="12"
               sm="6"
               md="4"
               lg="3"
+              class="stagger-col"
+              :style="getStaggerStyle(index)"
             >
               <v-card
                 class="content-card event-card sold-out-card"
@@ -665,6 +710,13 @@
                       <v-icon start size="14">mdi-ticket-off-outline</v-icon>
                       Sold Out
                     </v-chip>
+                  </div>
+
+                  <div class="card-media-overlay">
+                    <div class="card-media-overlay-content">
+                      <span class="card-media-overlay-label">View Event</span>
+                      <v-icon size="18" class="card-media-overlay-icon">mdi-arrow-top-right</v-icon>
+                    </div>
                   </div>
                 </div>
 
@@ -700,12 +752,14 @@
             <div v-show="showMoreSoldOut">
               <v-row class="mt-0">
                 <v-col
-                  v-for="event in soldOutEventsExtra"
+                  v-for="(event, index) in soldOutEventsExtra"
                   :key="event.id"
                   cols="12"
                   sm="6"
                   md="4"
                   lg="3"
+                  class="stagger-col stagger-col-delayed"
+                  :style="getStaggerStyle(index + 4)"
                 >
                   <v-card
                     class="content-card event-card sold-out-card"
@@ -734,6 +788,13 @@
                           <v-icon start size="14">mdi-ticket-off-outline</v-icon>
                           Sold Out
                         </v-chip>
+                      </div>
+
+                      <div class="card-media-overlay">
+                        <div class="card-media-overlay-content">
+                          <span class="card-media-overlay-label">View Event</span>
+                          <v-icon size="18" class="card-media-overlay-icon">mdi-arrow-top-right</v-icon>
+                        </div>
                       </div>
                     </div>
 
@@ -1056,6 +1117,12 @@ const soldOutEventsExtra = computed(() => {
   return soldOutEvents.value.slice(PREVIEW_COUNT)
 })
 
+function getStaggerStyle(index) {
+  return {
+    animationDelay: `${index * 70}ms`
+  }
+}
+
 function openEvent(eventId) {
   router.push({
     path: "/o_eventinfo",
@@ -1100,6 +1167,16 @@ function openVenue(venueId) {
   pointer-events: none;
 }
 
+.page-top-glow-secondary {
+  top: 140px;
+  right: auto;
+  left: -140px;
+  width: 300px;
+  height: 300px;
+  background: rgba(var(--v-theme-secondary), 0.10);
+  filter: blur(90px);
+}
+
 .hero-section {
   position: relative;
   overflow: hidden;
@@ -1114,12 +1191,38 @@ function openVenue(venueId) {
     inset 0 1px 0 rgba(255, 255, 255, 0.05);
 }
 
+.hero-accent {
+  position: absolute;
+  border-radius: 999px;
+  pointer-events: none;
+  filter: blur(6px);
+  opacity: 0.9;
+}
+
+.hero-accent-primary {
+  top: -22px;
+  right: 8%;
+  width: 180px;
+  height: 180px;
+  background: radial-gradient(circle, rgba(var(--v-theme-primary), 0.20) 0%, rgba(var(--v-theme-primary), 0.04) 45%, transparent 72%);
+}
+
+.hero-accent-secondary {
+  bottom: -50px;
+  left: 12%;
+  width: 220px;
+  height: 220px;
+  background: radial-gradient(circle, rgba(var(--v-theme-secondary), 0.12) 0%, rgba(var(--v-theme-secondary), 0.03) 44%, transparent 72%);
+}
+
 .hero-section-minimal {
   padding: 28px 32px;
   min-height: unset;
 }
 
 .hero-copy {
+  position: relative;
+  z-index: 1;
   max-width: 100%;
 }
 
@@ -1135,6 +1238,7 @@ function openVenue(venueId) {
   margin: 12px 0 0;
   font-size: 1.02rem;
   max-width: 720px;
+  line-height: 1.65;
 }
 
 .section-divider {
@@ -1143,6 +1247,18 @@ function openVenue(venueId) {
 
 .section-shell {
   position: relative;
+}
+
+.section-shell::before {
+  content: "";
+  position: absolute;
+  top: -14px;
+  left: 0;
+  width: 92px;
+  height: 4px;
+  border-radius: 999px;
+  background: linear-gradient(90deg, rgba(var(--v-theme-primary), 0.95), rgba(var(--v-theme-secondary), 0.7));
+  opacity: 0.95;
 }
 
 .section-header {
@@ -1185,6 +1301,14 @@ function openVenue(venueId) {
   text-transform: none;
   font-weight: 700;
   letter-spacing: 0;
+  padding-inline: 12px;
+  min-height: 40px;
+  transition: transform 0.22s ease, background-color 0.22s ease;
+}
+
+.section-toggle-btn:hover {
+  transform: translateY(-1px);
+  background: rgba(var(--v-theme-primary), 0.08);
 }
 
 .state-card {
@@ -1192,6 +1316,13 @@ function openVenue(venueId) {
   background:
     linear-gradient(180deg, rgba(var(--v-theme-surface), 0.98), rgba(var(--v-theme-surface), 0.92));
   box-shadow: 0 16px 36px rgba(0, 0, 0, 0.06);
+  transition: transform 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease;
+}
+
+.state-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 20px 42px rgba(0, 0, 0, 0.08);
+  border-color: rgba(var(--v-theme-primary), 0.20);
 }
 
 .state-card-dashed {
@@ -1230,13 +1361,29 @@ function openVenue(venueId) {
   transition:
     transform 0.28s ease,
     box-shadow 0.28s ease,
-    border-color 0.28s ease;
+    border-color 0.28s ease,
+    background 0.28s ease;
+}
+
+.content-card::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.03), transparent 35%, rgba(var(--v-theme-primary), 0.03));
+  opacity: 0;
+  transition: opacity 0.28s ease;
+  pointer-events: none;
+  z-index: 0;
 }
 
 .content-card:hover {
-  transform: translateY(-6px);
-  box-shadow: 0 24px 44px rgba(0, 0, 0, 0.14);
+  transform: translateY(-8px);
+  box-shadow: 0 26px 48px rgba(0, 0, 0, 0.14);
   border-color: rgba(var(--v-theme-primary), 0.24);
+}
+
+.content-card:hover::before {
+  opacity: 1;
 }
 
 .card-media-wrap {
@@ -1245,11 +1392,12 @@ function openVenue(venueId) {
 }
 
 .card-media {
-  transition: transform 0.5s ease;
+  transition: transform 0.6s ease, filter 0.35s ease;
 }
 
 .content-card:hover .card-media {
-  transform: scale(1.03);
+  transform: scale(1.08);
+  filter: saturate(1.04);
 }
 
 .media-overlay-top {
@@ -1260,19 +1408,85 @@ function openVenue(venueId) {
   display: flex;
   justify-content: flex-start;
   pointer-events: none;
+  z-index: 2;
+}
+
+.card-media-overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: flex-end;
+  justify-content: flex-start;
+  padding: 16px;
+  background:
+    linear-gradient(180deg, rgba(0, 0, 0, 0.02) 0%, rgba(0, 0, 0, 0.08) 42%, rgba(0, 0, 0, 0.52) 100%);
+  opacity: 0;
+  transition: opacity 0.26s ease;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.card-media-overlay-content {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.10);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  backdrop-filter: blur(10px);
+  color: white;
+  transform: translateY(8px);
+  transition: transform 0.28s ease, background 0.28s ease;
+}
+
+.card-media-overlay-label {
+  font-size: 0.88rem;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+}
+
+.card-media-overlay-icon {
+  transition: transform 0.24s ease;
+}
+
+.content-card:hover .card-media-overlay {
+  opacity: 1;
+}
+
+.content-card:hover .card-media-overlay-content {
+  transform: translateY(0);
+  background: rgba(255, 255, 255, 0.14);
+}
+
+.content-card:hover .card-media-overlay-icon {
+  transform: translate(2px, -2px);
 }
 
 .card-badge {
   backdrop-filter: blur(10px);
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.16);
   font-weight: 700;
+  transition: transform 0.24s ease, box-shadow 0.24s ease;
+}
+
+.content-card:hover .card-badge {
+  transform: translateY(-1px);
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.22);
 }
 
 .card-title {
+  position: relative;
+  z-index: 1;
   font-size: 1.08rem;
   font-weight: 800;
   line-height: 1.3;
   padding-bottom: 10px;
+  transition: color 0.24s ease;
+}
+
+.content-card:hover .card-title {
+  color: rgb(var(--v-theme-primary));
 }
 
 .meta-row {
@@ -1282,6 +1496,7 @@ function openVenue(venueId) {
   font-size: 0.94rem;
   line-height: 1.4;
   margin-bottom: 8px;
+  gap: 2px;
 }
 
 .meta-row:last-child {
@@ -1293,6 +1508,13 @@ function openVenue(venueId) {
   font-weight: 700;
   letter-spacing: 0;
   min-height: 42px;
+  transition: transform 0.22s ease, box-shadow 0.22s ease, filter 0.22s ease;
+}
+
+.content-card:hover .card-action-btn {
+  transform: translateY(-1px);
+  box-shadow: 0 10px 22px rgba(0, 0, 0, 0.14);
+  filter: brightness(1.03);
 }
 
 .sold-out-btn {
@@ -1300,6 +1522,7 @@ function openVenue(venueId) {
   font-weight: 700;
   letter-spacing: 0;
   min-height: 42px;
+  opacity: 0.95;
 }
 
 .event-card::after,
@@ -1334,6 +1557,31 @@ function openVenue(venueId) {
   opacity: 1;
 }
 
+.sold-out-card {
+  background:
+    linear-gradient(180deg, rgba(var(--v-theme-surface), 0.98), rgba(var(--v-theme-surface), 0.92));
+}
+
+.sold-out-card .card-media {
+  filter: saturate(0.88);
+}
+
+.last-call-card:hover {
+  border-color: rgba(var(--v-theme-warning), 0.4);
+}
+
+.venue-card:hover {
+  border-color: rgba(var(--v-theme-secondary), 0.28);
+}
+
+.stagger-col {
+  animation: cardEnter 0.55s ease both;
+}
+
+.stagger-col-delayed {
+  animation-duration: 0.62s;
+}
+
 .context-menu-list {
   border: 1px solid rgba(var(--v-border-color), 0.12);
   box-shadow: 0 18px 40px rgba(0, 0, 0, 0.16);
@@ -1347,6 +1595,17 @@ function openVenue(venueId) {
   overflow: hidden;
 }
 
+@keyframes cardEnter {
+  from {
+    opacity: 0;
+    transform: translateY(18px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
 @media (max-width: 1264px) {
   .hero-section-minimal {
     padding: 24px 28px;
@@ -1356,6 +1615,14 @@ function openVenue(venueId) {
 @media (max-width: 960px) {
   .section-header {
     align-items: flex-start;
+  }
+
+  .section-shell::before {
+    width: 74px;
+  }
+
+  .hero-accent-primary {
+    right: -24px;
   }
 }
 
@@ -1373,8 +1640,27 @@ function openVenue(venueId) {
     padding: 20px;
   }
 
+  .hero-accent-primary,
+  .hero-accent-secondary {
+    opacity: 0.72;
+  }
+
   .section-title {
     font-size: 1.35rem;
+  }
+
+  .card-media-overlay {
+    opacity: 1;
+    background: linear-gradient(180deg, rgba(0, 0, 0, 0.01) 0%, rgba(0, 0, 0, 0.06) 46%, rgba(0, 0, 0, 0.40) 100%);
+  }
+
+  .card-media-overlay-content {
+    transform: translateY(0);
+    padding: 7px 10px;
+  }
+
+  .content-card:hover .card-media {
+    transform: scale(1.04);
   }
 }
 </style>

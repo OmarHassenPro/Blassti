@@ -108,69 +108,42 @@ function normalizeSeatLayout(seatLayout = null) {
   return {
     width: Number(seatLayout?.width ?? 20),
     height: Number(seatLayout?.height ?? 12),
+
+    // 🔥 FULL persistence (not just seats)
     seats: Array.isArray(seatLayout?.seats)
       ? seatLayout.seats.map((seat, index) => {
           const row = String(seat?.row ?? "").trim()
           const number = String(seat?.number ?? "").trim()
+
           const seatNumber =
             seat?.seat_number ??
             (row && number ? `${row}${number}` : "")
-          const locationKey =
-            seat?.location_key ??
-            (row && number ? `${row}-${number}` : "")
-          const fallbackLabel =
-            seatNumber || `Seat ${index + 1}`
 
           return {
+            ...seat, // 🔥 keep EVERYTHING
             id: seat?.id ?? `seat-${index + 1}`,
             x: Number(seat?.x ?? 0),
             y: Number(seat?.y ?? 0),
-            width: Number(seat?.width ?? 1),
-            height: Number(seat?.height ?? 1),
-            rotation: Number(seat?.rotation ?? 0),
+
+            // 🔥 enforce fixed size
+            width: 1.2,
+            height: 1.2,
+
             row,
             number,
             seat_number: seatNumber,
-            location_key: locationKey,
-            label: seat?.label ?? fallbackLabel,
-            seat_class: seat?.seat_class ?? "Regular",
-            price: Number(seat?.price ?? 0),
+           label: (seat?.label ?? seatNumber) || `Seat ${index + 1}`,
           }
         })
       : [],
-    screens: Array.isArray(seatLayout?.screens)
-      ? seatLayout.screens.map((item, index) => ({
-          id: item?.id ?? `screen-${index + 1}`,
-          name: item?.name ?? "Screen",
-          x: Number(item?.x ?? 0),
-          y: Number(item?.y ?? 0),
-          width: Number(item?.width ?? 6),
-          height: Number(item?.height ?? 1.2),
-          rotation: Number(item?.rotation ?? 0),
-        }))
-      : [],
-    stages: Array.isArray(seatLayout?.stages)
-      ? seatLayout.stages.map((item, index) => ({
-          id: item?.id ?? `stage-${index + 1}`,
-          name: item?.name ?? "Stage",
-          x: Number(item?.x ?? 0),
-          y: Number(item?.y ?? 0),
-          width: Number(item?.width ?? 7),
-          height: Number(item?.height ?? 2.4),
-          rotation: Number(item?.rotation ?? 0),
-        }))
-      : [],
-    audio_sources: Array.isArray(seatLayout?.audio_sources)
-      ? seatLayout.audio_sources.map((item, index) => ({
-          id: item?.id ?? `audio-${index + 1}`,
-          name: item?.name ?? "Audio Source",
-          x: Number(item?.x ?? 0),
-          y: Number(item?.y ?? 0),
-          width: Number(item?.width ?? 1.2),
-          height: Number(item?.height ?? 1.2),
-          rotation: Number(item?.rotation ?? 0),
-        }))
-      : [],
+
+    screens: seatLayout?.screens ?? [],
+    stages: seatLayout?.stages ?? [],
+    audio_sources: seatLayout?.audio_sources ?? [],
+
+    // 🔥 NEW (for future-proofing)
+    elements: seatLayout?.elements ?? [],
+    metadata: seatLayout?.metadata ?? {},
   }
 }
 

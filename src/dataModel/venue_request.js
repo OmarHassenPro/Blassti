@@ -257,7 +257,87 @@ export function clear_All_Venue_Requests() {
   saveVenueRequests()
 }
 
+function build_Seat_Layout_From_Request(request) {
+  if (!request) return null
+
+  if (request.use_designer) {
+    const seats = Array.isArray(request.design?.seats)
+      ? request.design.seats.map((seat, index) => ({
+          id: seat?.id ?? crypto.randomUUID(),
+          x: normalizeNumber(seat?.x, 0),
+          y: normalizeNumber(seat?.y, 0),
+          width: normalizeNumber(seat?.width, 24),
+          height: normalizeNumber(seat?.height, 24),
+          rotation: normalizeNumber(seat?.rotation, 0),
+          row: String(seat?.row ?? "").trim(),
+          number: String(seat?.number ?? index + 1).trim(),
+          seat_number:
+            String(seat?.seat_number ?? seat?.label ?? `S${index + 1}`).trim() || `S${index + 1}`,
+          location_key:
+            String(seat?.location_key ?? seat?.label ?? `seat-${index + 1}`).trim() || `seat-${index + 1}`,
+          label: String(seat?.label ?? `Seat ${index + 1}`).trim() || `Seat ${index + 1}`,
+          seat_class: seat?.seat_class ?? "Regular",
+          price: normalizeNumber(seat?.price, 0),
+        }))
+      : []
+
+    const stages = Array.isArray(request.design?.stages)
+      ? request.design.stages.map((item, index) => ({
+          id: item?.id ?? `stage-${index + 1}`,
+          name: item?.title ?? `Stage ${index + 1}`,
+          x: normalizeNumber(item?.x, 0),
+          y: normalizeNumber(item?.y, 0),
+          width: normalizeNumber(item?.width, 140),
+          height: normalizeNumber(item?.height, 50),
+          rotation: normalizeNumber(item?.rotation, 0),
+        }))
+      : []
+
+    const screens = Array.isArray(request.design?.screens)
+      ? request.design.screens.map((item, index) => ({
+          id: item?.id ?? `screen-${index + 1}`,
+          name: item?.title ?? `Screen ${index + 1}`,
+          x: normalizeNumber(item?.x, 0),
+          y: normalizeNumber(item?.y, 0),
+          width: normalizeNumber(item?.width, 140),
+          height: normalizeNumber(item?.height, 50),
+          rotation: normalizeNumber(item?.rotation, 0),
+        }))
+      : []
+
+    const audio_sources = Array.isArray(request.design?.audio_sources)
+      ? request.design.audio_sources.map((item, index) => ({
+          id: item?.id ?? `audio-${index + 1}`,
+          name: item?.title ?? `Audio Source ${index + 1}`,
+          x: normalizeNumber(item?.x, 0),
+          y: normalizeNumber(item?.y, 0),
+          width: normalizeNumber(item?.width, 24),
+          height: normalizeNumber(item?.height, 24),
+          rotation: normalizeNumber(item?.rotation, 0),
+        }))
+      : []
+
+    return {
+      width: normalizeNumber(request.dimensions?.width_m, 20),
+      height: normalizeNumber(request.dimensions?.height_m, 12),
+      seats,
+      stages,
+      screens,
+      audio_sources,
+    }
+  }
+
+  return null
+}
+
 export function venue_Request_To_Venue(request) {
+  const seatLayout = build_Seat_Layout_From_Request(request)
+  const seatClasses = Array.from(
+    new Set(
+      (seatLayout?.seats ?? []).map(seat => seat?.seat_class).filter(Boolean)
+    )
+  )
+
   return new Venue({
     title: request.title,
     location: request.location,
@@ -285,6 +365,10 @@ export function venue_Request_To_Venue(request) {
     },
     featured: false,
     owner_user_id: request.owner_user_id ?? null,
+    seat_classes: seatClasses.length ? seatClasses : ["Regular"],
+    accessible_seats: false,
+    administration_blocks: [],
+    seat_layout: seatLayout,
   })
 }
 

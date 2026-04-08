@@ -351,17 +351,56 @@
                         {
                           reserved: isSeatReserved(seat),
                           selected: isSeatSelected(seat),
+                          hovered: hoveredSeatKey === seat.key,
                         }
                       ]"
                       :style="getSeatStyle(seat)"
                       :disabled="isSeatReserved(seat)"
+                      :title="buildSeatAriaLabel(seat)"
                       @click="toggleSeat(seat)"
+                      @mouseenter="setHoveredSeat(seat)"
+                      @mouseleave="clearHoveredSeat"
+                      @focus="setHoveredSeat(seat)"
+                      @blur="clearHoveredSeat"
                     >
-                      <v-icon size="18">mdi-seat</v-icon>
-                      <span class="seat-label">
-                        {{ compactSeatLabel(seat) }}
-                      </span>
+                      <div class="seat-shell">
+                        <div class="seat-icon-wrap">
+                          <v-icon size="18">mdi-seat</v-icon>
+                        </div>
+                        <span class="seat-label">
+                          {{ compactSeatLabel(seat) }}
+                        </span>
+                      </div>
                     </button>
+
+                    <transition name="seat-hover-card">
+                      <div
+                        v-if="hoveredSeatDetails"
+                        class="seat-hover-card"
+                        :style="getSeatHoverCardStyle(hoveredSeatDetails)"
+                      >
+                        <div class="d-flex align-center justify-space-between ga-2 mb-1">
+                          <div class="text-body-2 font-weight-bold text-white">
+                            {{ hoveredSeatDetails.seat_number || hoveredSeatDetails.label }}
+                          </div>
+                          <v-chip
+                            size="x-small"
+                            :color="getClassColor(hoveredSeatDetails.seat_class)"
+                            variant="tonal"
+                          >
+                            {{ hoveredSeatDetails.seat_class }}
+                          </v-chip>
+                        </div>
+
+                        <div class="text-caption text-medium-emphasis mb-1">
+                          {{ isSeatReserved(hoveredSeatDetails) ? 'Already reserved' : isSeatSelected(hoveredSeatDetails) ? 'Currently selected' : 'Available now' }}
+                        </div>
+
+                        <div class="text-body-2 font-weight-bold text-white">
+                          {{ formatPrice(hoveredSeatDetails.price) }}
+                        </div>
+                      </div>
+                    </transition>
                   </div>
                 </div>
 
@@ -617,9 +656,9 @@
 
       <!-- SUCCESS DIALOG -->
       <v-dialog v-model="successDialog" max-width="520">
-        <v-card rounded="xl">
+        <v-card rounded="xl" class="success-dialog-card">
           <v-card-text class="pa-7 text-center">
-            <v-avatar size="72" color="success" variant="tonal" class="mb-4">
+            <v-avatar size="72" color="success" variant="tonal" class="mb-4 success-pulse-avatar">
               <v-icon size="38">mdi-check-bold</v-icon>
             </v-avatar>
 
@@ -666,7 +705,7 @@
 </template>
 
 <script setup>
-import { computed, onBeforeUnmount, onMounted, reactive, ref } from "vue"
+import { computed, onBeforeUnmount, onMounted, reactive, ref, watch } from "vue"
 import { useRoute, useRouter } from "vue-router"
 import AppNavbar from "@/components/AppNavbar.vue"
 import { useTheme } from "vuetify"
@@ -716,6 +755,7 @@ const successDialog = ref(false)
 const isPaying = ref(false)
 const paymentError = ref("")
 const selectedSeatKeys = ref([])
+const hoveredSeatKey = ref("")
 const paymentForm = reactive({
   cardType: "Visa",
   cardHolder: "",
@@ -865,8 +905,19 @@ function defaultClassPrice(name) {
 }
 
 function normalizeCanvasSeat(seat, index) {
-  const row = seat?.row ?? seat?.seat_row ?? ""
-  const number = seat?.number ?? seat?.seat_number ?? seat?.seatNo ?? `${index + 1}`
+  const row = String(seat?.row ?? seat?.seat_row ?? "").trim()
+  const explicitSeatNumber = String(seat?.seat_number ?? "").trim()
+  const derivedNumber = explicitSeatNumber && row && explicitSeatNumber.startsWith(row)
+    ? explicitSeatNumber.slice(row.length)
+    : explicitSeatNumber
+
+  const number = String(
+    seat?.number ??
+    derivedNumber ??
+    seat?.seatNo ??
+    `${index + 1}`
+  ).trim()
+
   const seatClass = seat?.seat_class ?? seat?.class ?? seat?.seatType ?? "Regular"
   const rawPrice = Number(seat?.price)
 
@@ -875,25 +926,32 @@ function normalizeCanvasSeat(seat, index) {
       ? rawPrice
       : defaultClassPrice(seatClass)
 
+  const seatNumber =
+    explicitSeatNumber ||
+    [row, number].filter(Boolean).join("")
+
   const label =
     seat?.label ||
-    [row, number].filter(Boolean).join("") ||
+    seatNumber ||
     `${seatClass} ${index + 1}`
 
   return {
     id: seat?.id ?? `venue-seat-${index + 1}`,
     key:
       seat?.key ??
+      seat?.location_key ??
       `${seat?.id ?? "seat"}-${row || "row"}-${number || index + 1}`,
     label,
     row,
     number,
+    seat_number: seatNumber,
+    location_key: seat?.location_key ?? [row, number].filter(Boolean).join("-"),
     seat_class: seatClass,
     price: safePrice,
     x: numeric(seat?.x, 0),
     y: numeric(seat?.y, 0),
-    width: Math.max(0.8, numeric(seat?.width, 1)),
-    height: Math.max(0.8, numeric(seat?.height, 1)),
+    width: Math.max(1.05, numeric(seat?.width, 1.2)),
+    height: Math.max(1.05, numeric(seat?.height, 1.2)),
     rotation: numeric(seat?.rotation, 0),
   }
 }
@@ -1031,6 +1089,25 @@ function isSeatSelected(seat) {
   return selectedSeatKeys.value.includes(seat.key)
 }
 
+function setHoveredSeat(seat) {
+  hoveredSeatKey.value = seat?.key || ""
+}
+
+function clearHoveredSeat() {
+  hoveredSeatKey.value = ""
+}
+
+function buildSeatAriaLabel(seat) {
+  const code = seat?.seat_number || compactSeatLabel(seat)
+  const status = isSeatReserved(seat)
+    ? "Reserved"
+    : isSeatSelected(seat)
+      ? "Selected"
+      : "Available"
+
+  return `${code} • ${seat?.seat_class || "Regular"} • ${formatPrice(seat?.price)} • ${status}`
+}
+
 function toggleSeat(seat) {
   if (isSeatReserved(seat)) return
 
@@ -1045,6 +1122,19 @@ function toggleSeat(seat) {
 const selectedSeatsDetailed = computed(() =>
   manualSeatLayout.value.filter(seat => selectedSeatKeys.value.includes(seat.key))
 )
+
+const hoveredSeatDetails = computed(() =>
+  manualSeatLayout.value.find(seat => seat.key === hoveredSeatKey.value) || null
+)
+
+watch(manualSeatLayout, (nextSeats) => {
+  const validKeys = new Set(nextSeats.map(seat => seat.key))
+  selectedSeatKeys.value = selectedSeatKeys.value.filter(key => validKeys.has(key))
+
+  if (hoveredSeatKey.value && !validKeys.has(hoveredSeatKey.value)) {
+    hoveredSeatKey.value = ""
+  }
+}, { deep: true })
 
 function compactSeatLabel(seat) {
   return [seat.row, seat.number].filter(Boolean).join("") || seat.label
@@ -1256,6 +1346,18 @@ function getAssetStyle(asset) {
     width: `${(numeric(asset.width, 2) / canvasBounds.value.width) * 100}%`,
     height: `${(numeric(asset.height, 1.2) / canvasBounds.value.height) * 100}%`,
     transform: `rotate(${numeric(asset.rotation, 0)}deg)`,
+  }
+}
+
+function getSeatHoverCardStyle(seat) {
+  const seatX = numeric(seat?.x, 0) + numeric(seat?.width, 1.2) / 2
+  const seatY = numeric(seat?.y, 0) - 0.3
+  const left = (seatX / canvasBounds.value.width) * 100
+  const top = Math.max(4, (seatY / canvasBounds.value.height) * 100)
+
+  return {
+    left: `${Math.min(92, Math.max(8, left))}%`,
+    top: `${top}%`,
   }
 }
 
@@ -1583,6 +1685,7 @@ function goBack() {
   position: relative;
   width: 100%;
   height: 700px;
+  isolation: isolate;
 }
 
 .canvas-seat,
@@ -1597,13 +1700,33 @@ function goBack() {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  min-width: 34px;
-  min-height: 34px;
-  border-radius: 16px;
+  min-width: 38px;
+  min-height: 38px;
+  border-radius: 18px;
   color: white;
   cursor: pointer;
   box-shadow: 0 10px 18px rgba(0, 0, 0, 0.18);
   padding: 4px;
+  overflow: hidden;
+  border: 1px solid rgba(255,255,255,0.08);
+}
+
+.seat-shell {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+}
+
+.seat-icon-wrap {
+  display: grid;
+  place-items: center;
+  width: 20px;
+  height: 20px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.1);
 }
 
 .canvas-seat:hover:not(:disabled) {
@@ -1619,7 +1742,12 @@ function goBack() {
 
 .canvas-seat.selected {
   outline: 2px solid rgba(255, 255, 255, 0.9);
-  box-shadow: 0 0 0 4px rgba(255, 255, 255, 0.14);
+  box-shadow: 0 0 0 4px rgba(255, 255, 255, 0.14), 0 0 18px rgba(255, 255, 255, 0.18);
+}
+
+.canvas-seat.hovered:not(:disabled) {
+  z-index: 5;
+  box-shadow: 0 0 0 3px rgba(96, 165, 250, 0.2), 0 14px 28px rgba(2, 6, 23, 0.34);
 }
 
 .canvas-seat.seat-class-regular {
@@ -1644,6 +1772,33 @@ function goBack() {
   margin-top: 2px;
   font-weight: 700;
   white-space: nowrap;
+}
+
+
+.seat-hover-card {
+  position: absolute;
+  z-index: 9;
+  min-width: 160px;
+  max-width: 220px;
+  padding: 10px 12px;
+  border-radius: 16px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(8, 15, 29, 0.94);
+  backdrop-filter: blur(14px);
+  box-shadow: 0 18px 42px rgba(0, 0, 0, 0.32);
+  transform: translate(-50%, -105%);
+  pointer-events: none;
+}
+
+.seat-hover-card-enter-active,
+.seat-hover-card-leave-active {
+  transition: opacity 0.18s ease, transform 0.18s ease;
+}
+
+.seat-hover-card-enter-from,
+.seat-hover-card-leave-to {
+  opacity: 0;
+  transform: translate(-50%, -96%);
 }
 
 .layout-asset {
@@ -1728,6 +1883,15 @@ function goBack() {
 .payment-summary {
   background: rgba(0, 0, 0, 0.03);
   border: 1px dashed rgba(0, 0, 0, 0.12);
+}
+
+.browser-theme-light .seat-hover-card {
+  background: rgba(255, 255, 255, 0.96);
+  border-color: rgba(15, 23, 42, 0.08);
+}
+
+.browser-theme-light .seat-icon-wrap {
+  background: rgba(15, 23, 42, 0.08);
 }
 </style>
 .browser-theme-dark {
@@ -1870,6 +2034,29 @@ function goBack() {
 .selected-seat-item:hover,
 .fallback-class-row:hover {
   border-color: rgba(111, 150, 255, 0.22);
+}
+
+
+.success-dialog-card {
+  overflow: hidden;
+}
+
+.success-dialog-card::before {
+  content: "";
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: 4px;
+  background: linear-gradient(90deg, rgba(34,197,94,0.2), rgba(34,197,94,0.92), rgba(59,130,246,0.6));
+}
+
+.success-pulse-avatar {
+  animation: successPulse 1.8s ease-in-out infinite;
+}
+
+@keyframes successPulse {
+  0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.22); }
+  70% { transform: scale(1.05); box-shadow: 0 0 0 16px rgba(34, 197, 94, 0); }
+  100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(34, 197, 94, 0); }
 }
 
 @media (max-width: 1264px) {

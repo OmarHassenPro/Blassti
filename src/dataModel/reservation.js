@@ -1,5 +1,11 @@
 import { reactive } from "vue"
-import { get_Event_By_Id, update_Event } from "@/dataModel/event"
+import {
+  get_Event_By_Id,
+  increment_Event_Tickets_Sold,
+  is_Event_Past,
+  is_Event_Sold_Out,
+  parse_Event_DateTime,
+} from "@/dataModel/event"
 import { get_User_By_Id, update_User } from "@/dataModel/user"
 import {
   create_Ticket_Purchase_Notification,
@@ -13,7 +19,7 @@ import {
 
 const RESERVATIONS_STORAGE_KEY = "blassti_reservations_v3"
 const RESERVATIONS_VERSION_KEY = "blassti_reservations_version"
-const RESERVATIONS_VERSION = "v4_event_ticketing_with_seat_selection_and_fee_ledger"
+const RESERVATIONS_VERSION = "v5_event_ticketing_with_old_event_and_sold_out_guards"
 
 function toNumber(value, fallback = 0) {
   const num = Number(value)
@@ -68,15 +74,13 @@ function normalizeReservation(reservation) {
 
 function parseEventDateTime(event) {
   if (!event?.date) return null
-
-  const text = `${event.date} ${event.time || "00:00"}`
-  const parsed = new Date(text)
-  if (Number.isNaN(parsed.getTime())) return null
-  return parsed
+  return parse_Event_DateTime(event.date, event.time || "00:00")
 }
 
 function deriveStatusForEvent(event, explicitStatus = "") {
   if (explicitStatus === "Cancelled") return "Cancelled"
+
+  if (is_Event_Past(event)) return "Past"
 
   const eventDate = parseEventDateTime(event)
   if (!eventDate) return explicitStatus || "Upcoming"
@@ -615,6 +619,20 @@ export function create_Event_Ticket_Reservation({
     }
   }
 
+  if (is_Event_Past(event)) {
+    return {
+      success: false,
+      message: "This event has already ended. Tickets can no longer be purchased.",
+    }
+  }
+
+  if (is_Event_Sold_Out(event)) {
+    return {
+      success: false,
+      message: "This event is sold out.",
+    }
+  }
+
   const baseTicketPrice =
     total_price == null
       ? normalizedSeats.reduce((sum, seat) => sum + toNumber(seat.price, 0), 0)
@@ -675,9 +693,7 @@ export function create_Event_Ticket_Reservation({
     })
   )
 
-  update_Event(event.id, {
-    tickets_sold: Number(event.tickets_sold || 0) + ticketCount,
-  })
+  increment_Event_Tickets_Sold(event.id, ticketCount)
 
   if (!Array.isArray(user.joined_event_ids)) {
     user.joined_event_ids = []

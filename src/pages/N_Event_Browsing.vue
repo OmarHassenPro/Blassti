@@ -350,26 +350,12 @@
                             </v-chip>
 
                             <v-chip
-                              :color="event.seats_left === 0 ? 'error' : event.seats_left <= 20 ? 'warning' : 'success'"
+                              :color="getAvailabilityColor(event)"
                               variant="tonal"
                               class="status-chip"
                             >
-                              <v-icon start size="16">
-                                {{
-                                  event.seats_left === 0
-                                    ? "mdi-close-circle-outline"
-                                    : event.seats_left <= 20
-                                      ? "mdi-alert-circle-outline"
-                                      : "mdi-check-circle-outline"
-                                }}
-                              </v-icon>
-                              {{
-                                event.seats_left === 0
-                                  ? "Sold out"
-                                  : event.seats_left <= 20
-                                    ? "Almost sold out"
-                                    : "Available"
-                              }}
+                              <v-icon start size="16">{{ getAvailabilityIcon(event) }}</v-icon>
+                              {{ getAvailabilityLabel(event) }}
                             </v-chip>
                           </div>
                         </div>
@@ -406,13 +392,14 @@
                         <v-row style="margin-top:16px" class="align-center">
                           <v-btn
                             size="small"
-                            color="primary"
+                            :color="canBuyTicket(event) ? 'primary' : (isPastEvent(event) ? 'grey-darken-1' : 'error')"
                             class="action-btn primary-action-btn"
+                            :disabled="!canBuyTicket(event)"
                             @click="goToSeatSelection(event)"
                             @contextmenu.prevent.stop="openSeatSelectionContextMenu($event, event)"
                           >
-                            <v-icon start size="18">mdi-ticket-outline</v-icon>
-                            Buy Ticket
+                            <v-icon start size="18">{{ canBuyTicket(event) ? 'mdi-ticket-outline' : (isPastEvent(event) ? 'mdi-calendar-remove-outline' : 'mdi-close-circle-outline') }}</v-icon>
+                            {{ canBuyTicket(event) ? 'Buy Ticket' : (isPastEvent(event) ? 'Event Ended' : 'Sold Out') }}
                           </v-btn>
 
                           <v-btn
@@ -484,7 +471,7 @@
 import AppNavbar from "@/components/AppNavbar.vue"
 import { ref, computed, onMounted, onBeforeUnmount } from "vue"
 import { useRouter } from "vue-router"
-import { get_All_Events } from "@/dataModel/event"
+import { get_All_Events, can_Buy_Event_Tickets, is_Event_Past } from "@/dataModel/event"
 import { get_All_Artists, get_User_By_Id } from "@/dataModel/user"
 
 const router = useRouter()
@@ -587,6 +574,7 @@ function openMoreInfoContextMenu(domEvent, item) {
 }
 
 function openSeatSelectionContextMenu(domEvent, item) {
+  if (!canBuyTicket(item)) return
   openRouteContextMenu(domEvent, "/seatSelection", item?.title || "Seat selection", { id: item?.id })
 }
 
@@ -607,6 +595,35 @@ const ageRestrictions = ref({
   fifteenPlus: false,
   eighteenPlus: false
 })
+
+function canBuyTicket(event) {
+  return can_Buy_Event_Tickets(event)
+}
+
+function isPastEvent(event) {
+  return is_Event_Past(event)
+}
+
+function getAvailabilityLabel(event) {
+  if (isPastEvent(event)) return "Event ended"
+  if (event.seats_left === 0) return "Sold out"
+  if (event.seats_left <= 20) return "Almost sold out"
+  return "Available"
+}
+
+function getAvailabilityColor(event) {
+  if (isPastEvent(event)) return "grey-darken-1"
+  if (event.seats_left === 0) return "error"
+  if (event.seats_left <= 20) return "warning"
+  return "success"
+}
+
+function getAvailabilityIcon(event) {
+  if (isPastEvent(event)) return "mdi-calendar-remove-outline"
+  if (event.seats_left === 0) return "mdi-close-circle-outline"
+  if (event.seats_left <= 20) return "mdi-alert-circle-outline"
+  return "mdi-check-circle-outline"
+}
 
 const artistOptions = computed(() => {
   return artists.map(artistUser => ({
@@ -686,6 +703,7 @@ function goToMoreInfo(event) {
 }
 
 function goToSeatSelection(event) {
+  if (!canBuyTicket(event)) return
   router.push(`/seatSelection?id=${event.id}`)
 }
 

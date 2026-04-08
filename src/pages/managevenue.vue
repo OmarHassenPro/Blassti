@@ -37,7 +37,7 @@
       </v-col>
     </v-row>
 
-    <template v-if="!currentUser">
+    <div v-if="!currentUser">
       <v-card rounded="xl" class="pa-6 surface-card empty-state-card">
         <div class="d-flex align-center ga-3 mb-2"><div class="empty-state-icon"><v-icon size="24">mdi-lock-outline</v-icon></div><div class="text-h6 font-weight-bold">Login required</div></div>
         <div class="text-medium-emphasis mb-4">
@@ -47,9 +47,9 @@
           Go to login
         </v-btn>
       </v-card>
-    </template>
+    </div>
 
-    <template v-else-if="!managedVenues.length">
+    <div v-else-if="!managedVenues.length">
       <v-card rounded="xl" class="pa-6 surface-card empty-state-card">
         <div class="d-flex align-center ga-3 mb-2"><div class="empty-state-icon"><v-icon size="24">mdi-domain-off</v-icon></div><div class="text-h6 font-weight-bold">No venues to manage</div></div>
         <div class="text-medium-emphasis mb-4">
@@ -59,116 +59,298 @@
           Add venue
         </v-btn>
       </v-card>
-    </template>
+    </div>
 
-    <template v-else>
-      <v-row>
-        <v-col cols="12" lg="4" xl="3">
-          <v-card rounded="xl" class="pa-3 sidebar-card sticky-panel surface-card">
-            <div class="text-subtitle-1 font-weight-bold px-2 py-2">Your venues</div>
-
-            <v-text-field
-              v-model="venueSearch"
-              prepend-inner-icon="mdi-magnify"
-              label="Search venue"
-              density="comfortable"
-              variant="outlined"
-              hide-details
-              class="mb-3"
-            />
-
-            <div class="venue-list">
-              <v-card
-                v-for="venue in filteredManagedVenues"
-                :key="venue.id"
-                rounded="xl"
-                class="mb-3 venue-pick-card surface-card"
-                :class="{ 'venue-pick-card--active': selectedVenueId === venue.id }"
-                @click="selectVenue(venue.id)"
-              >
-                <v-img
-                  :src="venue.image"
-                  height="140"
-                  cover
-                  class="venue-pick-image"
-                >
-                  <div class="venue-overlay pa-3 d-flex flex-column justify-end fill-height">
-                    <div class="text-subtitle-1 font-weight-bold">
-                      {{ venue.title }}
-                    </div>
-                    <div class="text-caption">
-                      {{ venue.location }} • {{ venue.category }}
-                    </div>
-                  </div>
-                </v-img>
-
-                <div class="pa-3">
-                  <div class="d-flex align-center justify-space-between mb-2">
-                    <v-chip size="small" color="primary" variant="tonal">
-                      {{ formatMoney(venue.price_per_hour) }}/hr
-                    </v-chip>
-                    <v-chip size="small" color="success" variant="tonal">
-                      {{ formatMoney(venue.price_per_day) }}/day
-                    </v-chip>
-                  </div>
-
-                  <div class="text-caption text-medium-emphasis">
-                    {{ venue.owner_user_id ? "Owned by you" : "Ownerless venue you can manage" }}
+    <div v-else>
+      <div v-if="!workingVenue">
+        <v-row>
+          <v-col cols="12">
+            <v-card rounded="xl" class="pa-3 pa-md-4 sidebar-card surface-card venue-browser-card">
+              <div class="d-flex flex-column flex-md-row align-start align-md-center justify-space-between ga-3 mb-4">
+                <div>
+                  <div class="text-subtitle-1 font-weight-bold">Choose a venue to manage</div>
+                  <div class="text-medium-emphasis">
+                    Pick one of your venues to open the full management workspace.
                   </div>
                 </div>
-              </v-card>
-            </div>
-          </v-card>
-        </v-col>
 
-        <v-col cols="12" lg="8" xl="9">
-          <v-card v-if="workingVenue" rounded="xl" class="pa-4 pa-md-6 surface-card main-editor-card">
-            <div class="d-flex flex-column flex-xl-row justify-space-between align-start ga-4 mb-6">
-              <div>
-                <div class="text-h5 font-weight-bold section-title">{{ workingVenue.title }}</div>
-                <div class="text-medium-emphasis mb-3">
-                  {{ workingVenue.location }} • {{ workingVenue.exact_address }}
-                </div>
-                <div class="d-flex ga-2 flex-wrap">
-                  <v-chip size="small" color="primary" variant="tonal">
-                    <v-icon start size="14">mdi-currency-usd</v-icon>
-                    {{ formatMoney(workingVenue.price_per_hour) }}/hr
-                  </v-chip>
-                  <v-chip size="small" color="success" variant="tonal">
-                    <v-icon start size="14">mdi-currency-usd</v-icon>
-                    {{ formatMoney(workingVenue.price_per_day) }}/day
-                  </v-chip>
-                  <v-chip size="small" color="secondary" variant="tonal">
-                    <v-icon start size="14">mdi-account-group-outline</v-icon>
-                    Capacity: {{ workingVenue.capacity || 0 }}
-                  </v-chip>
-                </div>
-              </div>
-
-              <div class="d-flex ga-2 flex-wrap">
-                <v-chip color="error" variant="tonal">
-                  Unsaved: {{ isDirty ? "Yes" : "No" }}
+                <v-chip color="primary" variant="tonal" class="browser-hint-chip">
+                  <v-icon start size="16">mdi-arrow-collapse-right</v-icon>
+                  Workspace expands after selection
                 </v-chip>
-                <v-btn
-                  color="error"
-                  variant="outlined"
-                  rounded="lg"
-                  prepend-icon="mdi-delete-outline"
-                  @click="deleteDialog = true"
-                >
-                  Delete venue
-                </v-btn>
               </div>
-            </div>
 
-            <v-tabs v-model="tab" color="primary" class="mb-6 polished-tabs" grow>
-              <v-tab value="pricing"><v-icon start size="18">mdi-cash-multiple</v-icon>Pricing</v-tab>
-              <v-tab value="timeline"><v-icon start size="18">mdi-calendar-clock-outline</v-icon>Timetable</v-tab>
-              <v-tab value="images"><v-icon start size="18">mdi-image-multiple-outline</v-icon>Pictures</v-tab>
-              <v-tab value="info"><v-icon start size="18">mdi-information-outline</v-icon>Info</v-tab>
-            </v-tabs>
+              <v-text-field
+                v-model="venueSearch"
+                prepend-inner-icon="mdi-magnify"
+                label="Search venue"
+                density="comfortable"
+                variant="outlined"
+                hide-details
+                class="mb-4"
+              />
 
-            <v-window v-model="tab">
+              <v-row>
+                <v-col
+                  v-for="venue in filteredManagedVenues"
+                  :key="venue.id"
+                  cols="12"
+                  md="6"
+                  xl="4"
+                >
+                  <v-card
+                    rounded="xl"
+                    class="h-100 venue-pick-card venue-browser-grid-card surface-card"
+                    @click="selectVenue(venue.id)"
+                  >
+                    <v-img
+                      :src="venue.image"
+                      height="220"
+                      cover
+                      class="venue-pick-image"
+                    >
+                      <div class="venue-overlay pa-4 d-flex flex-column justify-end fill-height">
+                        <div class="text-h6 font-weight-bold">
+                          {{ venue.title }}
+                        </div>
+                        <div class="text-body-2">
+                          {{ venue.location }} • {{ venue.category }}
+                        </div>
+                      </div>
+                    </v-img>
+
+                    <div class="pa-4">
+                      <div class="d-flex align-center justify-space-between mb-3 flex-wrap ga-2">
+                        <v-chip size="small" color="primary" variant="tonal">
+                          {{ formatMoney(venue.price_per_hour) }}/hr
+                        </v-chip>
+                        <v-chip size="small" color="success" variant="tonal">
+                          {{ formatMoney(venue.price_per_day) }}/day
+                        </v-chip>
+                      </div>
+
+                      <div class="text-body-2 text-medium-emphasis mb-4">
+                        {{ venue.owner_user_id ? "Owned by you" : "Ownerless venue you can manage" }}
+                      </div>
+
+                      <v-btn
+                        color="primary"
+                        rounded="lg"
+                        block
+                        append-icon="mdi-arrow-right"
+                        @click.stop="selectVenue(venue.id)"
+                      >
+                        Open workspace
+                      </v-btn>
+                    </div>
+                  </v-card>
+                </v-col>
+              </v-row>
+
+              <v-expand-transition>
+                <v-card
+                  v-if="!filteredManagedVenues.length"
+                  rounded="xl"
+                  variant="tonal"
+                  class="pa-6 mt-2 clean-section-card text-center"
+                >
+                  <div class="text-subtitle-1 font-weight-bold mb-2">No venues match this search</div>
+                  <div class="text-medium-emphasis">
+                    Try another keyword to find the venue you want to manage.
+                  </div>
+                </v-card>
+              </v-expand-transition>
+            </v-card>
+          </v-col>
+        </v-row>
+      </div>
+
+      <div v-else>
+        <v-row class="manage-workspace-row" :class="{ 'manage-workspace-row--focused': sidebarCollapsed }">
+          <v-col
+            cols="12"
+            :lg="sidebarCollapsed ? 1 : 4"
+            :xl="sidebarCollapsed ? 1 : 3"
+            class="workspace-sidebar-col"
+          >
+            <transition name="sidebar-swap" mode="out-in">
+              <div v-if="!sidebarCollapsed" key="sidebar-open">
+                <v-card rounded="xl" class="pa-3 sidebar-card sticky-panel surface-card">
+                  <div class="d-flex align-center justify-space-between ga-2 px-2 py-2">
+                    <div class="text-subtitle-1 font-weight-bold">Your venues</div>
+
+                    <v-btn
+                      icon
+                      variant="text"
+                      size="small"
+                      class="sidebar-toggle-btn"
+                      @click="closeVenueBrowser"
+                    >
+                      <v-icon size="20">mdi-dock-left</v-icon>
+                      <v-tooltip activator="parent" location="bottom">Collapse venue list</v-tooltip>
+                    </v-btn>
+                  </div>
+
+                  <v-text-field
+                    v-model="venueSearch"
+                    prepend-inner-icon="mdi-magnify"
+                    label="Search venue"
+                    density="comfortable"
+                    variant="outlined"
+                    hide-details
+                    class="mb-3"
+                  />
+
+                  <div class="venue-list">
+                    <v-card
+                      v-for="venue in filteredManagedVenues"
+                      :key="venue.id"
+                      rounded="xl"
+                      class="mb-3 venue-pick-card surface-card"
+                      :class="{ 'venue-pick-card--active': selectedVenueId === venue.id }"
+                      @click="selectVenue(venue.id)"
+                    >
+                      <v-img
+                        :src="venue.image"
+                        height="140"
+                        cover
+                        class="venue-pick-image"
+                      >
+                        <div class="venue-overlay pa-3 d-flex flex-column justify-end fill-height">
+                          <div class="text-subtitle-1 font-weight-bold">
+                            {{ venue.title }}
+                          </div>
+                          <div class="text-caption">
+                            {{ venue.location }} • {{ venue.category }}
+                          </div>
+                        </div>
+                      </v-img>
+
+                      <div class="pa-3">
+                        <div class="d-flex align-center justify-space-between mb-2">
+                          <v-chip size="small" color="primary" variant="tonal">
+                            {{ formatMoney(venue.price_per_hour) }}/hr
+                          </v-chip>
+                          <v-chip size="small" color="success" variant="tonal">
+                            {{ formatMoney(venue.price_per_day) }}/day
+                          </v-chip>
+                        </div>
+
+                        <div class="text-caption text-medium-emphasis">
+                          {{ venue.owner_user_id ? "Owned by you" : "Ownerless venue you can manage" }}
+                        </div>
+                      </div>
+                    </v-card>
+                  </div>
+                </v-card>
+              </div>
+
+              <div v-else key="sidebar-collapsed" class="sticky-panel collapsed-sidebar-rail">
+                <v-card rounded="xl" class="surface-card collapsed-sidebar-card">
+                  <div class="collapsed-sidebar-inner">
+                    <v-btn
+                      icon
+                      color="primary"
+                      variant="tonal"
+                      size="large"
+                      class="mb-3"
+                      @click="openVenueBrowser"
+                    >
+                      <v-icon size="22">mdi-dock-left</v-icon>
+                      <v-tooltip activator="parent" location="right">Open venue list</v-tooltip>
+                    </v-btn>
+
+                    <div class="collapsed-sidebar-label">
+                      <span>Venues</span>
+                    </div>
+
+                    <v-avatar
+                      size="48"
+                      rounded="lg"
+                      class="collapsed-sidebar-avatar mt-3"
+                    >
+                      <v-img :src="workingVenue?.image" cover />
+                    </v-avatar>
+
+                    <div class="collapsed-sidebar-mini-title mt-3">
+                      {{ workingVenue?.title }}
+                    </div>
+                  </div>
+                </v-card>
+              </div>
+            </transition>
+          </v-col>
+
+          <v-col
+            cols="12"
+            :lg="sidebarCollapsed ? 11 : 8"
+            :xl="sidebarCollapsed ? 11 : 9"
+            class="workspace-main-col"
+          >
+            <v-card v-if="workingVenue" rounded="xl" class="pa-4 pa-md-6 surface-card main-editor-card">
+              <div class="d-flex flex-column flex-xl-row justify-space-between align-start ga-4 mb-6">
+                <div class="d-flex align-start ga-3">
+                  <v-btn
+                    icon
+                    variant="tonal"
+                    color="primary"
+                    class="workspace-sidebar-reveal d-none d-md-inline-flex"
+                    @click="openVenueBrowser"
+                  >
+                    <v-icon size="20">mdi-menu-open</v-icon>
+                    <v-tooltip activator="parent" location="bottom">Show venue list</v-tooltip>
+                  </v-btn>
+
+                  <div>
+                    <div class="text-h5 font-weight-bold section-title">{{ workingVenue.title }}</div>
+                    <div class="text-medium-emphasis mb-3">
+                      {{ workingVenue.location }} • {{ workingVenue.exact_address }}
+                    </div>
+                    <div class="d-flex ga-2 flex-wrap">
+                      <v-chip size="small" color="primary" variant="tonal">
+                        <v-icon start size="14">mdi-currency-usd</v-icon>
+                        {{ formatMoney(workingVenue.price_per_hour) }}/hr
+                      </v-chip>
+                      <v-chip size="small" color="success" variant="tonal">
+                        <v-icon start size="14">mdi-currency-usd</v-icon>
+                        {{ formatMoney(workingVenue.price_per_day) }}/day
+                      </v-chip>
+                      <v-chip size="small" color="secondary" variant="tonal">
+                        <v-icon start size="14">mdi-account-group-outline</v-icon>
+                        Capacity: {{ workingVenue.capacity || 0 }}
+                      </v-chip>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="d-flex ga-2 flex-wrap">
+                  <v-chip color="info" variant="tonal" class="workspace-state-chip">
+                    <v-icon start size="15">mdi-arrow-expand-horizontal</v-icon>
+                    {{ sidebarCollapsed ? "Focused workspace" : "Split workspace" }}
+                  </v-chip>
+                  <v-chip color="error" variant="tonal">
+                    Unsaved: {{ isDirty ? "Yes" : "No" }}
+                  </v-chip>
+                  <v-btn
+                    color="error"
+                    variant="outlined"
+                    rounded="lg"
+                    prepend-icon="mdi-delete-outline"
+                    @click="deleteDialog = true"
+                  >
+                    Delete venue
+                  </v-btn>
+                </div>
+              </div>
+
+              <v-tabs v-model="tab" color="primary" class="mb-6 polished-tabs" grow>
+                <v-tab value="pricing"><v-icon start size="18">mdi-cash-multiple</v-icon>Pricing</v-tab>
+                <v-tab value="timeline"><v-icon start size="18">mdi-calendar-clock-outline</v-icon>Timetable</v-tab>
+                <v-tab value="images"><v-icon start size="18">mdi-image-multiple-outline</v-icon>Pictures</v-tab>
+                <v-tab value="info"><v-icon start size="18">mdi-information-outline</v-icon>Info</v-tab>
+              </v-tabs>
+
+              <v-window v-model="tab">
               <!-- PRICING -->
               <v-window-item value="pricing">
                 <v-row>
@@ -660,7 +842,8 @@
           </v-card>
         </v-col>
       </v-row>
-    </template>
+      </div>
+    </div>
 
     <!-- Slot context menu -->
     <v-menu
@@ -778,6 +961,7 @@ const tab = ref("pricing")
 const venueSearch = ref("")
 const currentUser = ref(null)
 const selectedVenueId = ref(null)
+const sidebarCollapsed = ref(false)
 const workingVenue = ref(null)
 const originalVenueSnapshot = ref("")
 const snackbar = ref({ show: false, text: "" })
@@ -880,8 +1064,9 @@ onMounted(() => {
     }
   }
 
-  if (managedVenues.value.length && !selectedVenueId.value) {
-    forceSelectVenue(managedVenues.value[0].id)
+  if (!managedVenues.value.length) {
+    selectedVenueId.value = null
+    workingVenue.value = null
   }
 
   window.addEventListener("beforeunload", handleBeforeUnload)
@@ -927,18 +1112,46 @@ const filteredManagedVenues = computed(() => {
   )
 })
 
+const isVenueFocused = computed(() => Boolean(workingVenue.value))
+
+function toggleVenueSidebar(forceValue = null) {
+  if (typeof forceValue === "boolean") {
+    sidebarCollapsed.value = forceValue
+    return
+  }
+
+  sidebarCollapsed.value = !sidebarCollapsed.value
+}
+
+function openVenueBrowser() {
+  toggleVenueSidebar(false)
+}
+
+function closeVenueBrowser() {
+  if (workingVenue.value) {
+    toggleVenueSidebar(true)
+  }
+}
+
 function selectVenue(venueId) {
-  if (selectedVenueId.value === venueId && workingVenue.value) return
+  if (selectedVenueId.value === venueId && workingVenue.value) {
+    closeVenueBrowser()
+    return
+  }
 
   if (isDirty.value) {
     leaveDialog.value = {
       show: true,
-      next: () => forceSelectVenue(venueId),
+      next: () => {
+        forceSelectVenue(venueId)
+        closeVenueBrowser()
+      },
     }
     return
   }
 
   forceSelectVenue(venueId)
+  closeVenueBrowser()
 }
 
 function forceSelectVenue(venueId) {
@@ -1154,7 +1367,7 @@ const timeSlots = computed(() => {
 })
 
 const timelineGridStyle = computed(() => ({
-  gridTemplateColumns: `110px repeat(${days.value.length}, 210px)`,
+  gridTemplateColumns: `110px repeat(${days.value.length}, ${sidebarCollapsed.value ? 246 : 210}px)`,
 }))
 
 const venueReservations = computed(() => {
@@ -1841,6 +2054,12 @@ watch(tab, () => {
 watch(selectedVenueId, () => {
   slotMenu.value.show = false
 })
+
+watch(workingVenue, value => {
+  if (!value) {
+    toggleVenueSidebar(false)
+  }
+})
 </script>
 
 <style scoped>
@@ -1955,6 +2174,118 @@ watch(selectedVenueId, () => {
   justify-content: center;
   background: var(--hero-badge-bg);
   color: var(--hero-badge-color);
+}
+
+
+.venue-browser-card {
+  position: relative;
+  overflow: hidden;
+}
+
+.venue-browser-card::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(circle at top right, rgba(25, 118, 210, 0.09), transparent 24%),
+    radial-gradient(circle at bottom left, rgba(76, 175, 80, 0.08), transparent 22%);
+}
+
+.browser-hint-chip {
+  font-weight: 700;
+}
+
+.venue-browser-grid-card {
+  border-width: 1px;
+}
+
+.manage-workspace-row {
+  align-items: stretch;
+}
+
+.workspace-sidebar-col,
+.workspace-main-col {
+  transition: all 0.28s ease;
+}
+
+.workspace-main-col {
+  position: relative;
+}
+
+.collapsed-sidebar-rail {
+  height: 100%;
+}
+
+.collapsed-sidebar-card {
+  min-height: calc(100vh - 154px);
+  display: flex;
+  align-items: stretch;
+  justify-content: center;
+  overflow: hidden;
+}
+
+.collapsed-sidebar-inner {
+  width: 100%;
+  min-height: inherit;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  padding: 18px 10px;
+  gap: 6px;
+}
+
+.collapsed-sidebar-label {
+  writing-mode: vertical-rl;
+  transform: rotate(180deg);
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  font-size: 0.78rem;
+  font-weight: 800;
+  color: var(--hero-badge-color);
+  opacity: 0.9;
+}
+
+.collapsed-sidebar-avatar {
+  border: 1px solid var(--surface-border);
+  box-shadow: 0 10px 22px rgba(0, 0, 0, 0.18);
+}
+
+.collapsed-sidebar-mini-title {
+  max-width: 70px;
+  text-align: center;
+  font-size: 0.76rem;
+  font-weight: 700;
+  line-height: 1.25;
+  color: var(--text-strong);
+}
+
+.workspace-sidebar-reveal {
+  flex-shrink: 0;
+}
+
+.workspace-state-chip {
+  font-weight: 700;
+}
+
+.sidebar-toggle-btn {
+  transition: transform 0.2s ease, background-color 0.2s ease;
+}
+
+.sidebar-toggle-btn:hover {
+  transform: translateX(-1px);
+}
+
+.sidebar-swap-enter-active,
+.sidebar-swap-leave-active {
+  transition: opacity 0.24s ease, transform 0.24s ease;
+}
+
+.sidebar-swap-enter-from,
+.sidebar-swap-leave-to {
+  opacity: 0;
+  transform: translateX(-12px);
 }
 
 .main-editor-card {
@@ -2220,9 +2551,28 @@ watch(selectedVenueId, () => {
     position: static;
     top: auto;
   }
+
+  .collapsed-sidebar-card {
+    min-height: 100%;
+  }
+}
+
+@media (max-width: 1280px) {
+  .workspace-sidebar-col,
+  .workspace-main-col {
+    transition: none;
+  }
 }
 
 @media (max-width: 959px) {
+  .collapsed-sidebar-rail {
+    display: none;
+  }
+
+  .workspace-sidebar-reveal {
+    display: inline-flex !important;
+  }
+
   .hero-title {
     font-size: 1.9rem !important;
   }
