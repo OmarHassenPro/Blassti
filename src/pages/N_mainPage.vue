@@ -7,7 +7,7 @@
         <div class="page-top-glow"></div>
         <div class="page-top-glow page-top-glow-secondary"></div>
 
-        <section class="hero-section hero-section-minimal mb-8">
+        <section class="hero-section hero-section-minimal hero-section--blended mb-8">
           <div class="hero-accent hero-accent-primary"></div>
           <div class="hero-accent hero-accent-secondary"></div>
           <div class="hero-copy">
@@ -1180,23 +1180,29 @@ function openVenue(venueId) {
 .hero-section {
   position: relative;
   overflow: hidden;
-  border: 1px solid rgba(var(--v-border-color), 0.12);
-  background:
-    linear-gradient(135deg, rgba(var(--v-theme-primary), 0.08), rgba(var(--v-theme-surface), 0.96)),
-    rgba(var(--v-theme-surface), 0.96);
-  backdrop-filter: blur(12px);
   border-radius: 28px;
-  box-shadow:
-    0 20px 60px rgba(0, 0, 0, 0.10),
-    inset 0 1px 0 rgba(255, 255, 255, 0.05);
+  transition:
+    transform 0.22s ease,
+    box-shadow 0.22s ease,
+    border-color 0.22s ease,
+    background 0.22s ease;
+}
+
+.hero-section--blended {
+  border: 1px solid rgba(var(--v-border-color), 0.05);
+  background:
+    linear-gradient(180deg, rgba(var(--v-theme-surface), 0.22), rgba(var(--v-theme-surface), 0.08)),
+    rgba(var(--v-theme-surface), 0.10);
+  backdrop-filter: blur(4px);
+  box-shadow: none;
 }
 
 .hero-accent {
   position: absolute;
   border-radius: 999px;
   pointer-events: none;
-  filter: blur(6px);
-  opacity: 0.9;
+  filter: blur(42px);
+  opacity: 0.3;
 }
 
 .hero-accent-primary {
@@ -1204,7 +1210,7 @@ function openVenue(venueId) {
   right: 8%;
   width: 180px;
   height: 180px;
-  background: radial-gradient(circle, rgba(var(--v-theme-primary), 0.20) 0%, rgba(var(--v-theme-primary), 0.04) 45%, transparent 72%);
+  background: radial-gradient(circle, rgba(var(--v-theme-primary), 0.22) 0%, rgba(var(--v-theme-primary), 0) 72%);
 }
 
 .hero-accent-secondary {
@@ -1212,7 +1218,7 @@ function openVenue(venueId) {
   left: 12%;
   width: 220px;
   height: 220px;
-  background: radial-gradient(circle, rgba(var(--v-theme-secondary), 0.12) 0%, rgba(var(--v-theme-secondary), 0.03) 44%, transparent 72%);
+  background: radial-gradient(circle, rgba(var(--v-theme-secondary), 0.18) 0%, rgba(var(--v-theme-secondary), 0) 72%);
 }
 
 .hero-section-minimal {

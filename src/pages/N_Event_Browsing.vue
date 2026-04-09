@@ -3,48 +3,97 @@
     <AppNavbar />
 
     <v-main class="event-page-shell" :class="browserThemeClass">
-      <div class="page-background-orb orb-1" />
-      <div class="page-background-orb orb-2" />
+      <div class="page-background-orb orb-1"></div>
+      <div class="page-background-orb orb-2"></div>
 
-      <v-container class="py-6 py-md-8 page-container">
-        <v-card class="pa-5 pa-md-7 rounded-xl rounded-xxl mb-6 hero-card" elevation="0">
-          <div class="d-flex flex-column flex-lg-row align-lg-center justify-space-between ga-5">
-            <div class="hero-copy">
-              <div class="hero-badge mb-3">
-                <v-icon size="18" class="me-2">mdi-ticket-confirmation-outline</v-icon>
-                Discover live experiences
+      <v-container fluid class="py-8 px-4 px-md-6 page-container">
+        <v-row justify="center">
+          <v-col cols="12" xl="11">
+            <v-card class="hero-surface hero-surface--blended pa-5 pa-md-7 rounded-xl rounded-xxl mb-6" elevation="0">
+              <div class="page-header page-header--single">
+                <div class="hero-copy">
+                  <div class="text-overline page-kicker mb-2">BLASSTI EVENTS</div>
+
+                  <div class="text-h3 text-md-h2 font-weight-bold mb-3 page-title">
+                    Browse events across Tunisia
+                  </div>
+
+                  <div class="text-body-1 text-medium-emphasis page-subtitle mb-4">
+                    Explore upcoming experiences, discover artists, and book the right seat faster with availability-first browsing.
+                  </div>
+
+                  <div class="hero-search-wrap mb-4">
+                    <v-text-field
+                      v-model="searchQuery"
+                      label="Search events, cities, venues, artists..."
+                      variant="outlined"
+                      rounded="xl"
+                      density="comfortable"
+                      prepend-inner-icon="mdi-magnify"
+                      clearable
+                      hide-details
+                      class="hero-search-field"
+                    >
+                      <template #append-inner>
+                        <v-fade-transition>
+                          <v-chip
+                            v-if="searchQuery"
+                            size="small"
+                            rounded="lg"
+                            color="primary"
+                            variant="tonal"
+                          >
+                            Live search
+                          </v-chip>
+                        </v-fade-transition>
+                      </template>
+                    </v-text-field>
+
+                    <div class="d-flex flex-wrap ga-2 mt-3">
+                      <v-chip
+                        v-for="quickFilter in quickFilterChips"
+                        :key="quickFilter.value"
+                        rounded="lg"
+                        :color="selectedCategories.includes(quickFilter.value) ? 'primary' : undefined"
+                        :variant="selectedCategories.includes(quickFilter.value) ? 'flat' : 'outlined'"
+                        class="quick-filter-chip"
+                        @click="toggleQuickCategory(quickFilter.value)"
+                      >
+                        <v-icon start size="16">{{ quickFilter.icon }}</v-icon>
+                        {{ quickFilter.label }}
+                      </v-chip>
+                    </div>
+                  </div>
+
+                  <div class="d-flex flex-wrap ga-2 hero-tags">
+                    <v-chip color="primary" variant="tonal" rounded="lg">
+                      <v-icon size="16" class="me-2">mdi-ticket-confirmation-outline</v-icon>
+                      {{ filteredEvents.length }} events found
+                    </v-chip>
+
+                    <v-chip variant="outlined" rounded="lg">
+                      <v-icon size="16" class="me-2">mdi-check-decagram-outline</v-icon>
+                      {{ availableNowCount }} bookable now
+                    </v-chip>
+
+                    <v-chip variant="outlined" rounded="lg">
+                      <v-icon size="16" class="me-2">mdi-map-marker-radius-outline</v-icon>
+                      {{ cities.length }} cities
+                    </v-chip>
+
+                    <v-chip variant="outlined" rounded="lg">
+                      <v-icon size="16" class="me-2">mdi-shape-outline</v-icon>
+                      {{ labels.length }} categories
+                    </v-chip>
+                  </div>
+                </div>
               </div>
-
-              <div class="text-h4 text-md-h3 font-weight-bold mb-2 hero-title">
-                Browse Events
-              </div>
-
-              <div class="text-body-1 text-medium-emphasis hero-subtitle">
-                Explore upcoming events, filter by category, city, date, artist, and availability.
-              </div>
-            </div>
-
-            <div class="hero-stats d-flex flex-wrap ga-3">
-              <v-sheet class="hero-stat-chip" rounded="xl">
-                <div class="text-caption text-medium-emphasis">Visible events</div>
-                <div class="text-h6 font-weight-bold">{{ filteredEvents.length }}</div>
-              </v-sheet>
-
-              <v-sheet class="hero-stat-chip" rounded="xl">
-                <div class="text-caption text-medium-emphasis">Categories</div>
-                <div class="text-h6 font-weight-bold">{{ labels.length }}</div>
-              </v-sheet>
-
-              <v-sheet class="hero-stat-chip" rounded="xl">
-                <div class="text-caption text-medium-emphasis">Cities</div>
-                <div class="text-h6 font-weight-bold">{{ cities.length }}</div>
-              </v-sheet>
-            </div>
-          </div>
-        </v-card>
+            </v-card>
+          </v-col>
+        </v-row>
 
         <v-row class="ga-md-0">
-          <v-col cols="12" md="3">
+          <v-col cols="12" lg="3" xl="3">
             <v-card class="pa-4 pa-md-5 rounded-xl rounded-xxl filter-card" elevation="0">
               <div class="d-flex align-center justify-space-between mb-4">
                 <div class="d-flex align-center">
@@ -62,6 +111,51 @@
                 <v-chip size="small" variant="tonal" class="filter-count-chip">
                   {{ filteredEvents.length }}
                 </v-chip>
+              </div>
+
+              <div class="filter-toolbar mb-4">
+                <v-select
+                  v-model="sortBy"
+                  :items="sortOptions"
+                  item-title="label"
+                  item-value="value"
+                  label="Sort by"
+                  variant="outlined"
+                  density="comfortable"
+                  class="enhanced-field"
+                />
+
+                <div class="toggle-stack mt-1">
+                  <v-switch
+                    v-model="showSoldOutEvents"
+                    label="Show sold out events"
+                    hide-details
+                    inset
+                    color="error"
+                    density="comfortable"
+                    class="enhanced-switch"
+                  />
+                  <v-switch
+                    v-model="showPastEvents"
+                    label="Show past events"
+                    hide-details
+                    inset
+                    color="grey-darken-1"
+                    density="comfortable"
+                    class="enhanced-switch"
+                  />
+                </div>
+
+                <v-btn
+                  block
+                  variant="tonal"
+                  color="primary"
+                  class="mt-3 reset-filter-btn"
+                  @click="resetAllFilters"
+                >
+                  <v-icon start size="18">mdi-filter-remove-outline</v-icon>
+                  Clear filters
+                </v-btn>
               </div>
 
               <div class="filter-group">
@@ -259,7 +353,7 @@
             </v-card>
           </v-col>
 
-          <v-col cols="12" md="9">
+          <v-col cols="12" lg="9" xl="8">
             <v-card class="pa-4 pa-md-5 rounded-xl rounded-xxl results-card" elevation="0">
               <div class="d-flex flex-column flex-md-row align-md-center justify-space-between mb-5 ga-4">
                 <div>
@@ -285,16 +379,39 @@
                     <v-icon start size="16">mdi-shape-outline</v-icon>
                     {{ selectedCategories.length ? selectedCategories.length + " selected" : "All categories" }}
                   </v-chip>
+
+                  <v-chip size="small" variant="tonal" class="summary-chip">
+                    <v-icon start size="16">mdi-sort</v-icon>
+                    {{ currentSortLabel }}
+                  </v-chip>
                 </div>
               </div>
 
-              <v-row class="event-list-row">
+              <div v-if="activeFilterChips.length" class="active-filters-wrap mb-5">
+                <div class="text-caption text-medium-emphasis mb-2">Active filters</div>
+                <div class="d-flex flex-wrap ga-2">
+                  <v-chip
+                    v-for="chip in activeFilterChips"
+                    :key="chip.key"
+                    size="small"
+                    closable
+                    variant="tonal"
+                    class="active-filter-chip"
+                    @click:close="chip.action"
+                  >
+                    <v-icon start size="14">{{ chip.icon }}</v-icon>
+                    {{ chip.label }}
+                  </v-chip>
+                </div>
+              </div>
+
+              <v-row class="event-list-row" :key="resultsAnimationKey">
                 <v-col
                   v-for="event in filteredEvents"
                   :key="event.id"
                   cols="12"
                 >
-                  <v-card class="rounded-xl rounded-xxl pa-3 pa-md-4 event-card" elevation="0">
+                  <v-card class="rounded-xl rounded-xxl pa-3 pa-md-4 event-card" :class="{ 'event-card-muted': isPastEvent(event) || event.seats_left === 0 }" elevation="0">
                     <v-row class="align-stretch">
                       <v-col cols="12" md="4">
                         <div class="event-image-wrap">
@@ -311,7 +428,7 @@
                             </template>
                           </v-img>
 
-                          <div class="image-overlay-glow" />
+                          <div class="image-overlay-glow"></div>
                         </div>
                       </v-col>
 
@@ -377,7 +494,7 @@
                           </div>
                         </div>
 
-                        <div class="event-description text-body-2 mt-4">
+                        <div class="event-description text-body-2 mt-4 line-clamp-3">
                           {{ event.description }}
                         </div>
 
@@ -432,6 +549,16 @@
                   <div class="text-body-2 text-medium-emphasis">
                     Try changing your filters to see more results.
                   </div>
+                  <v-btn
+                    class="mt-4"
+                    color="primary"
+                    variant="tonal"
+                    rounded="xl"
+                    @click="resetAllFilters"
+                  >
+                    <v-icon start size="18">mdi-refresh</v-icon>
+                    Reset filters
+                  </v-btn>
                 </div>
               </v-sheet>
             </v-card>
@@ -489,6 +616,36 @@ const toMenu = ref(false)
 
 const cities = [...new Set(events.map(e => e.city))]
 const locationCity = ref(null)
+const searchQuery = ref("")
+const showSoldOutEvents = ref(false)
+const showPastEvents = ref(false)
+const sortBy = ref("soonest")
+
+const sortOptions = [
+  { label: "Soonest first", value: "soonest" },
+  { label: "Latest first", value: "latest" },
+  { label: "Most seats left", value: "mostSeats" },
+  { label: "Fewest seats left", value: "leastSeats" },
+  { label: "A to Z", value: "titleAsc" },
+  { label: "Z to A", value: "titleDesc" }
+]
+
+const quickFilterIconMap = {
+  Concert: "mdi-music-circle-outline",
+  Sports: "mdi-basketball",
+  Theater: "mdi-drama-masks",
+  Festival: "mdi-party-popper",
+  Comedy: "mdi-emoticon-outline",
+  Cinema: "mdi-filmstrip-box-multiple"
+}
+
+const quickFilterChips = computed(() => {
+  return labels.value.slice(0, 6).map(label => ({
+    label,
+    value: label,
+    icon: quickFilterIconMap[label] || "mdi-shape-outline"
+  }))
+})
 
 const availability = ref({
   available: false,
@@ -604,6 +761,10 @@ function isPastEvent(event) {
   return is_Event_Past(event)
 }
 
+const availableNowCount = computed(() => {
+  return events.filter(event => !isPastEvent(event) && canBuyTicket(event)).length
+})
+
 function getAvailabilityLabel(event) {
   if (isPastEvent(event)) return "Event ended"
   if (event.seats_left === 0) return "Sold out"
@@ -707,13 +868,217 @@ function goToSeatSelection(event) {
   router.push(`/seatSelection?id=${event.id}`)
 }
 
+function toggleQuickCategory(category) {
+  if (!category) return
+  if (selectedCategories.value.includes(category)) {
+    selectedCategories.value = selectedCategories.value.filter(item => item !== category)
+    return
+  }
+  selectedCategories.value = [...selectedCategories.value, category]
+}
+
+const currentSortLabel = computed(() => {
+  return sortOptions.find(option => option.value === sortBy.value)?.label || "Soonest first"
+})
+
+const activeFilterChips = computed(() => {
+  const chips = []
+
+  if (searchQuery.value) {
+    chips.push({
+      key: "search",
+      label: `Search: ${searchQuery.value}`,
+      icon: "mdi-magnify",
+      action: () => {
+        searchQuery.value = ""
+      }
+    })
+  }
+
+  if (selectedCategories.value.length) {
+    chips.push({
+      key: "categories",
+      label: `${selectedCategories.value.length} categor${selectedCategories.value.length > 1 ? "ies" : "y"}`,
+      icon: "mdi-shape-outline",
+      action: () => {
+        selectedCategories.value = []
+      }
+    })
+  }
+
+  if (fromDate.value) {
+    chips.push({
+      key: "from",
+      label: `From: ${fromDateDisplay.value}`,
+      icon: "mdi-calendar-start",
+      action: () => {
+        fromDate.value = null
+      }
+    })
+  }
+
+  if (toDate.value) {
+    chips.push({
+      key: "to",
+      label: `To: ${toDateDisplay.value}`,
+      icon: "mdi-calendar-end",
+      action: () => {
+        toDate.value = null
+      }
+    })
+  }
+
+  if (locationCity.value) {
+    chips.push({
+      key: "city",
+      label: locationCity.value,
+      icon: "mdi-map-marker-outline",
+      action: () => {
+        locationCity.value = null
+      }
+    })
+  }
+
+  if (artist.value) {
+    const artistLabel = artistOptions.value.find(item => item.value === artist.value)?.label || "Artist"
+    chips.push({
+      key: "artist",
+      label: artistLabel,
+      icon: "mdi-account-music-outline",
+      action: () => {
+        artist.value = null
+      }
+    })
+  }
+
+  if (availability.value.available || availability.value.almostSold || availability.value.soldOut) {
+    const selectedAvailability = [
+      availability.value.available ? "Available" : null,
+      availability.value.almostSold ? "Almost sold out" : null,
+      availability.value.soldOut ? "Sold out" : null
+    ].filter(Boolean).join(", ")
+
+    chips.push({
+      key: "availability",
+      label: selectedAvailability,
+      icon: "mdi-seat-outline",
+      action: () => {
+        availability.value = {
+          available: false,
+          almostSold: false,
+          soldOut: false
+        }
+      }
+    })
+  }
+
+  if (
+    ageRestrictions.value.allAges ||
+    ageRestrictions.value.fifteenPlus ||
+    ageRestrictions.value.eighteenPlus
+  ) {
+    const selectedAges = [
+      ageRestrictions.value.allAges ? "All ages" : null,
+      ageRestrictions.value.fifteenPlus ? "15+" : null,
+      ageRestrictions.value.eighteenPlus ? "18+" : null
+    ].filter(Boolean).join(", ")
+
+    chips.push({
+      key: "ages",
+      label: selectedAges,
+      icon: "mdi-badge-account-outline",
+      action: () => {
+        ageRestrictions.value = {
+          allAges: false,
+          fifteenPlus: false,
+          eighteenPlus: false
+        }
+      }
+    })
+  }
+
+  if (showSoldOutEvents.value) {
+    chips.push({
+      key: "showSoldOut",
+      label: "Showing sold out",
+      icon: "mdi-close-circle-outline",
+      action: () => {
+        showSoldOutEvents.value = false
+      }
+    })
+  }
+
+  if (showPastEvents.value) {
+    chips.push({
+      key: "showPast",
+      label: "Showing past events",
+      icon: "mdi-calendar-remove-outline",
+      action: () => {
+        showPastEvents.value = false
+      }
+    })
+  }
+
+  return chips
+})
+
+const resultsAnimationKey = computed(() => JSON.stringify({
+  search: searchQuery.value,
+  categories: selectedCategories.value,
+  from: fromDate.value,
+  to: toDate.value,
+  city: locationCity.value,
+  availability: availability.value,
+  artist: artist.value,
+  ages: ageRestrictions.value,
+  showSoldOut: showSoldOutEvents.value,
+  showPast: showPastEvents.value,
+  sort: sortBy.value
+}))
+
+function resetAllFilters() {
+  searchQuery.value = ""
+  selectedCategories.value = []
+  fromDate.value = null
+  toDate.value = null
+  locationCity.value = null
+  availability.value = {
+    available: false,
+    almostSold: false,
+    soldOut: false
+  }
+  artist.value = null
+  ageRestrictions.value = {
+    allAges: false,
+    fifteenPlus: false,
+    eighteenPlus: false
+  }
+  showSoldOutEvents.value = false
+  showPastEvents.value = false
+  sortBy.value = "soonest"
+}
+
 const filteredEvents = computed(() => {
   const from = parsePickerDate(fromDate.value)
   const to = parsePickerDate(toDate.value)
 
-  return events.filter(event => {
-    const seatsLeft = event.seats_left
+  const filtered = events.filter(event => {
+    const seatsLeft = Number(event.seats_left) || 0
     const eventDate = parseEventDate(event.date)
+    const eventTitle = String(event.title || "").toLowerCase()
+    const eventDescription = String(event.description || "").toLowerCase()
+    const venueName = String(event.venue || "").toLowerCase()
+    const cityName = String(event.city || "").toLowerCase()
+    const artistNames = getArtistNames(event).join(" ").toLowerCase()
+    const query = searchQuery.value.trim().toLowerCase()
+
+    const matchesSearch =
+      !query ||
+      eventTitle.includes(query) ||
+      eventDescription.includes(query) ||
+      venueName.includes(query) ||
+      cityName.includes(query) ||
+      artistNames.includes(query)
 
     const matchesCategory =
       selectedCategories.value.length === 0 ||
@@ -762,14 +1127,44 @@ const filteredEvents = computed(() => {
         (ageRestrictions.value.eighteenPlus && event.age_restriction === "18+")
     }
 
+    const passesSoldOutVisibility = showSoldOutEvents.value || seatsLeft > 0
+    const passesPastVisibility = showPastEvents.value || !isPastEvent(event)
+
     return (
+      matchesSearch &&
       matchesCategory &&
       matchesDate &&
       matchesCity &&
       matchesAvailability &&
       matchesArtist &&
-      matchesAge
+      matchesAge &&
+      passesSoldOutVisibility &&
+      passesPastVisibility
     )
+  })
+
+  return [...filtered].sort((a, b) => {
+    const aDate = parseEventDate(a.date)
+    const bDate = parseEventDate(b.date)
+    const aSeats = Number(a.seats_left) || 0
+    const bSeats = Number(b.seats_left) || 0
+    const titleCompare = String(a.title || "").localeCompare(String(b.title || ""))
+
+    switch (sortBy.value) {
+      case "latest":
+        return (bDate?.getTime() || 0) - (aDate?.getTime() || 0)
+      case "mostSeats":
+        return bSeats - aSeats
+      case "leastSeats":
+        return aSeats - bSeats
+      case "titleAsc":
+        return titleCompare
+      case "titleDesc":
+        return -titleCompare
+      case "soonest":
+      default:
+        return (aDate?.getTime() || 0) - (bDate?.getTime() || 0)
+    }
   })
 })
 </script>
@@ -846,7 +1241,7 @@ const filteredEvents = computed(() => {
   background: #00bcd4;
 }
 
-.hero-card,
+.hero-surface,
 .filter-card,
 .results-card,
 .event-card {
@@ -858,7 +1253,7 @@ const filteredEvents = computed(() => {
     border-color 0.35s ease;
 }
 
-.browser-light .hero-card,
+.browser-light .hero-surface,
 .browser-light .filter-card,
 .browser-light .results-card,
 .browser-light .event-card {
@@ -867,7 +1262,7 @@ const filteredEvents = computed(() => {
   box-shadow: 0 10px 30px rgba(20, 31, 56, 0.06);
 }
 
-.browser-dark .hero-card,
+.browser-dark .hero-surface,
 .browser-dark .filter-card,
 .browser-dark .results-card,
 .browser-dark .event-card {
@@ -876,86 +1271,132 @@ const filteredEvents = computed(() => {
   box-shadow: 0 14px 36px rgba(0, 0, 0, 0.28);
 }
 
-.hero-card {
+.browser-light .hero-surface {
+  border: 1px solid rgba(19, 35, 62, 0.04);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.34), rgba(248, 251, 255, 0.18)),
+    rgba(255, 255, 255, 0.14);
+  box-shadow: none;
+  backdrop-filter: blur(4px);
+}
+
+.browser-dark .hero-surface {
+  border: 1px solid rgba(255, 255, 255, 0.04);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.018), rgba(255, 255, 255, 0.006)),
+    rgba(13, 17, 23, 0.18);
+  box-shadow: none;
+  backdrop-filter: blur(4px);
+}
+
+.hero-surface {
   position: relative;
   overflow: hidden;
+  isolation: isolate;
+  animation: subtlePageIn 0.28s ease-out both;
 }
 
-.hero-card::before {
+.hero-surface--blended {
+  border-radius: 28px;
+}
+
+.hero-surface--blended::before,
+.hero-surface--blended::after {
+  opacity: 0.3;
+}
+
+.hero-surface::before,
+.hero-surface::after {
   content: "";
   position: absolute;
-  inset: 0;
-  background:
-    linear-gradient(135deg, rgba(99, 102, 241, 0.08), transparent 42%),
-    linear-gradient(315deg, rgba(6, 182, 212, 0.08), transparent 46%);
+  border-radius: 999px;
   pointer-events: none;
+  z-index: 0;
+  filter: blur(42px);
+  opacity: 0.22;
+  animation: heroGlowFloat 9s ease-in-out infinite alternate;
 }
 
-.hero-copy,
-.hero-stats {
+.hero-surface::before {
+  width: 280px;
+  height: 280px;
+  top: -110px;
+  left: -55px;
+  background: radial-gradient(circle, rgba(57, 153, 255, 0.22) 0%, rgba(57, 153, 255, 0) 72%);
+}
+
+.hero-surface::after {
+  width: 320px;
+  height: 320px;
+  right: -90px;
+  bottom: -140px;
+  background: radial-gradient(circle, rgba(0, 197, 255, 0.18) 0%, rgba(0, 197, 255, 0) 72%);
+  animation-duration: 11s;
+  animation-delay: 0.35s;
+}
+
+.hero-copy {
   position: relative;
   z-index: 1;
 }
 
-.hero-badge {
-  display: inline-flex;
-  align-items: center;
-  padding: 8px 14px;
-  border-radius: 999px;
-  font-size: 0.84rem;
-  font-weight: 700;
-  letter-spacing: 0.02em;
-  transition: background 0.35s ease, border-color 0.35s ease, color 0.35s ease;
+.page-header {
+  display: flex;
+  align-items: stretch;
+  justify-content: space-between;
+  gap: 24px;
+  flex-wrap: wrap;
 }
 
-.browser-light .hero-badge {
-  background: rgba(93, 114, 255, 0.08);
-  color: #3349b9;
-  border: 1px solid rgba(93, 114, 255, 0.15);
+.page-header--single {
+  justify-content: center;
 }
 
-.browser-dark .hero-badge {
-  background: rgba(99, 102, 241, 0.16);
-  color: #c7d2fe;
-  border: 1px solid rgba(129, 140, 248, 0.2);
+.page-header--single .hero-copy {
+  width: 100%;
+  max-width: 1120px;
+  margin: 0 auto;
 }
 
-.hero-title {
-  line-height: 1.08;
+.page-kicker {
+  letter-spacing: 2px;
+  color: rgba(var(--v-theme-primary), 0.9);
+}
+
+.page-title {
+  line-height: 1.05;
   letter-spacing: -0.02em;
 }
 
-.hero-subtitle {
-  max-width: 720px;
-  font-size: 1rem;
+.page-subtitle {
+  max-width: 980px;
+  line-height: 1.7;
 }
 
-.hero-stat-chip {
-  min-width: 118px;
-  padding: 14px 16px;
-  border: 1px solid transparent;
-  transition: transform 0.22s ease, box-shadow 0.22s ease, background 0.35s ease, border-color 0.35s ease;
+.hero-search-wrap {
+  max-width: 1180px;
 }
 
-.hero-stat-chip:hover {
-  transform: translateY(-2px);
+.hero-search-field :deep(.v-field) {
+  backdrop-filter: blur(10px);
 }
 
-.browser-light .hero-stat-chip {
-  background: rgba(255, 255, 255, 0.72);
-  border-color: rgba(37, 59, 102, 0.08);
-  box-shadow: 0 8px 18px rgba(20, 31, 56, 0.05);
+.quick-filter-chip {
+  transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease;
 }
 
-.browser-dark .hero-stat-chip {
-  background: rgba(20, 30, 48, 0.78);
-  border-color: rgba(145, 170, 220, 0.12);
-  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.22);
+.quick-filter-chip:hover {
+  transform: translateY(-1px);
+}
+
+.hero-tags {
+  row-gap: 10px;
 }
 
 .filter-card {
   position: sticky;
   top: 88px;
+  animation: subtlePageIn 0.3s ease-out 0.03s both;
 }
 
 .section-icon-wrap {
@@ -1040,6 +1481,10 @@ const filteredEvents = computed(() => {
 .date-picker-card {
   overflow: hidden;
   border-radius: 18px;
+}
+
+.results-card {
+  animation: subtlePageIn 0.3s ease-out 0.06s both;
 }
 
 .event-list-row {
@@ -1258,14 +1703,143 @@ const filteredEvents = computed(() => {
   border-radius: 24px !important;
 }
 
+.filter-toolbar {
+  padding: 14px;
+  border-radius: 20px;
+  transition: background 0.35s ease, border-color 0.35s ease, box-shadow 0.35s ease;
+}
+
+.browser-light .filter-toolbar {
+  background: rgba(246, 249, 255, 0.9);
+  border: 1px solid rgba(37, 59, 102, 0.08);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.75);
+}
+
+.browser-dark .filter-toolbar {
+  background: rgba(17, 25, 39, 0.78);
+  border: 1px solid rgba(145, 170, 220, 0.12);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.03);
+}
+
+.toggle-stack {
+  display: grid;
+  gap: 2px;
+}
+
+.enhanced-switch {
+  margin: 0;
+}
+
+.reset-filter-btn {
+  min-height: 40px;
+  text-transform: none;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+}
+
+.active-filters-wrap {
+  padding: 14px 16px;
+  border-radius: 18px;
+  transition: background 0.35s ease, border-color 0.35s ease;
+}
+
+.browser-light .active-filters-wrap {
+  background: rgba(248, 250, 255, 0.86);
+  border: 1px solid rgba(37, 59, 102, 0.08);
+}
+
+.browser-dark .active-filters-wrap {
+  background: rgba(16, 24, 38, 0.78);
+  border: 1px solid rgba(145, 170, 220, 0.12);
+}
+
+.active-filter-chip {
+  font-weight: 600;
+}
+
+.event-list-row {
+  row-gap: 8px;
+  animation: resultsFadeIn 0.28s ease;
+}
+
+.event-card-muted .event-image {
+  filter: saturate(0.72) brightness(0.88);
+}
+
+.event-card-muted .event-title,
+.event-card-muted .event-description,
+.event-card-muted .artist-line {
+  opacity: 0.92;
+}
+
+.browser-light .event-card-muted {
+  background: rgba(250, 251, 254, 0.74);
+}
+
+.browser-dark .event-card-muted {
+  background: rgba(18, 26, 40, 0.74);
+}
+
+.event-card:hover .event-title {
+  color: #4f63ff;
+}
+
+.browser-dark .event-card:hover .event-title {
+  color: #d4ddff;
+}
+
+.event-card:hover .status-chip {
+  transform: translateY(-1px);
+}
+
+.event-description.line-clamp-3 {
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+@keyframes heroGlowFloat {
+  0% {
+    transform: translate3d(0, 0, 0) scale(1);
+    opacity: 0.18;
+  }
+
+  100% {
+    transform: translate3d(18px, 10px, 0) scale(1.08);
+    opacity: 0.26;
+  }
+}
+
+@keyframes subtlePageIn {
+  0% {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes resultsFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
 @media (max-width: 959px) {
   .filter-card {
     position: static;
     top: auto;
-  }
-
-  .hero-stat-chip {
-    min-width: 104px;
   }
 }
 
@@ -1279,7 +1853,7 @@ const filteredEvents = computed(() => {
     justify-content: flex-start;
   }
 
-  .hero-title {
+  .page-title {
     font-size: 2rem !important;
   }
 }

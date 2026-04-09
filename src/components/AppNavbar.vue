@@ -1522,6 +1522,7 @@ function logout() {
 .search-wrapper {
   width: 430px;
   max-width: 36vw;
+  transform: translateY(-2px);
 }
 
 .user-search {

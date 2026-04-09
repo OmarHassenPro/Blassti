@@ -5,66 +5,86 @@
     <v-container fluid class="py-8 px-4 px-md-6">
       <v-row justify="center">
         <v-col cols="12" xl="11">
-          <div class="page-header mb-6">
-            <div class="hero-copy">
-              <div class="text-overline page-kicker mb-2">BLASSTI VENUES</div>
+          <v-card rounded="xl" class="hero-surface hero-surface--blended pa-5 pa-md-7 mb-6" elevation="0">
+            <div class="page-header page-header--single">
+              <div class="hero-copy">
+                <div class="text-overline page-kicker mb-2">BLASSTI VENUES</div>
 
-              <div class="text-h3 text-md-h2 font-weight-bold mb-3 page-title">
-                Browse venues across Tunisia
-              </div>
+                <div class="text-h3 text-md-h2 font-weight-bold mb-3 page-title">
+                  Browse venues across Tunisia
+                </div>
 
-              <div class="text-body-1 text-medium-emphasis page-subtitle mb-4">
-                Discover theatres, cinemas, stadiums, hotels, nightlife spaces, and newly approved venues ready for booking.
-              </div>
+                <div class="text-body-1 text-medium-emphasis page-subtitle mb-4">
+                  Discover theatres, cinemas, stadiums, hotels, nightlife spaces, and newly approved venues ready for booking.
+                </div>
 
-              <div class="d-flex flex-wrap ga-2 hero-tags">
-                <v-chip color="primary" variant="tonal" rounded="lg">
-                  <v-icon size="16" class="me-2">mdi-domain</v-icon>
-                  {{ filteredAndSortedVenues.length }} venues found
-                </v-chip>
+                <div class="hero-search-wrap mb-4">
+                  <v-text-field
+                    v-model="search"
+                    label="Search venues, cities, categories..."
+                    variant="outlined"
+                    rounded="xl"
+                    density="comfortable"
+                    prepend-inner-icon="mdi-magnify"
+                    clearable
+                    hide-details
+                    class="hero-search-field"
+                  >
+                    <template #append-inner>
+                      <v-fade-transition>
+                        <v-chip
+                          v-if="normalizedSearch"
+                          size="small"
+                          rounded="lg"
+                          color="primary"
+                          variant="tonal"
+                        >
+                          Live search
+                        </v-chip>
+                      </v-fade-transition>
+                    </template>
+                  </v-text-field>
 
-                <v-chip variant="outlined" rounded="lg">
-                  <v-icon size="16" class="me-2">mdi-check-decagram-outline</v-icon>
-                  {{ availableVenuesCount }} available now
-                </v-chip>
-
-                <v-chip variant="outlined" rounded="lg">
-                  <v-icon size="16" class="me-2">mdi-map-marker-radius-outline</v-icon>
-                  {{ locationOptions.length }} cities
-                </v-chip>
-
-                <v-chip variant="outlined" rounded="lg">
-                  <v-icon size="16" class="me-2">mdi-shape-outline</v-icon>
-                  {{ categoryOptions.length }} categories
-                </v-chip>
-              </div>
-            </div>
-
-            <div class="hero-aside">
-              <v-card rounded="xl" class="hero-stat-card pa-4">
-                <div class="d-flex align-center ga-3 mb-3">
-                  <div class="hero-stat-icon">
-                    <v-icon size="20">mdi-lightning-bolt-outline</v-icon>
-                  </div>
-                  <div>
-                    <div class="text-subtitle-1 font-weight-bold">Smart venue discovery</div>
-                    <div class="text-body-2 text-medium-emphasis">
-                      Search faster, filter cleaner, and open venue pages your way.
-                    </div>
+                  <div class="d-flex flex-wrap ga-2 mt-3">
+                    <v-chip
+                      v-for="quickFilter in quickFilterChips"
+                      :key="quickFilter.value"
+                      rounded="lg"
+                      :color="selectedCategory === quickFilter.value ? 'primary' : undefined"
+                      :variant="selectedCategory === quickFilter.value ? 'flat' : 'outlined'"
+                      class="quick-filter-chip"
+                      @click="toggleQuickCategory(quickFilter.value)"
+                    >
+                      <v-icon start size="16">{{ quickFilter.icon }}</v-icon>
+                      {{ quickFilter.label }}
+                    </v-chip>
                   </div>
                 </div>
 
-                <div class="d-flex flex-wrap ga-2">
-                  <v-chip size="small" color="primary" variant="tonal" rounded="lg">
-                    Right-click supported
+                <div class="d-flex flex-wrap ga-2 hero-tags">
+                  <v-chip color="primary" variant="tonal" rounded="lg">
+                    <v-icon size="16" class="me-2">mdi-domain</v-icon>
+                    {{ filteredAndSortedVenues.length }} venues found
                   </v-chip>
-                  <v-chip size="small" variant="outlined" rounded="lg">
-                    Browser theme synced
+
+                  <v-chip variant="outlined" rounded="lg">
+                    <v-icon size="16" class="me-2">mdi-check-decagram-outline</v-icon>
+                    {{ availableVenuesCount }} available now
+                  </v-chip>
+
+                  <v-chip variant="outlined" rounded="lg">
+                    <v-icon size="16" class="me-2">mdi-map-marker-radius-outline</v-icon>
+                    {{ locationOptions.length }} cities
+                  </v-chip>
+
+                  <v-chip variant="outlined" rounded="lg">
+                    <v-icon size="16" class="me-2">mdi-shape-outline</v-icon>
+                    {{ categoryOptions.length }} categories
                   </v-chip>
                 </div>
-              </v-card>
+              </div>
             </div>
-          </div>
+          </v-card>
         </v-col>
       </v-row>
 
@@ -72,30 +92,41 @@
         <!-- SIDE FILTERS -->
         <v-col cols="12" lg="3" xl="3">
           <v-card rounded="xl" class="filter-card pa-4">
-            <div class="d-flex align-center justify-space-between mb-4">
-              <div class="text-h6 font-weight-bold">Filters</div>
+            <div class="d-flex align-center justify-space-between mb-3">
+              <div>
+                <div class="text-h6 font-weight-bold">Filters</div>
+                <div class="text-caption text-medium-emphasis">Refine venues faster with smart availability-first browsing.</div>
+              </div>
 
               <v-chip
                 size="small"
                 rounded="lg"
                 color="primary"
-                variant="tonal"
+                :variant="hasActiveFilters ? 'flat' : 'tonal'"
               >
                 {{ hasActiveFilters ? "Active" : "Default" }}
               </v-chip>
             </div>
 
-            <v-text-field
-              v-model="search"
-              label="Search venues"
-              variant="outlined"
-              rounded="lg"
-              density="comfortable"
-              prepend-inner-icon="mdi-magnify"
-              clearable
-              hide-details
-              class="mb-4"
-            />
+            <div class="filter-status-row mb-4">
+              <v-chip
+                size="small"
+                rounded="lg"
+                color="primary"
+                :variant="showUnavailable ? 'outlined' : 'tonal'"
+              >
+                {{ showUnavailable ? 'Showing all venues' : 'Available only' }}
+              </v-chip>
+              <v-chip
+                v-if="hasActiveFilters"
+                size="small"
+                rounded="lg"
+                color="primary"
+                variant="flat"
+              >
+                {{ activeFilterCount }} active
+              </v-chip>
+            </div>
 
             <v-select
               v-model="selectedLocation"
@@ -133,17 +164,41 @@
               class="mb-4"
             />
 
-            <v-select
-              v-model="selectedAvailability"
-              :items="availabilityOptions"
-              label="Availability"
-              variant="outlined"
-              rounded="lg"
-              density="comfortable"
-              clearable
-              hide-details
-              class="mb-4"
-            />
+            <div class="filter-section mb-4">
+              <div class="d-flex align-center justify-space-between mb-2">
+                <div class="text-subtitle-2 font-weight-bold">Availability</div>
+                <v-switch
+                  v-model="showUnavailable"
+                  color="primary"
+                  hide-details
+                  inset
+                  density="compact"
+                  class="show-unavailable-switch"
+                >
+                  <template #label>
+                    <span class="text-body-2">Show unavailable</span>
+                  </template>
+                </v-switch>
+              </div>
+
+              <div class="d-flex flex-wrap ga-2 availability-chip-group">
+                <v-chip
+                  v-for="option in availabilityOptions"
+                  :key="option"
+                  rounded="lg"
+                  filter
+                  :color="selectedAvailability === option ? 'primary' : undefined"
+                  :variant="selectedAvailability === option ? 'flat' : 'outlined'"
+                  class="availability-filter-chip"
+                  @click="toggleAvailability(option)"
+                >
+                  <v-icon start size="16">
+                    {{ option === 'Available' ? 'mdi-check-circle-outline' : 'mdi-close-circle-outline' }}
+                  </v-icon>
+                  {{ option }}
+                </v-chip>
+              </div>
+            </div>
 
             <v-select
               v-model="sortBy"
@@ -158,6 +213,11 @@
 
             <div class="filter-divider mb-4"></div>
 
+            <div v-if="hasActiveFilters" class="active-filter-callout mb-4">
+              <div class="text-body-2 font-weight-medium mb-1">Filters are shaping your results</div>
+              <div class="text-caption text-medium-emphasis">Remove chips below or reset everything in one click.</div>
+            </div>
+
             <div class="d-flex flex-column ga-3">
               <v-btn
                 color="primary"
@@ -169,6 +229,17 @@
               >
                 <v-icon start>mdi-filter-off-outline</v-icon>
                 Reset filters
+              </v-btn>
+
+              <v-btn
+                variant="text"
+                rounded="lg"
+                block
+                class="clear-top-btn"
+                @click="clearOnlyFilters"
+              >
+                <v-icon start>mdi-close-circle-outline</v-icon>
+                Clear active filters
               </v-btn>
 
               <div class="text-caption text-medium-emphasis filter-tip">
@@ -189,6 +260,14 @@
                 <div class="text-body-2 text-medium-emphasis">
                   Refined by your search, filters, and sorting preferences.
                 </div>
+                <div class="d-flex flex-wrap ga-2 mt-2">
+                  <v-chip size="x-small" rounded="lg" :variant="showUnavailable ? 'outlined' : 'tonal'" color="primary">
+                    {{ showUnavailable ? 'Including unavailable venues' : 'Unavailable venues hidden' }}
+                  </v-chip>
+                  <v-chip v-if="normalizedSearch" size="x-small" rounded="lg" variant="outlined">
+                    Searching for “{{ truncateText(search, 18) }}”
+                  </v-chip>
+                </div>
               </div>
 
               <div class="d-flex flex-wrap ga-2">
@@ -208,13 +287,23 @@
                   <v-icon start size="16">mdi-tune-variant</v-icon>
                   {{ hasActiveFilters ? "Filters applied" : "No filters applied" }}
                 </v-chip>
+
+                <v-chip
+                  size="small"
+                  rounded="lg"
+                  :color="showUnavailable ? undefined : 'success'"
+                  :variant="showUnavailable ? 'outlined' : 'tonal'"
+                >
+                  <v-icon start size="16">{{ showUnavailable ? 'mdi-eye-outline' : 'mdi-eye' }}</v-icon>
+                  {{ showUnavailable ? 'Showing unavailable too' : 'Only available shown' }}
+                </v-chip>
               </div>
             </div>
           </v-card>
 
-          <div v-if="hasActiveFilters" class="d-flex flex-wrap ga-2 mb-4">
+          <div v-if="hasActiveFilters || !showUnavailable" class="d-flex flex-wrap ga-2 mb-4 active-chips-wrap">
             <v-chip
-              v-if="search"
+              v-if="normalizedSearch"
               closable
               rounded="lg"
               color="primary"
@@ -267,6 +356,17 @@
             >
               Availability: {{ selectedAvailability }}
             </v-chip>
+
+            <v-chip
+              v-if="!showUnavailable"
+              closable
+              rounded="lg"
+              color="success"
+              variant="tonal"
+              @click:close="showUnavailable = true"
+            >
+              Hiding unavailable venues
+            </v-chip>
           </div>
 
           <v-row v-if="filteredAndSortedVenues.length">
@@ -280,6 +380,7 @@
               <v-card
                 rounded="xl"
                 class="venue-card h-100 d-flex flex-column"
+                :class="{ 'venue-card--unavailable': !venue.availability }"
                 @click="openVenue(venue)"
                 @contextmenu.prevent="openVenueContextMenu($event, venue)"
               >
@@ -291,6 +392,7 @@
                   />
 
                   <div class="venue-image-overlay"></div>
+                  <div class="venue-image-glow"></div>
 
                   <div class="venue-image-top">
                     <v-chip
@@ -352,10 +454,10 @@
                   </div>
 
                   <div class="d-flex flex-wrap ga-2 mb-3">
-                    <v-chip size="small" variant="outlined" rounded="lg">
+                    <v-chip size="small" variant="outlined" rounded="lg" class="info-chip">
                       {{ venue.category }}
                     </v-chip>
-                    <v-chip size="small" variant="outlined" rounded="lg">
+                    <v-chip size="small" variant="outlined" rounded="lg" class="info-chip">
                       {{ venue.type }}
                     </v-chip>
                   </div>
@@ -434,6 +536,7 @@
 
             <div class="text-body-1 text-medium-emphasis mb-6">
               Try changing your search, filters, or sorting options to discover more places.
+              <span v-if="!showUnavailable"> You can also enable unavailable venues from the filter panel.</span>
             </div>
 
             <div class="d-flex justify-center flex-wrap ga-3">
@@ -477,7 +580,7 @@
 </template>
 
 <script setup>
-import { computed, onBeforeUnmount, onMounted, ref } from "vue"
+import { computed, onBeforeUnmount, onMounted, ref, watch } from "vue"
 import { useRouter } from "vue-router"
 import AppNavbar from "@/components/AppNavbar.vue"
 import { get_All_Venues } from "@/dataModel/venue"
@@ -574,10 +677,19 @@ const browserThemeClass = computed(() => {
 })
 
 const search = ref("")
+const normalizedSearch = computed(() => search.value.trim().toLowerCase())
+
+watch(search, value => {
+  if (!value || !value.trim()) {
+    search.value = ""
+  }
+})
+
 const selectedLocation = ref(null)
 const selectedType = ref(null)
 const selectedCategory = ref(null)
 const selectedAvailability = ref(null)
+const showUnavailable = ref(false)
 const sortBy = ref("rating_desc")
 
 const sortOptions = [
@@ -588,6 +700,12 @@ const sortOptions = [
 ]
 
 const availabilityOptions = ["Available", "Unavailable"]
+const quickFilterChips = [
+  { label: "Concerts", value: "Concert Hall", icon: "mdi-music" },
+  { label: "Sports", value: "Sports Arena", icon: "mdi-basketball" },
+  { label: "Cinema", value: "Cinema", icon: "mdi-movie-open-outline" },
+  { label: "Nightlife", value: "Nightlife", icon: "mdi-glass-cocktail" },
+]
 
 const allVenues = computed(() => get_All_Venues())
 
@@ -613,8 +731,12 @@ const availableVenuesCount = computed(() => {
   return allVenues.value.filter(venue => venue.availability).length
 })
 
+const unavailableVenuesCount = computed(() => {
+  return allVenues.value.filter(venue => !venue.availability).length
+})
+
 const filteredVenues = computed(() => {
-  const searchValue = search.value.trim().toLowerCase()
+  const searchValue = normalizedSearch.value
 
   return allVenues.value.filter(venue => {
     const matchesSearch =
@@ -635,6 +757,8 @@ const filteredVenues = computed(() => {
     const matchesCategory =
       !selectedCategory.value || venue.category === selectedCategory.value
 
+    const matchesAvailabilityVisibility = showUnavailable.value || venue.availability
+
     const matchesAvailability =
       !selectedAvailability.value ||
       (selectedAvailability.value === "Available" && venue.availability) ||
@@ -645,6 +769,7 @@ const filteredVenues = computed(() => {
       matchesLocation &&
       matchesType &&
       matchesCategory &&
+      matchesAvailabilityVisibility &&
       matchesAvailability
     )
   })
@@ -671,7 +796,7 @@ const filteredAndSortedVenues = computed(() => {
 
 const hasActiveFilters = computed(() => {
   return Boolean(
-    search.value ||
+    normalizedSearch.value ||
     selectedLocation.value ||
     selectedType.value ||
     selectedCategory.value ||
@@ -679,13 +804,31 @@ const hasActiveFilters = computed(() => {
   )
 })
 
-function resetFilters() {
+const activeFilterCount = computed(() => {
+  return [normalizedSearch.value, selectedLocation.value, selectedType.value, selectedCategory.value, selectedAvailability.value]
+    .filter(Boolean).length
+})
+
+function clearOnlyFilters() {
   search.value = ""
   selectedLocation.value = null
   selectedType.value = null
   selectedCategory.value = null
   selectedAvailability.value = null
+}
+
+function resetFilters() {
+  clearOnlyFilters()
+  showUnavailable.value = false
   sortBy.value = "rating_desc"
+}
+
+function toggleAvailability(option) {
+  selectedAvailability.value = selectedAvailability.value === option ? null : option
+}
+
+function toggleQuickCategory(category) {
+  selectedCategory.value = selectedCategory.value === category ? null : category
 }
 
 function formatRating(value) {
@@ -739,7 +882,89 @@ function openVenue(venue) {
   flex-wrap: wrap;
 }
 
+.hero-surface {
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
+  transition:
+    transform 0.22s ease,
+    box-shadow 0.22s ease,
+    border-color 0.22s ease,
+    background 0.22s ease;
+  animation: subtlePageIn 0.28s ease-out both;
+}
+
+.hero-surface--blended {
+  border-radius: 28px;
+}
+
+.hero-surface--blended::before,
+.hero-surface--blended::after {
+  opacity: 0.3;
+}
+
+.hero-surface::before,
+.hero-surface::after {
+  content: "";
+  position: absolute;
+  inset: auto;
+  border-radius: 999px;
+  pointer-events: none;
+  z-index: 0;
+  opacity: 0.22;
+  filter: blur(42px);
+  animation: heroGlowFloat 9s ease-in-out infinite alternate;
+}
+
+.hero-surface::before {
+  width: 280px;
+  height: 280px;
+  top: -110px;
+  left: -55px;
+  background: radial-gradient(circle, rgba(57, 153, 255, 0.22) 0%, rgba(57, 153, 255, 0) 72%);
+}
+
+.hero-surface::after {
+  width: 320px;
+  height: 320px;
+  right: -90px;
+  bottom: -140px;
+  background: radial-gradient(circle, rgba(0, 197, 255, 0.18) 0%, rgba(0, 197, 255, 0) 72%);
+  animation-duration: 11s;
+  animation-delay: 0.35s;
+}
+
+.venue-browsing-shell.theme-dark .hero-surface {
+  border: 1px solid rgba(255, 255, 255, 0.04);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.018), rgba(255, 255, 255, 0.006)),
+    rgba(13, 17, 23, 0.18);
+  box-shadow: none;
+  backdrop-filter: blur(4px);
+}
+
+.venue-browsing-shell.theme-light .hero-surface {
+  border: 1px solid rgba(19, 35, 62, 0.04);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.34), rgba(248, 251, 255, 0.18)),
+    rgba(255, 255, 255, 0.14);
+  box-shadow: none;
+  backdrop-filter: blur(4px);
+}
+
+.page-header--single {
+  justify-content: center;
+}
+
+.page-header--single .hero-copy {
+  width: 100%;
+  max-width: 1120px;
+  margin: 0 auto;
+}
+
 .hero-copy {
+  position: relative;
+  z-index: 1;
   flex: 1 1 700px;
 }
 
@@ -759,8 +984,36 @@ function openVenue(venue) {
 }
 
 .page-subtitle {
-  max-width: 760px;
+  max-width: 980px;
   line-height: 1.7;
+}
+
+.hero-search-wrap {
+  max-width: 1180px;
+}
+
+.hero-search-field :deep(.v-field) {
+  backdrop-filter: blur(12px);
+}
+
+.venue-browsing-shell.theme-dark .hero-search-field :deep(.v-field) {
+  background: rgba(9, 14, 23, 0.52);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.02);
+}
+
+.venue-browsing-shell.theme-light .hero-search-field :deep(.v-field) {
+  background: rgba(255, 255, 255, 0.65);
+  border: 1px solid rgba(19, 35, 62, 0.06);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.35);
+}
+
+.quick-filter-chip {
+  transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease;
+}
+
+.quick-filter-chip:hover {
+  transform: translateY(-1px);
 }
 
 .hero-tags {
@@ -811,6 +1064,40 @@ function openVenue(venue) {
   transform: translateY(-2px);
 }
 
+.hero-aside-stats {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.aside-stat-pill {
+  border-radius: 16px;
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.venue-browsing-shell.theme-dark .aside-stat-pill {
+  background: rgba(255, 255, 255, 0.035);
+  border: 1px solid rgba(255, 255, 255, 0.07);
+}
+
+.venue-browsing-shell.theme-light .aside-stat-pill {
+  background: rgba(245, 248, 255, 0.86);
+  border: 1px solid rgba(18, 36, 58, 0.08);
+}
+
+.aside-stat-value {
+  font-size: 1.05rem;
+  font-weight: 800;
+}
+
+.aside-stat-label {
+  font-size: 0.8rem;
+  opacity: 0.72;
+}
+
 .hero-stat-icon {
   width: 42px;
   height: 42px;
@@ -835,6 +1122,63 @@ function openVenue(venue) {
 .filter-card {
   position: sticky;
   top: 96px;
+  animation: subtlePageIn 0.3s ease-out 0.03s both;
+}
+
+.filter-status-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.filter-section {
+  border-radius: 18px;
+  padding: 12px 12px 4px;
+}
+
+.venue-browsing-shell.theme-dark .filter-section {
+  background: rgba(255, 255, 255, 0.025);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.venue-browsing-shell.theme-light .filter-section {
+  background: rgba(244, 248, 255, 0.9);
+  border: 1px solid rgba(18, 36, 58, 0.07);
+}
+
+.show-unavailable-switch {
+  margin-inline-start: auto;
+}
+
+.availability-chip-group {
+  padding-bottom: 8px;
+}
+
+.availability-filter-chip {
+  transition: transform 0.18s ease, box-shadow 0.18s ease;
+}
+
+.availability-filter-chip:hover {
+  transform: translateY(-1px);
+}
+
+.active-filter-callout {
+  border-radius: 16px;
+  padding: 12px 14px;
+}
+
+.venue-browsing-shell.theme-dark .active-filter-callout {
+  background: rgba(var(--v-theme-primary), 0.1);
+  border: 1px solid rgba(var(--v-theme-primary), 0.18);
+}
+
+.venue-browsing-shell.theme-light .active-filter-callout {
+  background: rgba(var(--v-theme-primary), 0.08);
+  border: 1px solid rgba(var(--v-theme-primary), 0.14);
+}
+
+.clear-top-btn {
+  justify-content: flex-start;
 }
 
 .filter-divider {
@@ -855,6 +1199,11 @@ function openVenue(venue) {
 
 .results-toolbar {
   overflow: hidden;
+  animation: subtlePageIn 0.3s ease-out 0.06s both;
+}
+
+.active-chips-wrap {
+  align-items: center;
 }
 
 .venue-card {
@@ -863,10 +1212,32 @@ function openVenue(venue) {
   position: relative;
 }
 
+.venue-card::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  border-radius: inherit;
+  opacity: 0;
+  transition: opacity 0.24s ease;
+}
+
+.venue-browsing-shell.theme-dark .venue-card::after {
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.04);
+}
+
+.venue-browsing-shell.theme-light .venue-card::after {
+  box-shadow: inset 0 0 0 1px rgba(18, 36, 58, 0.05);
+}
+
 .venue-browsing-shell.theme-dark .venue-card:hover {
   transform: translateY(-7px);
   box-shadow: 0 24px 48px rgba(0, 0, 0, 0.3);
   border-color: rgba(var(--v-theme-primary), 0.25);
+}
+
+.venue-card:hover::after {
+  opacity: 1;
 }
 
 .venue-browsing-shell.theme-light .venue-card:hover {
@@ -881,6 +1252,15 @@ function openVenue(venue) {
   overflow: hidden;
 }
 
+.venue-image-glow {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle at 18% 18%, rgba(255, 255, 255, 0.18), transparent 28%);
+  z-index: 1;
+  opacity: 0;
+  transition: opacity 0.28s ease;
+}
+
 .venue-image {
   width: 100%;
   height: 100%;
@@ -890,13 +1270,17 @@ function openVenue(venue) {
 }
 
 .venue-card:hover .venue-image {
-  transform: scale(1.05);
+  transform: scale(1.08);
+}
+
+.venue-card:hover .venue-image-glow {
+  opacity: 1;
 }
 
 .venue-image-overlay {
   position: absolute;
   inset: 0;
-  background: linear-gradient(180deg, rgba(0, 0, 0, 0.06), rgba(0, 0, 0, 0.62));
+  background: linear-gradient(180deg, rgba(0, 0, 0, 0.04), rgba(0, 0, 0, 0.68));
 }
 
 .venue-image-top {
@@ -969,6 +1353,14 @@ function openVenue(venue) {
 .venue-title {
   line-height: 1.2;
   letter-spacing: -0.01em;
+}
+
+.info-chip {
+  transition: transform 0.18s ease, background 0.18s ease;
+}
+
+.venue-card:hover .info-chip {
+  transform: translateY(-1px);
 }
 
 .rating-pill {
@@ -1071,6 +1463,18 @@ function openVenue(venue) {
   opacity: 0.86;
 }
 
+.venue-card--unavailable {
+  opacity: 0.88;
+}
+
+.venue-card--unavailable .venue-image {
+  filter: saturate(0.78) brightness(0.92);
+}
+
+.venue-card--unavailable .venue-action-btn {
+  opacity: 0.92;
+}
+
 .dropdown-list {
   backdrop-filter: blur(14px);
   -webkit-backdrop-filter: blur(14px);
@@ -1104,6 +1508,30 @@ function openVenue(venue) {
   box-shadow: inset 0 0 0 1px rgba(30, 56, 93, 0.04);
 }
 
+@keyframes heroGlowFloat {
+  0% {
+    transform: translate3d(0, 0, 0) scale(1);
+    opacity: 0.18;
+  }
+
+  100% {
+    transform: translate3d(18px, 10px, 0) scale(1.08);
+    opacity: 0.26;
+  }
+}
+
+@keyframes subtlePageIn {
+  0% {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
 @media (max-width: 1280px) {
   .page-header {
     align-items: start;
@@ -1129,6 +1557,10 @@ function openVenue(venue) {
 @media (max-width: 700px) {
   .page-title {
     font-size: 2rem !important;
+  }
+
+  .hero-aside-stats {
+    grid-template-columns: 1fr;
   }
 
   .venue-meta-grid {
