@@ -514,267 +514,412 @@
       v-model="mobileDrawer"
       temporary
       location="right"
-      width="340"
+      width="372"
       class="mobile-nav-drawer"
       :class="`theme-${currentTheme}`"
     >
-      <div class="mobile-drawer-shell">
-        <div class="mobile-drawer-header">
+      <div class="mobile-drawer-shell mobile-side-tabs-shell">
+        <div class="mobile-side-tabs-rail">
           <div
-            class="d-flex align-center ga-3 mobile-drawer-brand"
+            class="mobile-rail-brand"
             @click="goHome"
             @contextmenu.prevent="openRouteContextMenu($event, '/n_mainpage', 'Blassti Home')"
           >
             <v-avatar size="44" rounded="0" class="logo-avatar">
               <v-img :src="logoSrc" alt="Blassti Logo" contain />
             </v-avatar>
-
-            <div>
-              <div class="text-subtitle-1 font-weight-bold brand-title">Blassti</div>
-              <div class="text-caption text-medium-emphasis">Navigation</div>
-            </div>
           </div>
 
-          <v-btn icon variant="text" size="small" @click="mobileDrawer = false">
+          <button
+            type="button"
+            class="mobile-side-tab"
+            :class="{ 'is-active': mobileSideTab === 'explore' }"
+            @click="mobileSideTab = 'explore'"
+          >
+            <v-icon size="22">mdi-compass-outline</v-icon>
+            <span>Explore</span>
+          </button>
+
+          <button
+            type="button"
+            class="mobile-side-tab"
+            :class="{ 'is-active': mobileSideTab === 'manage' }"
+            @click="mobileSideTab = 'manage'"
+          >
+            <v-icon size="22">mdi-cog-outline</v-icon>
+            <span>Manage</span>
+          </button>
+
+          <button
+            type="button"
+            class="mobile-side-tab"
+            :class="{ 'is-active': mobileSideTab === 'account' }"
+            @click="mobileSideTab = 'account'"
+          >
+            <v-icon size="22">mdi-account-outline</v-icon>
+            <span>Account</span>
+          </button>
+
+          <v-spacer />
+
+          <v-btn icon variant="text" size="small" class="mobile-side-close-btn" @click="mobileDrawer = false">
             <v-icon>mdi-close</v-icon>
           </v-btn>
         </div>
 
-        <div class="mobile-drawer-search">
-          <v-autocomplete
-            v-model="selectedUser"
-            v-model:search="userSearch"
-            :items="filteredUserSearchItems"
-            item-title="title"
-            item-value="id"
-            return-object
-            variant="outlined"
-            density="comfortable"
-            rounded="xl"
-            prepend-inner-icon="mdi-magnify"
-            placeholder="Search users..."
-            hide-details
-            hide-no-data
-            clearable
-            no-filter
-            menu-icon=""
-            class="user-search mobile-user-search"
-            @update:modelValue="goToUserDetails"
-          >
-            <template #prepend-inner>
-              <v-icon size="18" class="search-leading-icon">mdi-magnify</v-icon>
-            </template>
+        <div class="mobile-side-panel">
+          <div class="mobile-drawer-header mobile-side-panel-header">
+            <div>
+              <div class="text-subtitle-1 font-weight-bold brand-title">Blassti</div>
+              <div class="text-caption text-medium-emphasis">
+                {{ mobileSideTabTitle }}
+              </div>
+            </div>
+          </div>
 
-            <template #append-inner>
-              <v-fade-transition>
-                <v-chip
-                  v-if="userSearch && filteredUserSearchItems.length"
-                  size="x-small"
-                  variant="tonal"
-                  color="primary"
-                  class="search-chip"
+          <div class="mobile-drawer-search">
+            <v-autocomplete
+              v-model="selectedUser"
+              v-model:search="userSearch"
+              :items="filteredUserSearchItems"
+              item-title="title"
+              item-value="id"
+              return-object
+              variant="outlined"
+              density="comfortable"
+              rounded="xl"
+              prepend-inner-icon="mdi-magnify"
+              placeholder="Search users..."
+              hide-details
+              hide-no-data
+              clearable
+              no-filter
+              menu-icon=""
+              class="user-search mobile-user-search"
+              @update:modelValue="goToUserDetails"
+            >
+              <template #prepend-inner>
+                <v-icon size="18" class="search-leading-icon">mdi-magnify</v-icon>
+              </template>
+
+              <template #append-inner>
+                <v-fade-transition>
+                  <v-chip
+                    v-if="userSearch && filteredUserSearchItems.length"
+                    size="x-small"
+                    variant="tonal"
+                    color="primary"
+                    class="search-chip"
+                  >
+                    {{ filteredUserSearchItems.length }}
+                  </v-chip>
+                </v-fade-transition>
+              </template>
+
+              <template #item="{ props, item }">
+                <v-list-item
+                  v-bind="props"
+                  class="dropdown-item fast-dropdown-item user-search-item"
+                  @contextmenu.prevent="openUserProfileContextMenu($event, item.raw)"
                 >
-                  {{ filteredUserSearchItems.length }}
-                </v-chip>
-              </v-fade-transition>
-            </template>
+                  <template #prepend>
+                    <v-avatar size="36" class="search-result-avatar">
+                      <v-img :src="item.raw.avatar" cover />
+                    </v-avatar>
+                  </template>
 
-            <template #item="{ props, item }">
-              <v-list-item
-                v-bind="props"
-                class="dropdown-item fast-dropdown-item user-search-item"
-                @contextmenu.prevent="openUserProfileContextMenu($event, item.raw)"
-              >
-                <template #prepend>
-                  <v-avatar size="36" class="search-result-avatar">
+                  <v-list-item-title class="search-result-title">
+                    {{ item.raw.title }}
+                  </v-list-item-title>
+
+                  <v-list-item-subtitle class="search-result-subtitle">
+                    {{ item.raw.subtitle }}
+                  </v-list-item-subtitle>
+                </v-list-item>
+              </template>
+
+              <template #selection="{ item }">
+                <div
+                  class="d-flex align-center ga-2 selected-user-pill"
+                  @contextmenu.prevent="openUserProfileContextMenu($event, item.raw)"
+                >
+                  <v-avatar size="24" class="selected-user-avatar">
                     <v-img :src="item.raw.avatar" cover />
                   </v-avatar>
+                  <span>{{ item.raw.title }}</span>
+                </div>
+              </template>
+
+              <template #no-data>
+                <div class="search-empty-state">
+                  <v-icon size="22" class="mb-2">mdi-account-search-outline</v-icon>
+                  <div class="text-body-2 font-weight-medium">No users found</div>
+                  <div class="text-caption text-medium-emphasis">
+                    Try another name, city, or role.
+                  </div>
+                </div>
+              </template>
+            </v-autocomplete>
+          </div>
+
+          <div class="mobile-side-panel-content">
+            <v-list v-if="mobileSideTab === 'explore'" class="mobile-nav-list" nav>
+              <v-list-subheader class="mobile-nav-subheader">Explore</v-list-subheader>
+
+              <v-list-group value="events">
+                <template #activator="{ props }">
+                  <v-list-item
+                    v-bind="props"
+                    class="mobile-nav-item"
+                    prepend-icon="mdi-calendar-star"
+                    title="Events"
+                  />
                 </template>
 
-                <v-list-item-title class="search-result-title">
-                  {{ item.raw.title }}
-                </v-list-item-title>
+                <v-list-item
+                  class="mobile-nav-child-item"
+                  title="Browse events"
+                  prepend-icon="mdi-calendar-star"
+                  @click="navigateTo('/N_Event_Browsing')"
+                  @contextmenu.prevent="openRouteContextMenu($event, '/N_Event_Browsing', 'Browse events')"
+                />
+                <v-list-item
+                  class="mobile-nav-child-item"
+                  title="My bookings"
+                  prepend-icon="mdi-ticket-confirmation-outline"
+                  @click="goProtected('/K_mybookings')"
+                  @contextmenu.prevent="openProtectedRouteContextMenu($event, '/K_mybookings', 'My bookings')"
+                />
+              </v-list-group>
 
-                <v-list-item-subtitle class="search-result-subtitle">
-                  {{ item.raw.subtitle }}
-                </v-list-item-subtitle>
-              </v-list-item>
-            </template>
+              <v-list-group value="venues">
+                <template #activator="{ props }">
+                  <v-list-item
+                    v-bind="props"
+                    class="mobile-nav-item"
+                    prepend-icon="mdi-map-search-outline"
+                    title="Venue"
+                  />
+                </template>
 
-            <template #selection="{ item }">
-              <div
-                class="d-flex align-center ga-2 selected-user-pill"
-                @contextmenu.prevent="openUserProfileContextMenu($event, item.raw)"
-              >
-                <v-avatar size="24" class="selected-user-avatar">
-                  <v-img :src="item.raw.avatar" cover />
-                </v-avatar>
-                <span>{{ item.raw.title }}</span>
-              </div>
-            </template>
+                <v-list-item
+                  class="mobile-nav-child-item"
+                  title="Browse venues"
+                  prepend-icon="mdi-map-search-outline"
+                  @click="navigateTo('/venueBrowsing')"
+                  @contextmenu.prevent="openRouteContextMenu($event, '/venueBrowsing', 'Browse venues')"
+                />
+                <v-list-item
+                  class="mobile-nav-child-item"
+                  title="My venues"
+                  prepend-icon="mdi-domain"
+                  @click="goProtected('/reserved_venues')"
+                  @contextmenu.prevent="openProtectedRouteContextMenu($event, '/reserved_venues', 'My venues')"
+                />
+              </v-list-group>
 
-            <template #no-data>
-              <div class="search-empty-state">
-                <v-icon size="22" class="mb-2">mdi-account-search-outline</v-icon>
-                <div class="text-body-2 font-weight-medium">No users found</div>
-                <div class="text-caption text-medium-emphasis">
-                  Try another name, city, or role.
-                </div>
-              </div>
-            </template>
-          </v-autocomplete>
+              <v-list-group value="carpools">
+                <template #activator="{ props }">
+                  <v-list-item
+                    v-bind="props"
+                    class="mobile-nav-item"
+                    prepend-icon="mdi-car-multiple"
+                    title="Carpools"
+                  />
+                </template>
+
+                <v-list-item
+                  class="mobile-nav-child-item"
+                  title="Current"
+                  prepend-icon="mdi-car-multiple"
+                  @click="goProtected('/O_CurrentCarpools')"
+                  @contextmenu.prevent="openProtectedRouteContextMenu($event, '/O_CurrentCarpools', 'Current carpools')"
+                />
+                <v-list-item
+                  class="mobile-nav-child-item"
+                  title="Search/Create"
+                  prepend-icon="mdi-car-search"
+                  @click="goProtected('/F_CarpoolCreate')"
+                  @contextmenu.prevent="openProtectedRouteContextMenu($event, '/F_CarpoolCreate', 'Search/Create carpools')"
+                />
+              </v-list-group>
+            </v-list>
+
+            <v-list v-else-if="mobileSideTab === 'manage'" class="mobile-nav-list" nav>
+              <v-list-subheader class="mobile-nav-subheader">Manage</v-list-subheader>
+
+              <v-list-item
+                class="mobile-nav-item"
+                title="Create event"
+                prepend-icon="mdi-calendar-plus"
+                @click="goProtected('/CreateEvent')"
+                @contextmenu.prevent="openProtectedRouteContextMenu($event, '/CreateEvent', 'Create event')"
+              />
+              <v-list-item
+                class="mobile-nav-item"
+                title="Add venue"
+                prepend-icon="mdi-store-plus-outline"
+                @click="goProtected('/o_CreateVenue')"
+                @contextmenu.prevent="openProtectedRouteContextMenu($event, '/o_CreateVenue', 'Add venue')"
+              />
+              <v-list-item
+                class="mobile-nav-item"
+                title="Manage my venues"
+                prepend-icon="mdi-store-edit-outline"
+                @click="goProtected('/manageVenue')"
+                @contextmenu.prevent="openProtectedRouteContextMenu($event, '/manageVenue', 'Manage my venues')"
+              />
+              <v-list-item
+                class="mobile-nav-item"
+                title="Manage my payments"
+                prepend-icon="mdi-cash-multiple"
+                @click="goProtected('/payments')"
+                @contextmenu.prevent="openProtectedRouteContextMenu($event, '/payments', 'Manage my payments')"
+              />
+
+              <template v-if="canModerate">
+                <v-divider class="my-2 mx-2" />
+                <v-list-item
+                  class="mobile-nav-item"
+                  title="Requests"
+                  prepend-icon="mdi-store-clock-outline"
+                  @click="navigateTo('/venueRequest')"
+                  @contextmenu.prevent="openRouteContextMenu($event, '/venueRequest', 'Requests')"
+                />
+                <v-list-item
+                  class="mobile-nav-item"
+                  title="Statistics"
+                  prepend-icon="mdi-chart-box-outline"
+                  @click="navigateTo('/stastistics')"
+                  @contextmenu.prevent="openRouteContextMenu($event, '/stastistics', 'Statistics')"
+                />
+                <v-list-item
+                  class="mobile-nav-item"
+                  title="Reports"
+                  prepend-icon="mdi-flag-outline"
+                  @click="openReportsDialog"
+                />
+                <v-list-item
+                  class="mobile-nav-item"
+                  title="Send notification"
+                  prepend-icon="mdi-bell-badge-outline"
+                  @click="openBroadcastDialog"
+                />
+              </template>
+            </v-list>
+
+            <v-list v-else class="mobile-nav-list" nav>
+              <v-list-subheader class="mobile-nav-subheader">Account</v-list-subheader>
+
+              <template v-if="currentUser">
+                <v-list-item
+                  class="mobile-nav-item"
+                  :title="fullNameFromCurrentUser"
+                  :subtitle="currentUser.email || 'Logged in'"
+                  prepend-icon="mdi-account-circle-outline"
+                  @click="goToOwnProfile"
+                  @contextmenu.prevent="openOwnProfileContextMenu($event)"
+                />
+                <v-list-item
+                  class="mobile-nav-item"
+                  title="Profile"
+                  prepend-icon="mdi-account-outline"
+                  @click="goToOwnProfile"
+                  @contextmenu.prevent="openOwnProfileContextMenu($event)"
+                />
+                <v-list-item
+                  class="mobile-nav-item"
+                  title="Profile Settings"
+                  prepend-icon="mdi-cog-outline"
+                  @click="navigateTo('/Setting')"
+                  @contextmenu.prevent="openRouteContextMenu($event, '/Setting', 'Profile Settings')"
+                />
+                <v-list-item
+                  class="mobile-nav-item"
+                  title="Subscribed"
+                  prepend-icon="mdi-account-heart-outline"
+                  :subtitle="`${subscribedUsers.length} following`"
+                  @click="openSubscribedDialog"
+                />
+                <v-list-item
+                  class="mobile-nav-item mobile-theme-toggle-item"
+                  :title="themeToggleTitle"
+                  :subtitle="themeToggleSubtitle"
+                  @click.stop="toggleTheme"
+                >
+                  <template #append>
+                    <div
+                      class="theme-toggle-shell"
+                      :class="{ 'theme-toggle-shell--dark': isDarkTheme }"
+                      role="switch"
+                      :aria-checked="String(isDarkTheme)"
+                      :aria-label="themeToggleTitle"
+                    >
+                      <div class="theme-toggle-track">
+                        <div class="theme-toggle-knob"></div>
+
+                        <div class="theme-toggle-option theme-toggle-option--light" :class="{ 'is-active': !isDarkTheme }">
+                          <span>Light</span>
+                          <v-icon size="15">mdi-weather-sunny</v-icon>
+                        </div>
+
+                        <div class="theme-toggle-option theme-toggle-option--dark" :class="{ 'is-active': isDarkTheme }">
+                          <span>Dark</span>
+                          <v-icon size="15">mdi-weather-night</v-icon>
+                        </div>
+                      </div>
+                    </div>
+                  </template>
+                </v-list-item>
+                <v-list-item
+                  class="mobile-nav-item"
+                  title="Logout"
+                  prepend-icon="mdi-logout"
+                  @click="logoutDialog = true"
+                />
+              </template>
+
+              <template v-else>
+                <v-list-item
+                  class="mobile-nav-item"
+                  title="Login"
+                  prepend-icon="mdi-login"
+                  @click="navigateTo('/O_login')"
+                />
+                <v-list-item
+                  class="mobile-nav-item mobile-theme-toggle-item"
+                  :title="themeToggleTitle"
+                  :subtitle="themeToggleSubtitle"
+                  @click.stop="toggleTheme"
+                >
+                  <template #append>
+                    <div
+                      class="theme-toggle-shell"
+                      :class="{ 'theme-toggle-shell--dark': isDarkTheme }"
+                      role="switch"
+                      :aria-checked="String(isDarkTheme)"
+                      :aria-label="themeToggleTitle"
+                    >
+                      <div class="theme-toggle-track">
+                        <div class="theme-toggle-knob"></div>
+
+                        <div class="theme-toggle-option theme-toggle-option--light" :class="{ 'is-active': !isDarkTheme }">
+                          <span>Light</span>
+                          <v-icon size="15">mdi-weather-sunny</v-icon>
+                        </div>
+
+                        <div class="theme-toggle-option theme-toggle-option--dark" :class="{ 'is-active': isDarkTheme }">
+                          <span>Dark</span>
+                          <v-icon size="15">mdi-weather-night</v-icon>
+                        </div>
+                      </div>
+                    </div>
+                  </template>
+                </v-list-item>
+              </template>
+            </v-list>
+          </div>
         </div>
-
-        <v-list class="mobile-nav-list" nav>
-          <v-list-subheader class="mobile-nav-subheader">Explore</v-list-subheader>
-
-          <v-list-group value="events">
-            <template #activator="{ props }">
-              <v-list-item
-                v-bind="props"
-                class="mobile-nav-item"
-                prepend-icon="mdi-calendar-star"
-                title="Events"
-              />
-            </template>
-
-            <v-list-item
-              class="mobile-nav-child-item"
-              title="Browse events"
-              prepend-icon="mdi-calendar-star"
-              @click="navigateTo('/N_Event_Browsing')"
-              @contextmenu.prevent="openRouteContextMenu($event, '/N_Event_Browsing', 'Browse events')"
-            />
-            <v-list-item
-              class="mobile-nav-child-item"
-              title="My bookings"
-              prepend-icon="mdi-ticket-confirmation-outline"
-              @click="goProtected('/K_mybookings')"
-              @contextmenu.prevent="openProtectedRouteContextMenu($event, '/K_mybookings', 'My bookings')"
-            />
-          </v-list-group>
-
-          <v-list-group value="venues">
-            <template #activator="{ props }">
-              <v-list-item
-                v-bind="props"
-                class="mobile-nav-item"
-                prepend-icon="mdi-map-search-outline"
-                title="Venue"
-              />
-            </template>
-
-            <v-list-item
-              class="mobile-nav-child-item"
-              title="Browse venues"
-              prepend-icon="mdi-map-search-outline"
-              @click="navigateTo('/venueBrowsing')"
-              @contextmenu.prevent="openRouteContextMenu($event, '/venueBrowsing', 'Browse venues')"
-            />
-            <v-list-item
-              class="mobile-nav-child-item"
-              title="My venues"
-              prepend-icon="mdi-domain"
-              @click="goProtected('/reserved_venues')"
-              @contextmenu.prevent="openProtectedRouteContextMenu($event, '/reserved_venues', 'My venues')"
-            />
-          </v-list-group>
-
-          <v-list-group value="carpools">
-            <template #activator="{ props }">
-              <v-list-item
-                v-bind="props"
-                class="mobile-nav-item"
-                prepend-icon="mdi-car-multiple"
-                title="Carpools"
-              />
-            </template>
-
-            <v-list-item
-              class="mobile-nav-child-item"
-              title="Current"
-              prepend-icon="mdi-car-multiple"
-              @click="goProtected('/O_CurrentCarpools')"
-              @contextmenu.prevent="openProtectedRouteContextMenu($event, '/O_CurrentCarpools', 'Current carpools')"
-            />
-            <v-list-item
-              class="mobile-nav-child-item"
-              title="Search/Create"
-              prepend-icon="mdi-car-search"
-              @click="goProtected('/F_CarpoolCreate')"
-              @contextmenu.prevent="openProtectedRouteContextMenu($event, '/F_CarpoolCreate', 'Search/Create carpools')"
-            />
-          </v-list-group>
-
-          <v-list-group value="manage">
-            <template #activator="{ props }">
-              <v-list-item
-                v-bind="props"
-                class="mobile-nav-item"
-                prepend-icon="mdi-cog-outline"
-                title="Manage"
-              />
-            </template>
-
-            <v-list-item
-              class="mobile-nav-child-item"
-              title="Create event"
-              prepend-icon="mdi-calendar-plus"
-              @click="goProtected('/CreateEvent')"
-              @contextmenu.prevent="openProtectedRouteContextMenu($event, '/CreateEvent', 'Create event')"
-            />
-            <v-list-item
-              class="mobile-nav-child-item"
-              title="Add venue"
-              prepend-icon="mdi-store-plus-outline"
-              @click="goProtected('/o_CreateVenue')"
-              @contextmenu.prevent="openProtectedRouteContextMenu($event, '/o_CreateVenue', 'Add venue')"
-            />
-            <v-list-item
-              class="mobile-nav-child-item"
-              title="Manage my venues"
-              prepend-icon="mdi-store-edit-outline"
-              @click="goProtected('/manageVenue')"
-              @contextmenu.prevent="openProtectedRouteContextMenu($event, '/manageVenue', 'Manage my venues')"
-            />
-            <v-list-item
-              class="mobile-nav-child-item"
-              title="Manage my payments"
-              prepend-icon="mdi-cash-multiple"
-              @click="goProtected('/payments')"
-              @contextmenu.prevent="openProtectedRouteContextMenu($event, '/payments', 'Manage my payments')"
-            />
-
-            <template v-if="canModerate">
-              <v-list-item
-                class="mobile-nav-child-item"
-                title="Requests"
-                prepend-icon="mdi-store-clock-outline"
-                @click="navigateTo('/venueRequest')"
-                @contextmenu.prevent="openRouteContextMenu($event, '/venueRequest', 'Requests')"
-              />
-              <v-list-item
-                class="mobile-nav-child-item"
-                title="Statistics"
-                prepend-icon="mdi-chart-box-outline"
-                @click="navigateTo('/stastistics')"
-                @contextmenu.prevent="openRouteContextMenu($event, '/stastistics', 'Statistics')"
-              />
-              <v-list-item
-                class="mobile-nav-child-item"
-                title="Reports"
-                prepend-icon="mdi-flag-outline"
-                @click="openReportsDialog"
-              />
-              <v-list-item
-                class="mobile-nav-child-item"
-                title="Send notification"
-                prepend-icon="mdi-bell-badge-outline"
-                @click="openBroadcastDialog"
-              />
-            </template>
-          </v-list-group>
-        </v-list>
       </div>
     </v-navigation-drawer>
 
@@ -1349,6 +1494,7 @@ const linkContextMenu = ref({
   label: "",
 })
 const mobileDrawer = ref(false)
+const mobileSideTab = ref("explore")
 
 const broadcastForm = ref({
   title: "",
@@ -1365,6 +1511,12 @@ const currentTheme = computed(() => {
 })
 
 const isDarkTheme = computed(() => currentTheme.value === "dark")
+
+const mobileSideTabTitle = computed(() => {
+  if (mobileSideTab.value === "manage") return "Create, manage, and moderate"
+  if (mobileSideTab.value === "account") return "Profile, theme, and session"
+  return "Browse what matters fast"
+})
 
 const themeToggleIcon = computed(() => {
   return isDarkTheme.value ? "mdi-weather-sunny" : "mdi-weather-night"
@@ -1434,6 +1586,12 @@ onBeforeUnmount(() => {
 
 watch(() => route.fullPath, () => {
   mobileDrawer.value = false
+})
+
+watch(mobileDrawer, (isOpen) => {
+  if (isOpen) {
+    mobileSideTab.value = "explore"
+  }
 })
 
 const canModerate = computed(() => {
@@ -2647,6 +2805,119 @@ function logout() {
   transform: translateX(1px);
 }
 
+.mobile-side-tabs-shell {
+  flex-direction: row;
+  gap: 12px;
+  padding: 12px;
+}
+
+.mobile-side-tabs-rail {
+  width: 88px;
+  flex: 0 0 88px;
+  border-radius: 24px;
+  padding: 12px 8px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  background: rgba(255, 255, 255, 0.04);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.06);
+}
+
+.mobile-rail-brand {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  padding: 4px 0 10px;
+  cursor: pointer;
+}
+
+.mobile-side-tab {
+  width: 100%;
+  border: 0;
+  outline: 0;
+  border-radius: 18px;
+  padding: 12px 6px 10px;
+  background: transparent;
+  color: inherit;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  font: inherit;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  transition: transform 0.18s ease, background 0.18s ease, box-shadow 0.18s ease, color 0.18s ease;
+}
+
+.mobile-side-tab:hover {
+  transform: translateY(-1px);
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.mobile-side-tab.is-active {
+  background: linear-gradient(180deg, rgba(74, 141, 255, 0.22), rgba(60, 116, 214, 0.14));
+  box-shadow:
+    inset 0 0 0 1px rgba(114, 168, 255, 0.22),
+    0 10px 22px rgba(24, 54, 106, 0.18);
+}
+
+.mobile-side-close-btn {
+  margin-top: 4px;
+}
+
+.mobile-side-panel {
+  flex: 1;
+  min-width: 0;
+  border-radius: 26px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  background: rgba(255, 255, 255, 0.035);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.05);
+}
+
+.mobile-side-panel-header {
+  padding: 14px 16px 8px;
+}
+
+.mobile-side-panel-content {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding-bottom: 8px;
+}
+
+.mobile-theme-toggle-item {
+  min-height: 92px;
+  align-items: stretch;
+}
+
+.mobile-theme-toggle-item :deep(.v-list-item__append) {
+  margin-inline-start: 10px;
+}
+
+.app-navbar.theme-light .mobile-side-tabs-rail,
+.app-navbar.theme-light .mobile-side-panel {
+  background: rgba(255, 255, 255, 0.76);
+  box-shadow:
+    inset 0 0 0 1px rgba(70, 120, 210, 0.08),
+    0 14px 30px rgba(63, 92, 138, 0.08);
+}
+
+.app-navbar.theme-light .mobile-side-tab:hover {
+  background: rgba(70, 120, 210, 0.06);
+}
+
+.app-navbar.theme-light .mobile-side-tab.is-active {
+  background: linear-gradient(180deg, rgba(86, 148, 241, 0.16), rgba(70, 120, 210, 0.1));
+  box-shadow:
+    inset 0 0 0 1px rgba(70, 120, 210, 0.12),
+    0 10px 20px rgba(63, 92, 138, 0.12);
+  color: rgba(15, 34, 63, 1);
+}
+
 .app-navbar.theme-light {
   background:
     linear-gradient(180deg, rgba(250, 252, 255, 0.92), rgba(243, 247, 255, 0.84)) !important;
@@ -2808,7 +3079,7 @@ function logout() {
   }
 
   .mobile-nav-drawer {
-    width: min(92vw, 340px) !important;
+    width: min(96vw, 380px) !important;
   }
 
   .mobile-drawer-shell {
