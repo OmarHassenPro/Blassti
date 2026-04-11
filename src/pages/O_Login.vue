@@ -1,15 +1,21 @@
 <template>
-  <v-container fluid class="login-page py-6 py-md-10" :class="browserThemeClass">
+  <v-container
+    fluid
+    class="login-page py-5 py-sm-6 py-md-10"
+    :class="themeClass"
+  >
     <div class="login-page-background"></div>
+    <div class="login-page-glow glow-one"></div>
+    <div class="login-page-glow glow-two"></div>
 
-    <v-row justify="center">
+    <v-row justify="center" class="login-row">
       <v-col cols="12" sm="11" md="8" lg="5" xl="4">
         <div class="page-shell">
           <v-fade-transition appear>
             <v-card
               variant="flat"
               rounded="xl"
-              class="pa-4 pa-md-6 login-card"
+              class="pa-4 pa-sm-5 pa-md-6 login-card"
             >
               <div class="page-hero mb-6 mb-md-8 text-center">
                 <div class="hero-logo-wrap mb-4">
@@ -24,7 +30,7 @@
                   Log in to Blassti
                 </div>
 
-                <div class="text-body-1 text-medium-emphasis hero-subtitle mt-2">
+                <div class="text-body-1 text-medium-emphasis hero-subtitle mt-2 mx-auto">
                   Access your account to explore events, manage bookings, and keep
                   everything in one place.
                 </div>
@@ -124,9 +130,10 @@
       v-model="dialog"
       max-width="460"
       transition="dialog-bottom-transition"
+      :scrim="dialogScrim"
     >
-      <v-card rounded="xl" class="dialog-card">
-        <v-card-title class="text-h6 font-weight-bold d-flex align-center ga-2">
+      <v-card rounded="xl" class="dialog-card" :class="themeClass">
+        <v-card-title class="text-h6 font-weight-bold d-flex align-center ga-2 dialog-title">
           <v-icon color="primary">
             {{
               dialogTitle === "Success"
@@ -144,7 +151,7 @@
         </v-card-text>
 
         <v-card-actions class="justify-end pa-4">
-          <v-btn color="primary" variant="flat" rounded="lg" @click="closeDialog">
+          <v-btn color="primary" variant="flat" rounded="lg" min-height="42" @click="closeDialog">
             OK
           </v-btn>
         </v-card-actions>
@@ -155,7 +162,7 @@
       <div v-if="showSuccessOverlay" class="success-overlay">
         <div class="success-overlay-backdrop"></div>
 
-        <div class="success-content">
+        <div class="success-content" :class="themeClass">
           <div class="success-ring">
             <v-icon class="success-check-icon" size="68" color="white">
               mdi-check
@@ -175,7 +182,7 @@
 <script setup>
 import { ref, computed, onMounted, onBeforeUnmount } from "vue"
 import { useRouter } from "vue-router"
-import { useTheme } from "vuetify"
+import { useTheme, useDisplay } from "vuetify"
 import {
   clear_Expired_Suspensions,
   get_User_By_Email,
@@ -186,6 +193,9 @@ import BlasstiLogo from "@/assets/blassti-logo.png"
 
 const router = useRouter()
 const theme = useTheme()
+const display = useDisplay()
+
+const THEME_STORAGE_KEY = "blassti-theme"
 
 const email = ref("")
 const password = ref("")
@@ -199,42 +209,76 @@ const redirectAfterClose = ref(false)
 const isLoggingIn = ref(false)
 const showSuccessOverlay = ref(false)
 
-const browserThemeClass = ref("theme-light")
-let mediaQuery = null
+const currentTheme = computed(() => {
+  return theme.global.name.value === "light" ? "light" : "dark"
+})
+
+const isDarkTheme = computed(() => currentTheme.value === "dark")
+const isMobile = computed(() => display.smAndDown.value)
+const themeClass = computed(() => `theme-${currentTheme.value}`)
 
 const fieldBg = computed(() =>
-  browserThemeClass.value === "theme-dark"
-    ? "rgba(255,255,255,0.03)"
-    : "rgba(255,255,255,0.7)"
+  isDarkTheme.value
+    ? "rgba(255,255,255,0.04)"
+    : "rgba(255,255,255,0.78)"
 )
 
-function applyBrowserTheme(event) {
-  const prefersDark =
-    event?.matches ?? window.matchMedia("(prefers-color-scheme: dark)").matches
+const dialogScrim = computed(() =>
+  isDarkTheme.value ? "rgba(5, 10, 18, 0.72)" : "rgba(15, 23, 42, 0.22)"
+)
 
-  browserThemeClass.value = prefersDark ? "theme-dark" : "theme-light"
-  theme.global.name.value = prefersDark ? "dark" : "light"
+function applyThemeChoice(themeName) {
+  const normalizedTheme = themeName === "light" ? "light" : "dark"
+  theme.global.name.value = normalizedTheme
+  localStorage.setItem(THEME_STORAGE_KEY, normalizedTheme)
+  document.documentElement.setAttribute("data-app-theme", normalizedTheme)
+  document.documentElement.style.colorScheme = normalizedTheme
+}
+
+function loadSavedTheme() {
+  const savedTheme = localStorage.getItem(THEME_STORAGE_KEY)
+  applyThemeChoice(savedTheme === "light" ? "light" : "dark")
+}
+
+function syncThemeFromStorage() {
+  const savedTheme = localStorage.getItem(THEME_STORAGE_KEY)
+  if (savedTheme === "light" || savedTheme === "dark") {
+    theme.global.name.value = savedTheme
+    document.documentElement.setAttribute("data-app-theme", savedTheme)
+    document.documentElement.style.colorScheme = savedTheme
+    return
+  }
+
+  applyThemeChoice("dark")
+}
+
+function handleWindowStorage(event) {
+  if (!event.key || event.key === THEME_STORAGE_KEY) {
+    syncThemeFromStorage()
+  }
+}
+
+function handleWindowFocus() {
+  syncThemeFromStorage()
+}
+
+function handleVisibilityChange() {
+  if (document.visibilityState === "visible") {
+    syncThemeFromStorage()
+  }
 }
 
 onMounted(() => {
-  mediaQuery = window.matchMedia("(prefers-color-scheme: dark)")
-  applyBrowserTheme(mediaQuery)
-
-  if (typeof mediaQuery.addEventListener === "function") {
-    mediaQuery.addEventListener("change", applyBrowserTheme)
-  } else if (typeof mediaQuery.addListener === "function") {
-    mediaQuery.addListener(applyBrowserTheme)
-  }
+  loadSavedTheme()
+  window.addEventListener("storage", handleWindowStorage)
+  window.addEventListener("focus", handleWindowFocus)
+  document.addEventListener("visibilitychange", handleVisibilityChange)
 })
 
 onBeforeUnmount(() => {
-  if (!mediaQuery) return
-
-  if (typeof mediaQuery.removeEventListener === "function") {
-    mediaQuery.removeEventListener("change", applyBrowserTheme)
-  } else if (typeof mediaQuery.removeListener === "function") {
-    mediaQuery.removeListener(applyBrowserTheme)
-  }
+  window.removeEventListener("storage", handleWindowStorage)
+  window.removeEventListener("focus", handleWindowFocus)
+  document.removeEventListener("visibilitychange", handleVisibilityChange)
 })
 
 function showPopup(title, message, shouldRedirect = false) {
@@ -323,8 +367,16 @@ function continueAsGuest() {
 .login-page {
   position: relative;
   min-height: 100vh;
-  overflow: hidden;
+  overflow-x: hidden;
+  overflow-y: auto;
   transition: background 0.35s ease, color 0.35s ease;
+}
+
+.login-row {
+  position: relative;
+  z-index: 1;
+  min-height: calc(100vh - 48px);
+  align-items: center;
 }
 
 .login-page-background {
@@ -333,6 +385,29 @@ function continueAsGuest() {
   pointer-events: none;
   opacity: 1;
   transition: opacity 0.35s ease, background 0.35s ease;
+}
+
+.login-page-glow {
+  position: absolute;
+  border-radius: 999px;
+  filter: blur(80px);
+  pointer-events: none;
+  opacity: 0.7;
+  transition: opacity 0.35s ease, background 0.35s ease;
+}
+
+.glow-one {
+  top: -80px;
+  left: -60px;
+  width: 260px;
+  height: 260px;
+}
+
+.glow-two {
+  right: -80px;
+  bottom: -70px;
+  width: 300px;
+  height: 300px;
 }
 
 .page-shell {
@@ -374,6 +449,10 @@ function continueAsGuest() {
     0 6px 28px rgba(0, 0, 0, 0.08);
 }
 
+.page-hero {
+  position: relative;
+}
+
 .hero-logo-wrap {
   display: flex;
   justify-content: center;
@@ -405,6 +484,7 @@ function continueAsGuest() {
 }
 
 .field-input :deep(.v-field) {
+  min-height: 54px;
   border-radius: 18px;
   transition:
     transform 0.18s ease,
@@ -421,7 +501,13 @@ function continueAsGuest() {
   box-shadow: 0 0 0 4px rgba(var(--v-theme-primary), 0.09);
 }
 
+.field-input :deep(.v-field__prepend-inner),
+.field-input :deep(.v-field__append-inner) {
+  padding-top: 14px;
+}
+
 .login-btn {
+  min-height: 56px;
   letter-spacing: 0.01em;
   box-shadow: 0 14px 30px rgba(var(--v-theme-primary), 0.22);
   transition:
@@ -437,7 +523,8 @@ function continueAsGuest() {
 }
 
 .guest-btn {
-  min-height: 42px;
+  min-height: 44px;
+  padding-inline: 16px;
   transition:
     transform 0.18s ease,
     background-color 0.18s ease,
@@ -460,6 +547,7 @@ function continueAsGuest() {
 }
 
 .create-account-btn {
+  min-height: 56px;
   transition:
     transform 0.18s ease,
     box-shadow 0.18s ease,
@@ -474,6 +562,11 @@ function continueAsGuest() {
 .dialog-card {
   border: 1px solid rgba(var(--v-theme-primary), 0.12);
   box-shadow: 0 18px 48px rgba(0, 0, 0, 0.18);
+  transition: background-color 0.35s ease, border-color 0.35s ease, color 0.35s ease;
+}
+
+.dialog-title {
+  line-height: 1.2;
 }
 
 .dialog-message {
@@ -488,6 +581,7 @@ function continueAsGuest() {
   align-items: center;
   justify-content: center;
   overflow: hidden;
+  padding: 16px;
 }
 
 .success-overlay-backdrop {
@@ -505,12 +599,11 @@ function continueAsGuest() {
   padding: 34px 28px;
   border-radius: 28px;
   text-align: center;
-  background: rgba(15, 23, 42, 0.72);
-  border: 1px solid rgba(255, 255, 255, 0.1);
   box-shadow:
     0 30px 80px rgba(0, 0, 0, 0.28),
     0 0 0 1px rgba(var(--v-theme-primary), 0.08);
   animation: successPopIn 0.42s cubic-bezier(0.2, 0.9, 0.2, 1);
+  transition: background-color 0.35s ease, border-color 0.35s ease;
 }
 
 .success-ring {
@@ -537,13 +630,11 @@ function continueAsGuest() {
 .success-title {
   font-size: 1.5rem;
   font-weight: 800;
-  color: white;
   letter-spacing: -0.02em;
 }
 
 .success-subtitle {
   font-size: 0.98rem;
-  color: rgba(255, 255, 255, 0.72);
 }
 
 .theme-light.login-page {
@@ -560,12 +651,21 @@ function continueAsGuest() {
     radial-gradient(circle at 85% 80%, rgba(25, 118, 210, 0.08), transparent 20%);
 }
 
+.theme-light .glow-one,
+.theme-light .glow-two {
+  background: rgba(33, 150, 243, 0.16);
+}
+
 .theme-light .login-card {
   background: rgba(255, 255, 255, 0.88);
 }
 
+.theme-light .dialog-card {
+  background: rgba(255, 255, 255, 0.96);
+}
+
 .theme-light .success-content {
-  background: rgba(255, 255, 255, 0.86);
+  background: rgba(255, 255, 255, 0.9);
   border: 1px solid rgba(var(--v-theme-primary), 0.12);
 }
 
@@ -591,6 +691,11 @@ function continueAsGuest() {
     radial-gradient(circle at 85% 85%, rgba(33, 150, 243, 0.08), transparent 16%);
 }
 
+.theme-dark .glow-one,
+.theme-dark .glow-two {
+  background: rgba(25, 118, 210, 0.18);
+}
+
 .theme-dark .login-card {
   background: rgba(15, 23, 42, 0.82);
 }
@@ -598,6 +703,23 @@ function continueAsGuest() {
 .theme-dark .register-panel {
   background: rgba(255, 255, 255, 0.025);
   border-color: rgba(255, 255, 255, 0.06);
+}
+
+.theme-dark .dialog-card {
+  background: rgba(15, 23, 42, 0.96);
+}
+
+.theme-dark .success-content {
+  background: rgba(15, 23, 42, 0.82);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.theme-dark .success-title {
+  color: white;
+}
+
+.theme-dark .success-subtitle {
+  color: rgba(255, 255, 255, 0.72);
 }
 
 @keyframes successFadeIn {
@@ -656,13 +778,38 @@ function continueAsGuest() {
   }
 }
 
+@media (max-width: 959px) {
+  .login-row {
+    min-height: calc(100vh - 24px);
+  }
+}
+
 @media (max-width: 600px) {
+  .login-page {
+    padding-inline: 10px;
+  }
+
+  .login-row {
+    min-height: auto;
+    align-items: flex-start;
+  }
+
+  .page-shell {
+    padding-top: 8px;
+    padding-bottom: 8px;
+  }
+
   .login-card {
     padding: 18px !important;
+    border-radius: 24px !important;
   }
 
   .hero-title {
     font-size: 2rem !important;
+  }
+
+  .hero-subtitle {
+    font-size: 0.96rem;
   }
 
   .hero-logo {
@@ -671,6 +818,15 @@ function continueAsGuest() {
 
   .register-panel {
     padding: 16px;
+  }
+
+  .field-input :deep(.v-field) {
+    min-height: 52px;
+  }
+
+  .login-btn,
+  .create-account-btn {
+    min-height: 54px;
   }
 
   .success-content {

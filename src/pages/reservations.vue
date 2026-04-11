@@ -1,7 +1,7 @@
 <template>
   <AppNavbar />
 
-  <div class="reservation-page-shell" :class="browserThemeClass">
+  <div class="reservation-page-shell" :class="browserThemeClass" :data-theme="browserTheme">
     <v-container fluid class="py-8 reservation-page">
       <v-row justify="center">
         <v-col cols="12" xl="11">
@@ -410,7 +410,7 @@
         </v-col>
       </v-row>
 
-      <v-dialog v-model="paymentDialog" max-width="560">
+      <v-dialog v-model="paymentDialog" max-width="560" :scrim="browserTheme === 'dark' ? 'rgba(5, 8, 16, 0.72)' : 'rgba(15, 23, 42, 0.22)'">
         <v-card rounded="xl" class="dialog-card">
           <v-card-title class="text-h6 font-weight-bold dialog-title">
             <v-icon class="me-2" size="20">mdi-credit-card-outline</v-icon>
@@ -477,7 +477,7 @@
         </v-card>
       </v-dialog>
 
-      <v-dialog v-model="successDialog" max-width="520">
+      <v-dialog v-model="successDialog" max-width="520" :scrim="browserTheme === 'dark' ? 'rgba(5, 8, 16, 0.72)' : 'rgba(15, 23, 42, 0.22)'">
         <v-card rounded="xl" class="dialog-card success-card">
           <v-card-title class="text-h6 font-weight-bold d-flex align-center success-title">
             <v-avatar size="40" class="success-avatar me-3">
@@ -492,7 +492,7 @@
             </div>
 
             <div class="success-hint">
-              Tip: you can right-click the button below to open <strong>My venues</strong> in a new tab or a new window.
+              Tip: you can right-click on desktop or long-press on mobile to open <strong>My venues</strong> in a new tab or a new window.
             </div>
           </v-card-text>
 
@@ -502,9 +502,13 @@
             <v-btn
               color="primary"
               rounded="lg"
-              class="action-btn"
+              class="action-btn mobile-context-trigger"
               @click="goToMyVenues"
               @contextmenu.prevent="handleNavButtonContextMenu($event, '/reserved_venues')"
+              @touchstart.passive="triggerLongPressContextMenu($event, '/reserved_venues')"
+              @touchend="cancelLongPressContextMenu"
+              @touchmove="cancelLongPressContextMenu"
+              @touchcancel="cancelLongPressContextMenu"
             >
               Open My venues
             </v-btn>
@@ -551,7 +555,8 @@
 </template>
 
 <script setup>
-import { computed, onBeforeUnmount, onMounted, reactive, ref } from "vue"
+import { computed, onBeforeUnmount, onMounted, reactive, ref, watch } from "vue"
+import { useTheme } from "vuetify"
 import { useRoute, useRouter } from "vue-router"
 import AppNavbar from "@/components/AppNavbar.vue"
 import { get_Current_User } from "@/dataModel/user"
@@ -568,6 +573,10 @@ import { get_All_Events } from "@/dataModel/event"
 
 const router = useRouter()
 const route = useRoute()
+const theme = useTheme()
+
+const THEME_STORAGE_KEY = "blassti-theme"
+const LONG_PRESS_DURATION = 550
 
 const step = ref(1)
 const paymentDialog = ref(false)
@@ -602,6 +611,8 @@ const jumpToDate = ref("")
 
 const browserTheme = ref("dark")
 const mediaQuery = ref(null)
+const isMobileViewport = ref(false)
+const longPressTimer = ref(null)
 
 const navigationMenu = reactive({
   show: false,
@@ -776,23 +787,91 @@ const durationConflictMessage = computed(() => {
 const canContinueFromStep1 = computed(() => Boolean(selectedStart.value) && !durationConflictMessage.value)
 const canProceedToPayment = computed(() => canContinueFromStep1.value && Boolean(currentUser.value?.id))
 
+watch(
+  () => theme?.global?.name?.value,
+  (newTheme) => {
+    if (!newTheme) return
+    syncBrowserThemeFromVuetify(newTheme)
+  },
+  { immediate: true }
+)
+
 function notify(text, color = "primary") {
   snackbar.text = text
   snackbar.color = color
   snackbar.show = true
 }
 
-function updateBrowserTheme() {
-  if (typeof window === "undefined" || !window.matchMedia) {
-    browserTheme.value = "dark"
-    return
-  }
-
-  browserTheme.value = window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light"
+function getStoredTheme() {
+  if (typeof window === "undefined") return "dark"
+  const savedTheme = localStorage.getItem(THEME_STORAGE_KEY)
+  return savedTheme === "light" ? "light" : "dark"
 }
 
-function handleBrowserThemeChange(event) {
-  browserTheme.value = event.matches ? "dark" : "light"
+function applyStoredTheme() {
+  const savedTheme = getStoredTheme()
+  browserTheme.value = savedTheme
+
+  if (theme?.global?.name) {
+    theme.global.name.value = savedTheme
+  }
+
+  if (typeof document !== "undefined") {
+    document.documentElement.setAttribute("data-app-theme", savedTheme)
+    document.documentElement.style.colorScheme = savedTheme
+    document.body?.setAttribute?.("data-app-theme", savedTheme)
+  }
+}
+
+function syncBrowserThemeFromVuetify(themeName) {
+  const normalizedTheme = themeName === "light" ? "light" : "dark"
+  browserTheme.value = normalizedTheme
+
+  if (typeof document !== "undefined") {
+    document.documentElement.setAttribute("data-app-theme", normalizedTheme)
+    document.documentElement.style.colorScheme = normalizedTheme
+    document.body?.setAttribute?.("data-app-theme", normalizedTheme)
+  }
+}
+
+function updateViewportState() {
+  if (typeof window === "undefined") return
+  isMobileViewport.value = window.innerWidth <= 960
+}
+
+function updateBrowserTheme() {
+  applyStoredTheme()
+  updateViewportState()
+}
+
+function handleBrowserThemeChange() {
+  applyStoredTheme()
+}
+
+function clearLongPressTimer() {
+  if (longPressTimer.value) {
+    clearTimeout(longPressTimer.value)
+    longPressTimer.value = null
+  }
+}
+
+function triggerLongPressContextMenu(event, targetRoute) {
+  if (!isMobileViewport.value) return
+  clearLongPressTimer()
+
+  const touch = event.touches?.[0] || event.changedTouches?.[0]
+  if (!touch) return
+
+  longPressTimer.value = window.setTimeout(() => {
+    handleContextMenuOpen({
+      clientX: touch.clientX,
+      clientY: touch.clientY,
+    }, targetRoute)
+  }, LONG_PRESS_DURATION)
+}
+
+function cancelLongPressContextMenu() {
+  clearLongPressTimer()
 }
 
 function closeContextMenu() {
@@ -814,11 +893,15 @@ function openRouteInNewWindow(targetRoute) {
   window.open(href, "_blank", "noopener,noreferrer,width=1280,height=900")
 }
 
-function handleNavButtonContextMenu(event, targetRoute) {
+function handleContextMenuOpen(event, targetRoute) {
   navigationMenu.x = event.clientX
   navigationMenu.y = event.clientY
   navigationMenu.route = targetRoute
   navigationMenu.show = true
+}
+
+function handleNavButtonContextMenu(event, targetRoute) {
+  handleContextMenuOpen(event, targetRoute)
 }
 
 function openContextRouteHere() {
@@ -1058,30 +1141,40 @@ function goToMyVenues() {
 onMounted(() => {
   updateBrowserTheme()
 
-  if (typeof window !== "undefined" && window.matchMedia) {
-    mediaQuery.value = window.matchMedia("(prefers-color-scheme: dark)")
+  if (typeof window !== "undefined") {
+    mediaQuery.value = window.matchMedia(`(max-width: 960px)`)
 
     if (typeof mediaQuery.value.addEventListener === "function") {
-      mediaQuery.value.addEventListener("change", handleBrowserThemeChange)
+      mediaQuery.value.addEventListener("change", updateViewportState)
     } else if (typeof mediaQuery.value.addListener === "function") {
-      mediaQuery.value.addListener(handleBrowserThemeChange)
+      mediaQuery.value.addListener(updateViewportState)
     }
 
+    window.addEventListener("storage", handleBrowserThemeChange)
+    window.addEventListener("focus", updateBrowserTheme)
+    window.addEventListener("resize", updateViewportState)
+    document.addEventListener("visibilitychange", updateBrowserTheme)
     window.addEventListener("click", closeContextMenu)
     window.addEventListener("scroll", closeContextMenu, true)
   }
 })
 
 onBeforeUnmount(() => {
+  clearLongPressTimer()
+
   if (mediaQuery.value) {
     if (typeof mediaQuery.value.removeEventListener === "function") {
-      mediaQuery.value.removeEventListener("change", handleBrowserThemeChange)
+      mediaQuery.value.removeEventListener("change", updateViewportState)
     } else if (typeof mediaQuery.value.removeListener === "function") {
-      mediaQuery.value.removeListener(handleBrowserThemeChange)
+      mediaQuery.value.removeListener(updateViewportState)
     }
   }
 
   if (typeof window !== "undefined") {
+    window.removeEventListener("storage", handleBrowserThemeChange)
+    window.removeEventListener("focus", updateBrowserTheme)
+    window.removeEventListener("resize", updateViewportState)
+    document.removeEventListener("visibilitychange", updateBrowserTheme)
     window.removeEventListener("click", closeContextMenu)
     window.removeEventListener("scroll", closeContextMenu, true)
   }
@@ -1108,6 +1201,52 @@ onBeforeUnmount(() => {
     radial-gradient(circle at top left, rgba(33, 150, 243, 0.06), transparent 24%),
     linear-gradient(180deg, #f5f8ff 0%, #eef3fb 55%, #f8fbff 100%);
   color: #152033;
+}
+
+
+.reservation-page {
+  position: relative;
+  z-index: 1;
+}
+
+.reservation-page--dark :deep(.v-card),
+.reservation-page--dark :deep(.v-sheet),
+.reservation-page--dark :deep(.v-stepper),
+.reservation-page--dark :deep(.v-list),
+.reservation-page--dark :deep(.v-table),
+.reservation-page--dark :deep(.v-field),
+.reservation-page--dark :deep(.v-input__control),
+.reservation-page--dark :deep(.v-window),
+.reservation-page--dark :deep(.v-navigation-drawer) {
+  color: rgba(255, 255, 255, 0.96);
+}
+
+.reservation-page--light :deep(.v-card),
+.reservation-page--light :deep(.v-sheet),
+.reservation-page--light :deep(.v-stepper),
+.reservation-page--light :deep(.v-list),
+.reservation-page--light :deep(.v-table),
+.reservation-page--light :deep(.v-field),
+.reservation-page--light :deep(.v-input__control),
+.reservation-page--light :deep(.v-window),
+.reservation-page--light :deep(.v-navigation-drawer) {
+  color: #152033;
+}
+
+.reservation-page--dark :deep(.v-field) {
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.reservation-page--light :deep(.v-field) {
+  background: rgba(255, 255, 255, 0.94);
+}
+
+.reservation-page--dark :deep(.text-medium-emphasis) {
+  color: rgba(226, 232, 240, 0.72) !important;
+}
+
+.reservation-page--light :deep(.text-medium-emphasis) {
+  color: rgba(21, 32, 51, 0.72) !important;
 }
 
 .reservation-main-card {
@@ -1692,4 +1831,159 @@ onBeforeUnmount(() => {
     width: 100%;
   }
 }
+
+.mobile-context-trigger {
+  touch-action: manipulation;
+  -webkit-touch-callout: none;
+}
+
+@media (max-width: 1280px) {
+  .reservation-page {
+    padding-inline: 10px;
+  }
+
+  .hero-chip-group {
+    width: 100%;
+  }
+}
+
+@media (max-width: 960px) {
+  .reservation-page {
+    padding-top: 20px !important;
+    padding-bottom: 28px !important;
+  }
+
+  .reservation-main-card {
+    padding: 18px !important;
+  }
+
+  .page-hero {
+    align-items: flex-start !important;
+    margin-bottom: 22px !important;
+  }
+
+  .hero-copy,
+  .hero-chip-group {
+    width: 100%;
+  }
+
+  .hero-chip-group :deep(.v-chip) {
+    max-width: 100%;
+  }
+
+  .clean-stepper {
+    overflow-x: auto;
+  }
+
+  .timeline-scroller {
+    max-height: 62vh;
+    border-radius: 18px;
+  }
+
+  .timeline-grid {
+    min-width: max-content;
+  }
+
+  .day-header,
+  .slot-cell {
+    min-width: 166px;
+  }
+
+  .time-label,
+  .timeline-corner {
+    min-width: 84px;
+  }
+
+  .slot-cell {
+    font-size: 0.84rem;
+    padding: 12px 6px;
+  }
+
+  .bill-row {
+    font-size: 0.95rem;
+  }
+
+  .pay-btn,
+  .action-btn,
+  .page-footer-actions .v-btn {
+    min-height: 48px;
+  }
+
+  .context-menu-list {
+    min-width: 200px;
+  }
+}
+
+@media (max-width: 600px) {
+  .reservation-page {
+    padding-inline: 6px;
+  }
+
+  .reservation-main-card {
+    padding: 14px !important;
+  }
+
+  .page-hero {
+    gap: 14px !important;
+  }
+
+  .hero-subtitle {
+    line-height: 1.6;
+  }
+
+  .hero-chip-group {
+    gap: 8px !important;
+  }
+
+  .hero-chip-group :deep(.v-chip) {
+    width: 100%;
+    justify-content: flex-start;
+  }
+
+  .clean-section-card {
+    padding: 14px !important;
+    border-radius: 20px !important;
+  }
+
+  .timeline-scroller {
+    max-height: 58vh;
+  }
+
+  .day-header,
+  .slot-cell {
+    min-width: 136px;
+  }
+
+  .time-label,
+  .timeline-corner {
+    min-width: 74px;
+  }
+
+  .day-header {
+    padding: 8px 10px;
+  }
+
+  .slot-cell {
+    min-height: 52px;
+    font-size: 0.78rem;
+    line-height: 1.25;
+    word-break: break-word;
+  }
+
+  .mini-summary-row,
+  .bill-row {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .details-list :deep(.v-list-item) {
+    padding-inline: 4px;
+  }
+
+  .context-menu-list {
+    min-width: 188px;
+  }
+}
+
 </style>

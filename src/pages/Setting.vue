@@ -1,9 +1,9 @@
 <template>
-  <v-app>
+  <v-app :class="['settings-app', `theme-${currentTheme}`]">
     <AppNavbar />
 
     <v-main>
-      <div class="settings-shell" :class="browserThemeClass">
+      <div class="settings-shell" :class="pageThemeClass">
         <div class="settings-shell__glow settings-shell__glow--one" />
         <div class="settings-shell__glow settings-shell__glow--two" />
 
@@ -75,6 +75,9 @@
                     class="action-btn"
                     @click="smartNavigate('/')"
                     @contextmenu="openRouteMenu($event, 'Home', '/')"
+                    @touchstart.passive="startLongPress($event, 'Home', '/')"
+                    @touchend="cancelLongPress"
+                    @touchcancel="cancelLongPress"
                   >
                     Back to Home
                   </v-btn>
@@ -337,7 +340,9 @@
                             variant="outlined"
                             density="comfortable"
                             readonly
-                            prepend-inner-icon="mdi-email-outline"
+                            prepend-inner-icon="mdi-lock-outline"
+                            hint="Email cannot be edited."
+                            persistent-hint
                             class="clean-input"
                           />
                         </v-col>
@@ -364,7 +369,10 @@
                             type="date"
                             variant="outlined"
                             density="comfortable"
-                            prepend-inner-icon="mdi-calendar-month-outline"
+                            readonly
+                            prepend-inner-icon="mdi-lock-outline"
+                            hint="Date of birth cannot be edited."
+                            persistent-hint
                             class="clean-input"
                           />
                         </v-col>
@@ -624,7 +632,7 @@
     </v-main>
 
     <v-dialog v-model="passwordDialog" max-width="520">
-      <v-card rounded="xl" class="dialog-card">
+      <v-card rounded="xl" :class="['dialog-card', `theme-${currentTheme}`]">
         <v-card-title class="text-h6 font-weight-bold d-flex align-center">
           <v-icon class="me-2" size="20">mdi-lock-reset</v-icon>
           Change Password
@@ -680,7 +688,7 @@
     </v-dialog>
 
     <v-dialog v-model="leaveDialog" max-width="480" persistent>
-      <v-card rounded="xl" class="dialog-card">
+      <v-card rounded="xl" :class="['dialog-card', `theme-${currentTheme}`]">
         <v-card-title class="text-h6 font-weight-bold d-flex align-center">
           <v-icon class="me-2" size="20">mdi-content-save-alert-outline</v-icon>
           Unsaved changes
@@ -705,7 +713,7 @@
     </v-dialog>
 
     <v-dialog v-model="messageDialog.show" max-width="430">
-      <v-card rounded="xl" class="dialog-card">
+      <v-card rounded="xl" :class="['dialog-card', `theme-${currentTheme}`]">
         <v-card-title class="text-h6 font-weight-bold d-flex align-center">
           <v-icon class="me-2" size="20">mdi-information-outline</v-icon>
           {{ messageDialog.title }}
@@ -724,7 +732,7 @@
     </v-dialog>
 
     <v-dialog v-model="deleteAccountDialog" max-width="460">
-      <v-card rounded="xl" class="dialog-card">
+      <v-card rounded="xl" :class="['dialog-card', `theme-${currentTheme}`]">
         <v-card-title class="text-h6 font-weight-bold d-flex align-center">
           <v-icon class="me-2" size="20">mdi-delete-alert-outline</v-icon>
           Delete Account
@@ -746,7 +754,7 @@
     </v-dialog>
 
     <v-dialog v-model="deleteReasonDialog" max-width="560">
-      <v-card rounded="xl" class="dialog-card">
+      <v-card rounded="xl" :class="['dialog-card', `theme-${currentTheme}`]">
         <v-card-title class="text-h6 font-weight-bold d-flex align-center">
           <v-icon class="me-2" size="20">mdi-help-circle-outline</v-icon>
           Why are you leaving?
@@ -785,7 +793,7 @@
     </v-dialog>
 
     <v-dialog v-model="deleteFinalDialog" max-width="480">
-      <v-card rounded="xl" class="dialog-card">
+      <v-card rounded="xl" :class="['dialog-card', `theme-${currentTheme}`]">
         <v-card-title class="text-h6 font-weight-bold d-flex align-center">
           <v-icon class="me-2" size="20">mdi-alert-outline</v-icon>
           Final Warning
@@ -807,7 +815,7 @@
     </v-dialog>
 
     <v-dialog v-model="imageEditorDialog" max-width="760">
-      <v-card rounded="xl" class="dialog-card">
+      <v-card rounded="xl" :class="['dialog-card', `theme-${currentTheme}`]">
         <v-card-title class="text-h6 font-weight-bold d-flex align-center">
           <v-icon class="me-2" size="20">mdi-crop</v-icon>
           Crop & Resize Image
@@ -879,7 +887,7 @@
         @contextmenu.prevent="closeRouteMenu"
       >
         <div
-          class="route-context-menu"
+          :class="[`route-context-menu`, `theme-${currentTheme}`]"
           :style="{ top: `${routeMenu.y}px`, left: `${routeMenu.x}px` }"
           @click.stop
         >
@@ -911,7 +919,7 @@
       :timeout="2600"
       rounded="lg"
       location="bottom right"
-      class="elevated-snackbar"
+      :class="[`elevated-snackbar`, `theme-${currentTheme}`]"
     >
       {{ snackbar.text }}
     </v-snackbar>
@@ -943,6 +951,8 @@ import {
 const router = useRouter()
 const vuetifyTheme = useTheme()
 const MAX_IMAGE_SIZE_BYTES = 2 * 1024 * 1024
+const THEME_STORAGE_KEY = "blassti-theme"
+const LONG_PRESS_DURATION = 550
 
 const currentUser = ref(get_Current_User())
 const genderOptions = ["Male", "Female", "Other"]
@@ -990,9 +1000,7 @@ const snackbar = reactive({
 
 const pendingRoute = ref(null)
 const allowLeave = ref(false)
-
-const browserPrefersDark = ref(false)
-let colorSchemeMediaQuery = null
+const longPressTimer = ref(null)
 
 const routeMenu = reactive({
   show: false,
@@ -1004,8 +1012,12 @@ const routeMenu = reactive({
 
 const form = reactive(createInitialForm(currentUser.value))
 
-const browserThemeClass = computed(() => {
-  return browserPrefersDark.value ? "browser-dark" : "browser-light"
+const currentTheme = computed(() => {
+  return vuetifyTheme.global.name.value === "light" ? "light" : "dark"
+})
+
+const pageThemeClass = computed(() => {
+  return currentTheme.value === "dark" ? "theme-dark" : "theme-light"
 })
 
 const computedIsArtist = computed(() => {
@@ -1071,18 +1083,63 @@ function normalizeFormForCompare(value) {
   }
 }
 
-function applyBrowserThemePreference() {
-  if (typeof window === "undefined" || !window.matchMedia) return
-
-  browserPrefersDark.value = window.matchMedia("(prefers-color-scheme: dark)").matches
+function applyThemeChoice(themeName) {
+  const normalizedTheme = themeName === "light" ? "light" : "dark"
 
   if (vuetifyTheme?.global?.name) {
-    vuetifyTheme.global.name.value = browserPrefersDark.value ? "dark" : "light"
+    vuetifyTheme.global.name.value = normalizedTheme
+  }
+
+  if (typeof document !== "undefined") {
+    document.documentElement.setAttribute("data-app-theme", normalizedTheme)
+    document.documentElement.style.colorScheme = normalizedTheme
   }
 }
 
-function handleBrowserThemeChange() {
-  applyBrowserThemePreference()
+function loadSavedTheme() {
+  if (typeof window === "undefined") return
+  const savedTheme = window.localStorage.getItem(THEME_STORAGE_KEY)
+  applyThemeChoice(savedTheme === "light" ? "light" : "dark")
+}
+
+function handleWindowStorage(event) {
+  if (!event.key || event.key === THEME_STORAGE_KEY) {
+    loadSavedTheme()
+  }
+}
+
+function handleWindowFocus() {
+  syncCurrentUser()
+  loadSavedTheme()
+}
+
+function handleVisibilityChange() {
+  if (document.visibilityState === "visible") {
+    loadSavedTheme()
+  }
+}
+
+function startLongPress(event, title, path) {
+  cancelLongPress()
+
+  const touch = event?.touches?.[0]
+  if (!touch) return
+
+  longPressTimer.value = window.setTimeout(() => {
+    openRouteMenu({
+      preventDefault: () => {},
+      clientX: touch.clientX,
+      clientY: touch.clientY,
+    }, title, path)
+    longPressTimer.value = null
+  }, LONG_PRESS_DURATION)
+}
+
+function cancelLongPress() {
+  if (longPressTimer.value) {
+    window.clearTimeout(longPressTimer.value)
+    longPressTimer.value = null
+  }
 }
 
 function showMessage(title, message) {
@@ -1408,32 +1465,24 @@ function handleGlobalEscape(event) {
 }
 
 onMounted(() => {
+  loadSavedTheme()
+  syncCurrentUser()
   window.addEventListener("beforeunload", handleBeforeUnload)
   window.addEventListener("keydown", handleGlobalEscape)
-
-  if (typeof window !== "undefined" && window.matchMedia) {
-    colorSchemeMediaQuery = window.matchMedia("(prefers-color-scheme: dark)")
-    applyBrowserThemePreference()
-
-    if (colorSchemeMediaQuery.addEventListener) {
-      colorSchemeMediaQuery.addEventListener("change", handleBrowserThemeChange)
-    } else if (colorSchemeMediaQuery.addListener) {
-      colorSchemeMediaQuery.addListener(handleBrowserThemeChange)
-    }
-  }
+  window.addEventListener("storage", handleWindowStorage)
+  window.addEventListener("focus", handleWindowFocus)
+  document.addEventListener("visibilitychange", handleVisibilityChange)
+  window.addEventListener("blassti-theme-change", loadSavedTheme)
 })
 
 onBeforeUnmount(() => {
+  cancelLongPress()
   window.removeEventListener("beforeunload", handleBeforeUnload)
   window.removeEventListener("keydown", handleGlobalEscape)
-
-  if (colorSchemeMediaQuery) {
-    if (colorSchemeMediaQuery.removeEventListener) {
-      colorSchemeMediaQuery.removeEventListener("change", handleBrowserThemeChange)
-    } else if (colorSchemeMediaQuery.removeListener) {
-      colorSchemeMediaQuery.removeListener(handleBrowserThemeChange)
-    }
-  }
+  window.removeEventListener("storage", handleWindowStorage)
+  window.removeEventListener("focus", handleWindowFocus)
+  document.removeEventListener("visibilitychange", handleVisibilityChange)
+  window.removeEventListener("blassti-theme-change", loadSavedTheme)
 })
 
 onBeforeRouteLeave((to) => {
@@ -1480,6 +1529,14 @@ function saveAndLeave() {
 </script>
 
 <style scoped>
+.settings-app.theme-dark {
+  color-scheme: dark;
+}
+
+.settings-app.theme-light {
+  color-scheme: light;
+}
+
 .settings-shell {
   position: relative;
   min-height: 100%;
@@ -1517,12 +1574,12 @@ function saveAndLeave() {
   background: radial-gradient(circle, rgba(var(--v-theme-primary), 0.2) 0%, rgba(var(--v-theme-primary), 0) 72%);
 }
 
-.browser-light {
+.settings-shell.theme-light {
   background:
     linear-gradient(180deg, rgba(245, 248, 255, 0.95) 0%, rgba(250, 252, 255, 1) 100%);
 }
 
-.browser-dark {
+.settings-shell.theme-dark {
   background:
     radial-gradient(circle at top, rgba(31, 41, 55, 0.55) 0%, rgba(10, 14, 22, 0) 35%),
     linear-gradient(180deg, rgba(7, 11, 18, 1) 0%, rgba(10, 14, 22, 1) 100%);
@@ -1548,7 +1605,7 @@ function saveAndLeave() {
   box-shadow: 0 18px 40px rgba(0, 0, 0, 0.08);
 }
 
-.browser-dark .hero-card {
+.theme-dark .hero-card {
   background:
     linear-gradient(135deg, rgba(var(--v-theme-primary), 0.16) 0%, rgba(19, 24, 34, 0.96) 40%, rgba(14, 18, 28, 0.98) 100%);
   box-shadow: 0 18px 40px rgba(0, 0, 0, 0.35);
@@ -1561,9 +1618,8 @@ function saveAndLeave() {
   box-shadow: 0 14px 34px rgba(0, 0, 0, 0.06);
 }
 
-.browser-dark .section-card,
-.browser-dark .sticky-action-card,
-.browser-dark .dialog-card {
+.theme-dark .section-card,
+.theme-dark .sticky-action-card {
   box-shadow: 0 14px 34px rgba(0, 0, 0, 0.22);
 }
 
@@ -1676,7 +1732,7 @@ function saveAndLeave() {
   background: rgba(var(--v-theme-surface), 0.9);
 }
 
-.browser-dark .sticky-action-card {
+.theme-dark .sticky-action-card {
   background: rgba(16, 20, 30, 0.9);
 }
 
@@ -1708,8 +1764,22 @@ function saveAndLeave() {
   -webkit-backdrop-filter: blur(12px);
 }
 
-.browser-dark .route-context-menu {
+
+.dialog-card.theme-light {
+  box-shadow: 0 14px 34px rgba(0, 0, 0, 0.06);
+}
+
+.dialog-card.theme-dark {
+  background: rgba(14, 18, 28, 0.98);
+  box-shadow: 0 14px 34px rgba(0, 0, 0, 0.22);
+}
+
+.route-context-menu.theme-dark {
   background: rgba(18, 23, 34, 0.98);
+}
+
+.route-context-menu.theme-light {
+  background: rgba(var(--v-theme-surface), 0.97);
 }
 
 .route-context-header {
@@ -1750,7 +1820,8 @@ function saveAndLeave() {
   opacity: 0;
 }
 
-.elevated-snackbar :deep(.v-snackbar__wrapper) {
+.elevated-snackbar.theme-light :deep(.v-snackbar__wrapper),
+.elevated-snackbar.theme-dark :deep(.v-snackbar__wrapper) {
   box-shadow: 0 16px 28px rgba(0, 0, 0, 0.18);
 }
 

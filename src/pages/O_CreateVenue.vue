@@ -703,6 +703,10 @@
                           @mouseup="onCanvasMouseUp"
                           @mouseleave="onCanvasMouseUp"
                           @contextmenu.prevent="openContextMenu($event)"
+                          @touchstart.passive="startLongPress($event)"
+                          @touchend="cancelLongPress"
+                          @touchcancel="cancelLongPress"
+                          @touchmove="cancelLongPress"
                         >
                           <div
                             v-if="selectionBox.visible"
@@ -722,6 +726,10 @@
                             @mousedown.stop="startItemMouseDown($event, item)"
                             @click.stop="onItemClick($event, item)"
                             @contextmenu.prevent.stop="openContextMenu($event, item)"
+                            @touchstart.passive.stop="startLongPress($event, item)"
+                            @touchend.stop="cancelLongPress"
+                            @touchcancel.stop="cancelLongPress"
+                            @touchmove.stop="cancelLongPress"
                           >
                             <template v-if="item.kind === 'seat'">
                               <div class="seat-shape" :style="{ backgroundColor: seatBg(item) }">
@@ -979,16 +987,20 @@
 import AppNavbar from "@/components/AppNavbar.vue"
 import { computed, onBeforeUnmount, onMounted, reactive, ref } from "vue"
 import { useRouter } from "vue-router"
+import { useDisplay, useTheme } from "vuetify"
 import { fileToDataUrl } from "@/utils/imageUtils"
 import { get_Current_User } from "@/dataModel/user"
 import {
-  VenueRequest,
   add_Venue_Request,
   count_Seats_By_Class,
 } from "@/dataModel/venue_request"
 import { create_Venue_Request_Submitted_Notifications } from "@/dataModel/notification"
 
 const router = useRouter()
+const theme = useTheme()
+const display = useDisplay()
+
+const THEME_STORAGE_KEY = "blassti-theme"
 const step = ref(1)
 const submitDialog = ref(false)
 const canvasRef = ref(null)
@@ -1043,16 +1055,15 @@ const snackbar = reactive({
 })
 
 const historyStack = ref([])
-
-const browserTheme = ref("dark")
-let browserThemeMedia = null
+const isMobile = computed(() => display.smAndDown.value)
+const isDarkTheme = computed(() => theme.global.name.value === "dark")
 
 const browserThemeClass = computed(() =>
-  browserTheme.value === "light" ? "browser-theme-light" : "browser-theme-dark"
+  isDarkTheme.value ? "browser-theme-dark" : "browser-theme-light"
 )
 
 const browserThemeLabel = computed(() =>
-  browserTheme.value === "light" ? "Light" : "Dark"
+  isDarkTheme.value ? "Dark" : "Light"
 )
 
 
@@ -1140,6 +1151,39 @@ const contextMenu = reactive({
   y: 0,
   itemId: null,
 })
+
+const longPressTimer = ref(null)
+const LONG_PRESS_DELAY = 520
+
+function clearLongPressTimer() {
+  if (longPressTimer.value) {
+    clearTimeout(longPressTimer.value)
+    longPressTimer.value = null
+  }
+}
+
+function startLongPress(event, item = null) {
+  if (!isMobile.value) return
+
+  clearLongPressTimer()
+
+  const touch = event?.touches?.[0] || event?.changedTouches?.[0]
+  if (!touch) return
+
+  longPressTimer.value = window.setTimeout(() => {
+    openContextMenu(
+      {
+        clientX: touch.clientX,
+        clientY: touch.clientY,
+      },
+      item
+    )
+  }, LONG_PRESS_DELAY)
+}
+
+function cancelLongPress() {
+  clearLongPressTimer()
+}
 
 const singleSelectedTitle = ref("")
 
@@ -1287,17 +1331,39 @@ function notify(text, color = "primary") {
   snackbar.show = true
 }
 
-function applyBrowserThemePreference() {
-  if (typeof window === "undefined" || typeof window.matchMedia !== "function") {
-    browserTheme.value = "dark"
-    return
+function applySavedTheme() {
+  if (typeof window === "undefined") return
+
+  const savedTheme = localStorage.getItem(THEME_STORAGE_KEY)
+  const normalizedTheme = savedTheme === "light" ? "light" : "dark"
+  const availableThemes = theme?.themes?.value ? Object.keys(theme.themes.value) : []
+
+  if (availableThemes.includes(normalizedTheme)) {
+    theme.global.name.value = normalizedTheme
+  } else {
+    theme.global.name.value = normalizedTheme
   }
 
-  browserTheme.value = window.matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark"
+  document.documentElement.setAttribute("data-app-theme", normalizedTheme)
+  document.documentElement.style.colorScheme = normalizedTheme
 }
 
-function handleBrowserThemeChange(event) {
-  browserTheme.value = event.matches ? "light" : "dark"
+function handleWindowStorage(event) {
+  if (!event.key || event.key === THEME_STORAGE_KEY) {
+    applySavedTheme()
+  }
+}
+
+function handleAppThemeSync(event) {
+  const nextTheme =
+    event?.detail === "light" || event?.detail === "dark"
+      ? event.detail
+      : localStorage.getItem(THEME_STORAGE_KEY)
+
+  const normalizedTheme = nextTheme === "light" ? "light" : "dark"
+  theme.global.name.value = normalizedTheme
+  document.documentElement.setAttribute("data-app-theme", normalizedTheme)
+  document.documentElement.style.colorScheme = normalizedTheme
 }
 
 function deepClone(value) {
@@ -2674,39 +2740,93 @@ function buildRequestPayload() {
   const currentUser = get_Current_User()
   const serializedDesign = getSerializedDesign()
 
-  return new VenueRequest({
+  const resolvedSeatClasses = Array.from(
+    new Set(
+      serializedDesign.seats
+        .map(seat => String(seat?.seat_class ?? "Regular").trim() || "Regular")
+        .filter(Boolean)
+    )
+  )
+
+  const normalizedSeatClasses = resolvedSeatClasses.length
+    ? resolvedSeatClasses
+    : ["Regular"]
+
+  const normalizedSeatLayout = {
+    width: Number(form.dimensions.width_m || 20),
+    height: Number(form.dimensions.height_m || 12),
+    seats: serializedDesign.seats.map(seat => ({
+      ...seat,
+    })),
+    screens: serializedDesign.screens.map(screen => ({
+      ...screen,
+      name: screen.name || screen.title || "Screen",
+    })),
+    audio_sources: serializedDesign.audio_sources.map(source => ({
+      ...source,
+      name: source.name || source.title || "Audio Source",
+    })),
+    stages: serializedDesign.stages.map(stage => ({
+      ...stage,
+      name: stage.name || stage.title || "Stage",
+    })),
+    elements: serializedDesign.elements.map(element => ({
+      ...element,
+    })),
+    metadata: {
+      shape: form.dimensions.shape,
+      notes: serializedDesign.notes,
+      mode: form.use_designer ? "designer" : "manual",
+      total_seat_count: finalSeatCount.value,
+      seat_classes: normalizedSeatClasses,
+    },
+  }
+
+  return {
+    id: createId(),
     created_by_user_id: currentUser?.id ?? null,
     created_at: new Date().toISOString(),
     status: "Pending",
     venue_data: {
-      id: crypto.randomUUID(),
+      id: createId(),
       title: form.title,
       location: form.location,
       exact_address: form.exact_address,
       availability: form.availability,
       price_per_hour: Number(form.price_per_hour || 0),
-      price_per_day: Number(form.price_per_day || 0),
       capacity: finalSeatCount.value,
       status: "Pending Approval",
       category: form.category,
       type: form.type,
       review_rating: Number(form.review_rating || 0),
       description: form.description,
-      image: form.image,
+      image: form.image || "",
       extra_images: [...form.extra_images],
       contact_info: {
         ...form.contact_info,
         address: form.exact_address,
       },
+      featured: false,
+      profile_picture: form.image || "",
+      owner_user_id: currentUser?.id ?? null,
       bank_account_info: {
         ...form.bank_account_info,
       },
-      featured: false,
-      profile_picture: form.image || "",
+      seat_classes: normalizedSeatClasses,
+      seat_layout: normalizedSeatLayout,
+      price_per_day: Number(form.price_per_day || 0),
+      submitted_at: new Date().toISOString(),
+      use_designer: form.use_designer,
+      manual_seat_count: finalSeatCount.value,
+      manual_seat_counts: {
+        regular: Number(form.manual_seat_counts.regular || 0),
+        special: Number(form.manual_seat_counts.special || 0),
+        vip: Number(form.manual_seat_counts.vip || 0),
+      },
     },
     dimensions: {
-      width_m: form.dimensions.width_m,
-      height_m: form.dimensions.height_m,
+      width_m: Number(form.dimensions.width_m || 20),
+      height_m: Number(form.dimensions.height_m || 12),
       shape: form.dimensions.shape,
     },
     layout: {
@@ -2717,6 +2837,9 @@ function buildRequestPayload() {
         special: Number(form.manual_seat_counts.special || 0),
         vip: Number(form.manual_seat_counts.vip || 0),
       },
+      width: Number(form.dimensions.width_m || 20),
+      height: Number(form.dimensions.height_m || 12),
+      shape: form.dimensions.shape,
       seats: serializedDesign.seats,
       screens: serializedDesign.screens,
       audio_sources: serializedDesign.audio_sources,
@@ -2725,8 +2848,10 @@ function buildRequestPayload() {
       shapes: serializedDesign.shapes,
       notes: serializedDesign.notes,
       use_designer: form.use_designer,
+      seat_classes: normalizedSeatClasses,
+      total_seat_count: finalSeatCount.value,
     },
-  })
+  }
 }
 
 function submitVenueRequest() {
@@ -2760,7 +2885,7 @@ function submitVenueRequest() {
     notify("Request sent successfully.", "success")
   } catch (error) {
     console.error(error)
-    notify("Something went wrong while sending the request.", "error")
+    notify(error?.message || "Something went wrong while sending the request.", "error")
   }
 }
 
@@ -2836,19 +2961,12 @@ function resetForm() {
 }
 
 onMounted(() => {
-  applyBrowserThemePreference()
+  applySavedTheme()
   window.addEventListener("pointerdown", handleGlobalPointerDown)
   window.addEventListener("keydown", onGlobalKeyDown)
-
-  if (typeof window !== "undefined" && typeof window.matchMedia === "function") {
-    browserThemeMedia = window.matchMedia("(prefers-color-scheme: light)")
-
-    if (typeof browserThemeMedia.addEventListener === "function") {
-      browserThemeMedia.addEventListener("change", handleBrowserThemeChange)
-    } else if (typeof browserThemeMedia.addListener === "function") {
-      browserThemeMedia.addListener(handleBrowserThemeChange)
-    }
-  }
+  window.addEventListener("storage", handleWindowStorage)
+  window.addEventListener("focus", applySavedTheme)
+  window.addEventListener("blassti-theme-updated", handleAppThemeSync)
 })
 
 function onGlobalKeyDown(event) {
@@ -2872,16 +2990,12 @@ function onGlobalKeyDown(event) {
 
 onBeforeUnmount(() => {
   stopGlobalDrag()
+  clearLongPressTimer()
   window.removeEventListener("pointerdown", handleGlobalPointerDown)
   window.removeEventListener("keydown", onGlobalKeyDown)
-
-  if (browserThemeMedia) {
-    if (typeof browserThemeMedia.removeEventListener === "function") {
-      browserThemeMedia.removeEventListener("change", handleBrowserThemeChange)
-    } else if (typeof browserThemeMedia.removeListener === "function") {
-      browserThemeMedia.removeListener(handleBrowserThemeChange)
-    }
-  }
+  window.removeEventListener("storage", handleWindowStorage)
+  window.removeEventListener("focus", applySavedTheme)
+  window.removeEventListener("blassti-theme-updated", handleAppThemeSync)
 })
 </script>
 

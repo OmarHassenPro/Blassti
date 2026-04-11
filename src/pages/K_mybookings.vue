@@ -1,11 +1,14 @@
 <template>
-  <v-app>
+  <v-app :class="pageThemeClass">
     <AppNavbar />
 
     <v-main>
-      <div class="my-bookings-page" :class="pageThemeClass">
-        <v-container class="py-8 py-md-10">
-          <v-row class="mb-6 mb-md-8">
+      <div
+        class="my-bookings-page"
+        :class="[pageThemeClass, `bookings-theme-${currentTheme}`]"
+      >
+        <v-container class="py-6 py-sm-7 py-md-10 bookings-container">
+          <v-row class="mb-5 mb-md-8">
             <v-col cols="12">
               <v-card
                 class="hero-card overflow-hidden"
@@ -15,15 +18,15 @@
                 <div class="hero-glow hero-glow-1" />
                 <div class="hero-glow hero-glow-2" />
 
-                <v-card-text class="pa-5 pa-md-8 position-relative">
-                  <div class="d-flex flex-column flex-lg-row justify-space-between align-start ga-6">
+                <v-card-text class="pa-4 pa-sm-5 pa-md-8 position-relative">
+                  <div class="d-flex flex-column flex-lg-row justify-space-between align-start ga-5 ga-md-6 hero-layout">
                     <div class="hero-copy">
                       <div class="hero-badge mb-4">
                         <v-icon size="18" class="me-2">mdi-ticket-confirmation-outline</v-icon>
                         Booking workspace
                       </div>
 
-                      <div class="text-h4 text-md-h3 font-weight-bold mb-2 hero-title">
+                      <div class="text-h4 text-sm-h4 text-md-h3 font-weight-bold mb-2 hero-title">
                         My Bookings
                       </div>
 
@@ -31,13 +34,14 @@
                         Manage, review, and track your purchased tickets in one clean place.
                       </div>
 
-                      <div class="d-flex flex-wrap ga-2 mt-5">
+                      <div class="d-flex flex-wrap ga-2 mt-5 hero-actions">
                         <v-btn
                           class="status-pill-btn"
                           :class="{ 'status-pill-btn--active': selectedStatus === 'Upcoming' }"
                           variant="outlined"
                           rounded="xl"
                           prepend-icon="mdi-calendar-clock-outline"
+                          :size="isMobile ? 'default' : 'default'"
                           @click="selectedStatus = 'Upcoming'"
                         >
                           Upcoming
@@ -49,6 +53,7 @@
                           variant="outlined"
                           rounded="xl"
                           prepend-icon="mdi-history"
+                          :size="isMobile ? 'default' : 'default'"
                           @click="selectedStatus = 'Past'"
                         >
                           Past
@@ -60,6 +65,7 @@
                           variant="outlined"
                           rounded="xl"
                           prepend-icon="mdi-cancel"
+                          :size="isMobile ? 'default' : 'default'"
                           @click="selectedStatus = 'Cancelled'"
                         >
                           Cancelled
@@ -71,6 +77,7 @@
                           variant="outlined"
                           rounded="xl"
                           prepend-icon="mdi-filter-variant-remove"
+                          :size="isMobile ? 'default' : 'default'"
                           @click="selectedStatus = 'All statuses'"
                         >
                           All
@@ -87,7 +94,7 @@
                         <div class="text-caption text-medium-emphasis mb-1">
                           Active filter
                         </div>
-                        <div class="text-subtitle-1 font-weight-bold">
+                        <div class="text-subtitle-1 font-weight-bold text-truncate">
                           {{ selectedStatus }}
                         </div>
                       </v-sheet>
@@ -111,7 +118,7 @@
             </v-col>
           </v-row>
 
-          <v-row class="ga-md-0">
+          <v-row class="ga-md-0 bookings-main-row">
             <!-- LEFT FILTERS COLUMN -->
             <v-col cols="12" md="4" lg="3">
               <v-card
@@ -121,13 +128,13 @@
                 elevation="0"
               >
                 <v-card-text class="pa-4 pa-md-5">
-                  <div class="d-flex align-center justify-space-between mb-4">
-                    <div class="d-flex align-center">
+                  <div class="d-flex align-center justify-space-between mb-4 filters-header">
+                    <div class="d-flex align-center min-w-0">
                       <v-avatar size="34" class="filters-avatar me-3">
                         <v-icon size="18">mdi-tune-variant</v-icon>
                       </v-avatar>
-                      <div>
-                        <div class="font-weight-bold text-subtitle-1">
+                      <div class="min-w-0">
+                        <div class="font-weight-bold text-subtitle-1 text-truncate">
                           Filters
                         </div>
                         <div class="text-caption text-medium-emphasis">
@@ -140,10 +147,56 @@
                       variant="text"
                       size="small"
                       class="text-none"
-                      @click="selectedStatus = 'All statuses'; chosenDate = ''; search = ''"
+                      @click="resetFilters"
                     >
                       Reset
                     </v-btn>
+                  </div>
+
+                  <div class="d-flex flex-wrap ga-2 mb-4 mobile-friendly-filter-pills">
+                    <v-chip
+                      class="filter-chip"
+                      rounded="xl"
+                      :variant="selectedStatus === 'All statuses' ? 'flat' : 'outlined'"
+                      :color="selectedStatus === 'All statuses' ? 'primary' : undefined"
+                      prepend-icon="mdi-filter-variant-remove"
+                      @click="selectedStatus = 'All statuses'"
+                    >
+                      All
+                    </v-chip>
+
+                    <v-chip
+                      class="filter-chip"
+                      rounded="xl"
+                      :variant="selectedStatus === 'Upcoming' ? 'flat' : 'outlined'"
+                      :color="selectedStatus === 'Upcoming' ? 'primary' : undefined"
+                      prepend-icon="mdi-calendar-clock-outline"
+                      @click="selectedStatus = 'Upcoming'"
+                    >
+                      Upcoming
+                    </v-chip>
+
+                    <v-chip
+                      class="filter-chip"
+                      rounded="xl"
+                      :variant="selectedStatus === 'Past' ? 'flat' : 'outlined'"
+                      :color="selectedStatus === 'Past' ? 'primary' : undefined"
+                      prepend-icon="mdi-history"
+                      @click="selectedStatus = 'Past'"
+                    >
+                      Past
+                    </v-chip>
+
+                    <v-chip
+                      class="filter-chip"
+                      rounded="xl"
+                      :variant="selectedStatus === 'Cancelled' ? 'flat' : 'outlined'"
+                      :color="selectedStatus === 'Cancelled' ? 'error' : undefined"
+                      prepend-icon="mdi-cancel"
+                      @click="selectedStatus = 'Cancelled'"
+                    >
+                      Cancelled
+                    </v-chip>
                   </div>
 
                   <v-select
@@ -188,7 +241,15 @@
                       Quick overview
                     </div>
 
-                    <v-sheet class="quick-status-item mb-2" rounded="lg" border>
+                    <v-sheet
+                      class="quick-status-item mb-2"
+                      rounded="lg"
+                      border
+                      role="button"
+                      tabindex="0"
+                      @click="selectedStatus = 'Upcoming'"
+                      @keydown.enter="selectedStatus = 'Upcoming'"
+                    >
                       <div class="d-flex align-center justify-space-between">
                         <div class="d-flex align-center">
                           <v-icon size="18" class="me-2 status-icon status-icon-upcoming">mdi-calendar-clock-outline</v-icon>
@@ -198,7 +259,15 @@
                       </div>
                     </v-sheet>
 
-                    <v-sheet class="quick-status-item mb-2" rounded="lg" border>
+                    <v-sheet
+                      class="quick-status-item mb-2"
+                      rounded="lg"
+                      border
+                      role="button"
+                      tabindex="0"
+                      @click="selectedStatus = 'Past'"
+                      @keydown.enter="selectedStatus = 'Past'"
+                    >
                       <div class="d-flex align-center justify-space-between">
                         <div class="d-flex align-center">
                           <v-icon size="18" class="me-2 status-icon status-icon-past">mdi-history</v-icon>
@@ -208,7 +277,15 @@
                       </div>
                     </v-sheet>
 
-                    <v-sheet class="quick-status-item" rounded="lg" border>
+                    <v-sheet
+                      class="quick-status-item"
+                      rounded="lg"
+                      border
+                      role="button"
+                      tabindex="0"
+                      @click="selectedStatus = 'Cancelled'"
+                      @keydown.enter="selectedStatus = 'Cancelled'"
+                    >
                       <div class="d-flex align-center justify-space-between">
                         <div class="d-flex align-center">
                           <v-icon size="18" class="me-2 status-icon status-icon-cancelled">mdi-cancel</v-icon>
@@ -346,7 +423,7 @@
                       </v-col>
                     </v-row>
 
-                    <div class="d-flex align-center justify-space-between flex-wrap ga-3 mb-4">
+                    <div class="d-flex align-center justify-space-between flex-wrap ga-3 mb-4 list-toolbar">
                       <div>
                         <div class="text-subtitle-1 font-weight-bold">
                           Booking list
@@ -361,6 +438,7 @@
                         variant="tonal"
                         rounded="xl"
                         prepend-icon="mdi-filter-check-outline"
+                        class="current-filter-chip"
                       >
                         {{ selectedStatus }}
                       </v-chip>
@@ -371,6 +449,7 @@
                         v-for="booking in filteredBookings"
                         :key="booking.id"
                         class="booking-card mb-4"
+                        :class="`booking-card--${String(booking.status || '').toLowerCase()}`"
                         rounded="xl"
                         border
                       >
@@ -385,19 +464,19 @@
                               cover
                               height="92"
                               width="112"
-                              class="rounded-lg"
+                              class="rounded-lg booking-image"
                             />
                             <v-icon v-else size="30">mdi-image-outline</v-icon>
                           </v-sheet>
 
-                          <div class="flex-grow-1 w-100">
+                          <div class="flex-grow-1 w-100 booking-main-content">
                             <div class="d-flex flex-column flex-lg-row justify-space-between align-start ga-3 mb-2">
-                              <div>
+                              <div class="booking-headline">
                                 <div class="text-subtitle-1 text-md-h6 font-weight-bold mb-1 booking-title">
                                   {{ booking.event.title }}
                                 </div>
 
-                                <div class="d-flex flex-wrap ga-2">
+                                <div class="d-flex flex-wrap ga-2 booking-info-chips">
                                   <v-chip
                                     size="small"
                                     variant="tonal"
@@ -525,15 +604,15 @@
                       <div class="text-body-2 text-medium-emphasis mb-4">
                         Time to plan something unforgettable ✨
                       </div>
-                     <v-btn
-                       color="primary"
-                      variant="flat"
-                       rounded="xl"
-                      prepend-icon="mdi-compass"
-                       class="px-6"
-                       @click="$router.push({ name: '/N_Event_Browsing' })"
-                        >
-                         Browse events
+                      <v-btn
+                        color="primary"
+                        variant="flat"
+                        rounded="xl"
+                        prepend-icon="mdi-compass"
+                        class="px-6"
+                        @click="$router.push({ name: '/N_Event_Browsing' })"
+                      >
+                        Browse events
                       </v-btn>
                     </v-sheet>
                   </template>
@@ -545,17 +624,18 @@
 
         <v-dialog
           v-model="ticketDialog"
-          max-width="760"
+          :fullscreen="isMobile"
+          :max-width="isMobile ? undefined : 760"
           transition="dialog-bottom-transition"
         >
           <v-card rounded="xl" class="ticket-dialog-card">
-            <v-card-title class="d-flex align-center justify-space-between py-4 px-5">
-              <div class="d-flex align-center">
+            <v-card-title class="d-flex align-center justify-space-between py-4 px-4 px-md-5 ticket-dialog-title">
+              <div class="d-flex align-center min-w-0">
                 <v-avatar size="38" class="dialog-title-avatar me-3">
                   <v-icon size="20">mdi-ticket-confirmation-outline</v-icon>
                 </v-avatar>
-                <div>
-                  <div class="text-h6 font-weight-bold">Ticket details</div>
+                <div class="min-w-0">
+                  <div class="text-h6 font-weight-bold text-truncate">Ticket details</div>
                   <div class="text-caption text-medium-emphasis">
                     Booking summary and seat information
                   </div>
@@ -569,7 +649,7 @@
 
             <v-divider />
 
-            <v-card-text v-if="selectedBooking" class="pa-5 pa-md-6">
+            <v-card-text v-if="selectedBooking" class="pa-4 pa-sm-5 pa-md-6">
               <v-row class="align-center">
                 <v-col cols="12" md="5">
                   <v-img
@@ -686,23 +766,35 @@
 import AppNavbar from "@/components/AppNavbar.vue"
 import { ref, computed, onMounted, onBeforeUnmount } from "vue"
 import { useRouter } from "vue-router"
-import { useTheme } from "vuetify"
+import { useDisplay, useTheme } from "vuetify"
 import { get_All_Reservations } from "@/dataModel/reservation"
 import { get_Event_By_Id } from "@/dataModel/event"
 import { get_Current_User } from "@/dataModel/user"
 
 const router = useRouter()
 const theme = useTheme()
+const display = useDisplay()
+
+const THEME_STORAGE_KEY = "blassti-theme"
 
 const selectedStatus = ref("All statuses")
 const chosenDate = ref("")
 const search = ref("")
 const ticketDialog = ref(false)
 const selectedBooking = ref(null)
-const prefersDark = ref(false)
 
 const currentUser = computed(() => get_Current_User())
 const reservations = get_All_Reservations()
+
+const isMobile = computed(() => display.smAndDown.value)
+
+const currentTheme = computed(() => {
+  return theme.global.name.value === "light" ? "light" : "dark"
+})
+
+const pageThemeClass = computed(() =>
+  currentTheme.value === "dark" ? "bookings-theme-dark" : "bookings-theme-light"
+)
 
 const currentUserReservations = computed(() => {
   if (!currentUser.value) return []
@@ -759,9 +851,39 @@ const filteredBookings = computed(() => {
   })
 })
 
-const pageThemeClass = computed(() =>
-  prefersDark.value ? "bookings-theme-dark" : "bookings-theme-light"
-)
+function applyThemeChoice(themeName) {
+  if (typeof window === "undefined") return
+
+  const normalizedTheme = themeName === "light" ? "light" : "dark"
+  theme.global.name.value = normalizedTheme
+  localStorage.setItem(THEME_STORAGE_KEY, normalizedTheme)
+  document.documentElement.setAttribute("data-app-theme", normalizedTheme)
+  document.documentElement.style.colorScheme = normalizedTheme
+}
+
+function loadSavedTheme() {
+  if (typeof window === "undefined") return
+
+  const savedTheme = localStorage.getItem(THEME_STORAGE_KEY)
+  applyThemeChoice(savedTheme === "light" ? "light" : "dark")
+}
+
+function handleWindowStorage(event) {
+  if (!event.key || event.key === THEME_STORAGE_KEY) {
+    const savedTheme = localStorage.getItem(THEME_STORAGE_KEY)
+    if (savedTheme === "light" || savedTheme === "dark") {
+      theme.global.name.value = savedTheme
+      document.documentElement.setAttribute("data-app-theme", savedTheme)
+      document.documentElement.style.colorScheme = savedTheme
+    }
+  }
+}
+
+function resetFilters() {
+  selectedStatus.value = "All statuses"
+  chosenDate.value = ""
+  search.value = ""
+}
 
 function goToLogin() {
   router.push("/O_login")
@@ -790,39 +912,17 @@ function getStatusColor(status) {
   return "primary"
 }
 
-let mediaQuery = null
-
-function applyBrowserTheme() {
-  if (typeof window === "undefined") return
-  prefersDark.value = window.matchMedia("(prefers-color-scheme: dark)").matches
-  theme.global.name.value = prefersDark.value ? "dark" : "light"
-}
-
-function handleThemeChange(event) {
-  prefersDark.value = event.matches
-  theme.global.name.value = event.matches ? "dark" : "light"
-}
-
 onMounted(() => {
   if (typeof window === "undefined") return
-  mediaQuery = window.matchMedia("(prefers-color-scheme: dark)")
-  applyBrowserTheme()
-
-  if (mediaQuery.addEventListener) {
-    mediaQuery.addEventListener("change", handleThemeChange)
-  } else if (mediaQuery.addListener) {
-    mediaQuery.addListener(handleThemeChange)
-  }
+  loadSavedTheme()
+  window.addEventListener("storage", handleWindowStorage)
+  window.addEventListener("focus", loadSavedTheme)
 })
 
 onBeforeUnmount(() => {
-  if (!mediaQuery) return
-
-  if (mediaQuery.removeEventListener) {
-    mediaQuery.removeEventListener("change", handleThemeChange)
-  } else if (mediaQuery.removeListener) {
-    mediaQuery.removeListener(handleThemeChange)
-  }
+  if (typeof window === "undefined") return
+  window.removeEventListener("storage", handleWindowStorage)
+  window.removeEventListener("focus", loadSavedTheme)
 })
 </script>
 
@@ -830,6 +930,11 @@ onBeforeUnmount(() => {
 .my-bookings-page {
   min-height: 100%;
   transition: background 0.35s ease, color 0.35s ease;
+}
+
+.bookings-container {
+  position: relative;
+  z-index: 1;
 }
 
 .bookings-theme-light {
@@ -875,6 +980,20 @@ onBeforeUnmount(() => {
 .hero-card {
   position: relative;
   overflow: hidden;
+}
+
+.hero-layout,
+.filters-header,
+.list-toolbar,
+.booking-card-inner,
+.ticket-dialog-title {
+  min-width: 0;
+}
+
+.hero-copy,
+.booking-main-content,
+.booking-headline {
+  min-width: 0;
 }
 
 .hero-glow {
@@ -928,6 +1047,10 @@ onBeforeUnmount(() => {
   max-width: 680px;
 }
 
+.hero-stats {
+  justify-content: flex-end;
+}
+
 .hero-mini-stat {
   min-width: 170px;
   padding: 16px 18px;
@@ -950,6 +1073,7 @@ onBeforeUnmount(() => {
   transition: all 0.25s ease;
   text-transform: none;
   letter-spacing: 0;
+  min-height: 42px;
 }
 
 .status-pill-btn:hover {
@@ -976,13 +1100,27 @@ onBeforeUnmount(() => {
   top: 94px;
 }
 
+.mobile-friendly-filter-pills {
+  row-gap: 10px;
+}
+
+.filter-chip {
+  cursor: pointer;
+  min-height: 36px;
+}
+
 .quick-status-item {
   padding: 12px 14px;
-  transition: background 0.2s ease, transform 0.2s ease;
+  transition: background 0.2s ease, transform 0.2s ease, border-color 0.2s ease;
+  cursor: pointer;
 }
 
 .quick-status-item:hover {
   transform: translateY(-1px);
+}
+
+.quick-status-item:active {
+  transform: scale(0.99);
 }
 
 .status-icon-upcoming {
@@ -1042,12 +1180,18 @@ onBeforeUnmount(() => {
   border-color: rgba(var(--v-theme-error), 0.22) !important;
 }
 
-.search-field :deep(.v-field) {
-  transition: box-shadow 0.22s ease, transform 0.22s ease;
+.search-field :deep(.v-field),
+.filters-card :deep(.v-field) {
+  transition: box-shadow 0.22s ease, transform 0.22s ease, border-color 0.22s ease;
 }
 
-.search-field :deep(.v-field:hover) {
+.search-field :deep(.v-field:hover),
+.filters-card :deep(.v-field:hover) {
   transform: translateY(-1px);
+}
+
+.current-filter-chip {
+  max-width: 100%;
 }
 
 .booking-card {
@@ -1069,6 +1213,14 @@ onBeforeUnmount(() => {
   box-shadow: 0 14px 30px rgba(0, 0, 0, 0.22);
 }
 
+.booking-card--upcoming {
+  border-color: rgba(var(--v-theme-primary), 0.18) !important;
+}
+
+.booking-card--cancelled {
+  border-color: rgba(var(--v-theme-error), 0.18) !important;
+}
+
 .booking-card-inner {
   padding: 18px;
   gap: 0;
@@ -1083,8 +1235,21 @@ onBeforeUnmount(() => {
   overflow: hidden;
 }
 
+.booking-image {
+  transition: transform 0.3s ease;
+}
+
+.booking-card:hover .booking-image {
+  transform: scale(1.04);
+}
+
 .booking-title {
   line-height: 1.2;
+  word-break: break-word;
+}
+
+.booking-info-chips :deep(.v-chip) {
+  max-width: 100%;
 }
 
 .booking-meta-row {
@@ -1095,6 +1260,7 @@ onBeforeUnmount(() => {
   padding: 10px 12px;
   border-radius: 14px;
   height: 100%;
+  overflow-wrap: anywhere;
 }
 
 .bookings-theme-light .booking-meta-item {
@@ -1122,10 +1288,16 @@ onBeforeUnmount(() => {
 
 .booking-seats {
   padding-top: 2px;
+  overflow-wrap: anywhere;
+}
+
+.booking-actions {
+  align-self: stretch;
 }
 
 .booking-actions .v-btn {
   transition: transform 0.2s ease, box-shadow 0.2s ease;
+  min-height: 42px;
 }
 
 .booking-actions .v-btn:hover {
@@ -1149,6 +1321,7 @@ onBeforeUnmount(() => {
 .ticket-info-item {
   padding: 12px 14px;
   border-radius: 14px;
+  overflow-wrap: anywhere;
 }
 
 .bookings-theme-light .ticket-info-item {
@@ -1178,6 +1351,12 @@ onBeforeUnmount(() => {
   transform: translateY(10px);
 }
 
+@media (max-width: 1279px) {
+  .hero-stats {
+    justify-content: flex-start;
+  }
+}
+
 @media (max-width: 959px) {
   .sticky-filters {
     position: static;
@@ -1187,15 +1366,62 @@ onBeforeUnmount(() => {
   .hero-mini-stat {
     min-width: 150px;
   }
+
+  .bookings-main-row {
+    row-gap: 16px;
+  }
 }
 
 @media (max-width: 700px) {
-  .ticket-info-grid {
-    grid-template-columns: 1fr;
+  .bookings-container {
+    padding-left: 12px;
+    padding-right: 12px;
+  }
+
+  .hero-actions {
+    width: 100%;
+  }
+
+  .hero-actions .v-btn {
+    flex: 1 1 calc(50% - 8px);
+    min-width: 0;
+  }
+
+  .hero-stats {
+    width: 100%;
+  }
+
+  .hero-mini-stat {
+    flex: 1 1 100%;
+    min-width: 0;
+  }
+
+  .filters-header {
+    align-items: flex-start;
+    gap: 10px;
   }
 
   .booking-card-inner {
     padding: 16px;
+  }
+
+  .booking-image-shell {
+    width: 100%;
+    min-width: 100%;
+    height: 180px;
+    margin-right: 0 !important;
+  }
+
+  .booking-image-shell :deep(.v-img) {
+    width: 100% !important;
+    height: 100% !important;
+  }
+
+  .booking-headline,
+  .booking-headline > div:first-child,
+  .status-chip,
+  .current-filter-chip {
+    width: 100%;
   }
 
   .booking-actions {
@@ -1204,6 +1430,21 @@ onBeforeUnmount(() => {
 
   .booking-actions .v-btn {
     width: 100%;
+  }
+
+  .ticket-info-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 460px) {
+  .hero-actions .v-btn {
+    flex: 1 1 100%;
+  }
+
+  .mobile-friendly-filter-pills .v-chip {
+    width: 100%;
+    justify-content: center;
   }
 }
 </style>

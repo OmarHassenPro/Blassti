@@ -1,7 +1,7 @@
 <template>
   <AppNavbar />
 
-  <div class="request-page-shell" :class="browserThemeClass">
+  <div class="request-page-shell" :class="pageThemeClass">
     <v-container fluid class="py-6 py-md-8 request-page">
       <v-row justify="center">
         <v-col cols="12" xl="11">
@@ -352,6 +352,10 @@
                     class="header-link-btn"
                     @click="openLinkTarget(selectedRequest.cover_image || fallbackImage, 'tab')"
                     @contextmenu.prevent="openLinkContextMenu($event, selectedRequest.cover_image || fallbackImage)"
+                      @touchstart.passive="startLongPress($event, selectedRequest.cover_image || fallbackImage)"
+                      @touchend="cancelLongPress"
+                      @touchcancel="cancelLongPress"
+                      @touchmove="cancelLongPress"
                   >
                     Open image
                   </v-btn>
@@ -364,6 +368,10 @@
                     class="header-link-btn"
                     @click="openLinkTarget(normalizeWebsite(selectedRequest.contact_info?.website), 'tab')"
                     @contextmenu.prevent="openLinkContextMenu($event, normalizeWebsite(selectedRequest.contact_info?.website))"
+                      @touchstart.passive="startLongPress($event, normalizeWebsite(selectedRequest.contact_info?.website))"
+                      @touchend="cancelLongPress"
+                      @touchcancel="cancelLongPress"
+                      @touchmove="cancelLongPress"
                   >
                     Visit website
                   </v-btn>
@@ -394,6 +402,10 @@
                       class="details-link-btn"
                       @click="openLinkTarget(selectedRequest.cover_image || fallbackImage, 'tab')"
                       @contextmenu.prevent="openLinkContextMenu($event, selectedRequest.cover_image || fallbackImage)"
+                      @touchstart.passive="startLongPress($event, selectedRequest.cover_image || fallbackImage)"
+                      @touchend="cancelLongPress"
+                      @touchcancel="cancelLongPress"
+                      @touchmove="cancelLongPress"
                     >
                       Open in new tab
                     </v-btn>
@@ -407,6 +419,10 @@
                       class="details-link-btn"
                       @click="openLinkTarget(selectedRequest.cover_image || fallbackImage, 'window')"
                       @contextmenu.prevent="openLinkContextMenu($event, selectedRequest.cover_image || fallbackImage)"
+                      @touchstart.passive="startLongPress($event, selectedRequest.cover_image || fallbackImage)"
+                      @touchend="cancelLongPress"
+                      @touchcancel="cancelLongPress"
+                      @touchmove="cancelLongPress"
                     >
                       Open in new window
                     </v-btn>
@@ -518,6 +534,10 @@
                       class="details-link-btn"
                       @click="openLinkTarget(`mailto:${selectedRequest.contact_info?.email}`, 'tab')"
                       @contextmenu.prevent="openLinkContextMenu($event, `mailto:${selectedRequest.contact_info?.email}`)"
+                      @touchstart.passive="startLongPress($event, `mailto:${selectedRequest.contact_info?.email}`)"
+                      @touchend="cancelLongPress"
+                      @touchcancel="cancelLongPress"
+                      @touchmove="cancelLongPress"
                     >
                       Email
                     </v-btn>
@@ -531,6 +551,10 @@
                       class="details-link-btn"
                       @click="openLinkTarget(normalizeWebsite(selectedRequest.contact_info?.website), 'tab')"
                       @contextmenu.prevent="openLinkContextMenu($event, normalizeWebsite(selectedRequest.contact_info?.website))"
+                      @touchstart.passive="startLongPress($event, normalizeWebsite(selectedRequest.contact_info?.website))"
+                      @touchend="cancelLongPress"
+                      @touchcancel="cancelLongPress"
+                      @touchmove="cancelLongPress"
                     >
                       Website
                     </v-btn>
@@ -544,6 +568,10 @@
                       class="details-link-btn"
                       @click="openLinkTarget(normalizeInstagram(selectedRequest.contact_info?.instagram), 'tab')"
                       @contextmenu.prevent="openLinkContextMenu($event, normalizeInstagram(selectedRequest.contact_info?.instagram))"
+                      @touchstart.passive="startLongPress($event, normalizeInstagram(selectedRequest.contact_info?.instagram))"
+                      @touchend="cancelLongPress"
+                      @touchcancel="cancelLongPress"
+                      @touchmove="cancelLongPress"
                     >
                       Instagram
                     </v-btn>
@@ -726,7 +754,7 @@
 
 <script setup>
 import { computed, reactive, ref, onMounted, onBeforeUnmount } from "vue"
-import { useTheme } from "vuetify"
+import { useDisplay, useTheme } from "vuetify"
 import AppNavbar from "@/components/AppNavbar.vue"
 import { get_Current_User, get_User_By_Id } from "@/dataModel/user"
 import {
@@ -737,6 +765,9 @@ import {
 } from "@/dataModel/venue_request"
 
 const theme = useTheme()
+const display = useDisplay()
+
+const THEME_STORAGE_KEY = "blassti-theme"
 
 const search = ref("")
 const detailsDialog = ref(false)
@@ -765,9 +796,10 @@ const snackbar = reactive({
   color: "primary",
 })
 
-const isBrowserDark = ref(false)
-const browserThemeClass = computed(() =>
-  isBrowserDark.value ? "browser-dark" : "browser-light"
+const isMobile = computed(() => display.smAndDown.value)
+const isDarkTheme = computed(() => theme.global.name.value === "dark")
+const pageThemeClass = computed(() =>
+  isDarkTheme.value ? "browser-dark" : "browser-light"
 )
 
 const linkMenu = reactive({
@@ -779,7 +811,65 @@ const linkMenu = reactive({
 
 const currentUser = ref(get_Current_User())
 
-const allRequests = computed(() => get_All_Venue_Requests())
+function normalizeVenueRequest(request) {
+  const venueData = request?.venue_data || {}
+  const layout = request?.layout || {}
+  const contactInfo = request?.contact_info || venueData.contact_info || {}
+  const bankAccountInfo = request?.bank_account_info || venueData.bank_account_info || {}
+  const dimensions = request?.dimensions || venueData.dimensions || {}
+  const coverImage =
+    request?.cover_image ||
+    request?.image ||
+    venueData.cover_image ||
+    venueData.image ||
+    venueData.profile_picture ||
+    ""
+
+  const capacity =
+    request?.seat_count ??
+    request?.capacity ??
+    venueData.seat_count ??
+    venueData.capacity ??
+    layout?.manual_seat_count ??
+    0
+
+  return {
+    ...request,
+    owner_user_id: request?.owner_user_id ?? request?.created_by_user_id ?? venueData?.owner_user_id ?? null,
+    created_by_user_id: request?.created_by_user_id ?? request?.owner_user_id ?? null,
+    submitted_at: request?.submitted_at || request?.created_at || venueData?.submitted_at || null,
+    title: request?.title || venueData?.title || "Untitled venue",
+    location: request?.location || venueData?.location || "-",
+    exact_address: request?.exact_address || venueData?.exact_address || contactInfo?.address || "-",
+    category: request?.category || venueData?.category || "-",
+    type: request?.type || venueData?.type || "-",
+    description: request?.description || venueData?.description || "",
+    price_per_hour: request?.price_per_hour ?? venueData?.price_per_hour ?? 0,
+    price_per_day: request?.price_per_day ?? venueData?.price_per_day ?? 0,
+    seat_count: capacity,
+    capacity,
+    cover_image: coverImage,
+    image: coverImage,
+    extra_images: request?.extra_images || venueData?.extra_images || [],
+    contact_info: {
+      ...venueData?.contact_info,
+      ...request?.contact_info,
+    },
+    bank_account_info: {
+      ...venueData?.bank_account_info,
+      ...request?.bank_account_info,
+    },
+    dimensions: {
+      width_m: request?.dimensions?.width_m ?? venueData?.dimensions?.width_m ?? dimensions?.width_m ?? 0,
+      height_m: request?.dimensions?.height_m ?? venueData?.dimensions?.height_m ?? dimensions?.height_m ?? 0,
+      shape: request?.dimensions?.shape ?? venueData?.dimensions?.shape ?? dimensions?.shape ?? "",
+    },
+  }
+}
+
+const allRequests = computed(() =>
+  get_All_Venue_Requests().map(request => normalizeVenueRequest(request))
+)
 
 const filteredRequests = computed(() => {
   const q = search.value.trim().toLowerCase()
@@ -1044,47 +1134,105 @@ function clearProcessedRequests() {
   notify("All processed requests cleared.", "success")
 }
 
-function applyBrowserTheme() {
+function applySavedTheme() {
   if (typeof window === "undefined") return
 
-  const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches
-  isBrowserDark.value = prefersDark
-
-  const targetThemeName = prefersDark ? "dark" : "light"
+  const savedTheme = localStorage.getItem(THEME_STORAGE_KEY)
+  const normalizedTheme = savedTheme === "light" ? "light" : "dark"
   const availableThemes = theme?.themes?.value ? Object.keys(theme.themes.value) : []
 
-  if (availableThemes.includes(targetThemeName)) {
-    theme.global.name.value = targetThemeName
+  if (availableThemes.includes(normalizedTheme)) {
+    theme.global.name.value = normalizedTheme
+  }
+
+  document.documentElement.setAttribute("data-app-theme", normalizedTheme)
+  document.documentElement.style.colorScheme = normalizedTheme
+}
+
+function handleWindowStorage(event) {
+  if (!event.key || event.key === THEME_STORAGE_KEY) {
+    applySavedTheme()
   }
 }
 
-let browserThemeMediaQuery = null
+function handleAppThemeSync(event) {
+  const nextTheme =
+    event?.detail === "light" || event?.detail === "dark"
+      ? event.detail
+      : localStorage.getItem(THEME_STORAGE_KEY)
 
-function handleBrowserThemeChange() {
-  applyBrowserTheme()
+  const normalizedTheme = nextTheme === "light" ? "light" : "dark"
+  theme.global.name.value = normalizedTheme
+  document.documentElement.setAttribute("data-app-theme", normalizedTheme)
+  document.documentElement.style.colorScheme = normalizedTheme
+}
+
+const longPressTimer = ref(null)
+
+function getTouchPoint(event) {
+  if (!event) return { clientX: 0, clientY: 0 }
+  const touch =
+    event.changedTouches?.[0] ||
+    event.touches?.[0]
+
+  if (touch) {
+    return {
+      clientX: touch.clientX,
+      clientY: touch.clientY,
+    }
+  }
+
+  return {
+    clientX: event.clientX ?? 0,
+    clientY: event.clientY ?? 0,
+  }
+}
+
+function startLongPress(event, href) {
+  if (!isMobile.value || !href) return
+
+  clearLongPress()
+
+  const point = getTouchPoint(event)
+
+  longPressTimer.value = window.setTimeout(() => {
+    openLinkContextMenu(
+      {
+        clientX: point.clientX,
+        clientY: point.clientY,
+      },
+      href
+    )
+  }, 520)
+}
+
+function clearLongPress() {
+  if (longPressTimer.value) {
+    clearTimeout(longPressTimer.value)
+    longPressTimer.value = null
+  }
+}
+
+function cancelLongPress() {
+  clearLongPress()
 }
 
 onMounted(() => {
   if (typeof window === "undefined") return
 
-  applyBrowserTheme()
-  browserThemeMediaQuery = window.matchMedia("(prefers-color-scheme: dark)")
-
-  if (browserThemeMediaQuery.addEventListener) {
-    browserThemeMediaQuery.addEventListener("change", handleBrowserThemeChange)
-  } else if (browserThemeMediaQuery.addListener) {
-    browserThemeMediaQuery.addListener(handleBrowserThemeChange)
-  }
+  applySavedTheme()
+  window.addEventListener("storage", handleWindowStorage)
+  window.addEventListener("focus", applySavedTheme)
+  window.addEventListener("blassti-theme-updated", handleAppThemeSync)
 })
 
 onBeforeUnmount(() => {
-  if (!browserThemeMediaQuery) return
+  if (typeof window === "undefined") return
 
-  if (browserThemeMediaQuery.removeEventListener) {
-    browserThemeMediaQuery.removeEventListener("change", handleBrowserThemeChange)
-  } else if (browserThemeMediaQuery.removeListener) {
-    browserThemeMediaQuery.removeListener(handleBrowserThemeChange)
-  }
+  clearLongPress()
+  window.removeEventListener("storage", handleWindowStorage)
+  window.removeEventListener("focus", applySavedTheme)
+  window.removeEventListener("blassti-theme-updated", handleAppThemeSync)
 })
 </script>
 
@@ -1108,8 +1256,45 @@ onBeforeUnmount(() => {
     linear-gradient(180deg, #f5f8ff 0%, #eef3fb 50%, #f8fbff 100%);
 }
 
+
 .request-page {
-  background: transparent;
+  animation: pageFadeIn 0.22s ease-out;
+}
+
+.page-hero-wrap::before,
+.page-hero-wrap::after {
+  content: "";
+  position: absolute;
+  pointer-events: none;
+  border-radius: 999px;
+  filter: blur(42px);
+  opacity: 0.55;
+}
+
+.page-hero-wrap::before {
+  width: 220px;
+  height: 220px;
+  top: -40px;
+  right: 4%;
+  animation: heroGlowFloat 8s ease-in-out infinite;
+}
+
+.page-hero-wrap::after {
+  width: 160px;
+  height: 160px;
+  left: 3%;
+  bottom: -24px;
+  animation: heroGlowFloat 10s ease-in-out infinite reverse;
+}
+
+.browser-dark .page-hero-wrap::before,
+.browser-dark .page-hero-wrap::after {
+  background: rgba(33, 150, 243, 0.18);
+}
+
+.browser-light .page-hero-wrap::before,
+.browser-light .page-hero-wrap::after {
+  background: rgba(33, 150, 243, 0.12);
 }
 
 .page-hero-wrap {
@@ -1549,4 +1734,127 @@ onBeforeUnmount(() => {
     width: 100%;
   }
 }
+
+:deep(.v-overlay__content > .details-dialog-card),
+:deep(.v-overlay__content > .action-dialog-card),
+:deep(.v-overlay__content > .link-context-card) {
+  transition: background 0.25s ease, border-color 0.25s ease, box-shadow 0.25s ease;
+}
+
+@keyframes pageFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes heroGlowFloat {
+  0%, 100% {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+  50% {
+    transform: translate3d(0, 8px, 0) scale(1.04);
+  }
+}
+
+@media (max-width: 960px) {
+  .request-page {
+    padding-left: 10px !important;
+    padding-right: 10px !important;
+  }
+
+  .hero-copy,
+  .hero-subtitle {
+    max-width: 100%;
+  }
+
+  .hero-side {
+    width: 100%;
+  }
+
+  .toolbar-action-btn,
+  .action-btn {
+    min-width: unset;
+  }
+
+  .request-table-shell {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .request-table {
+    min-width: 860px;
+  }
+}
+
+@media (max-width: 600px) {
+  .request-page {
+    padding-top: 18px !important;
+  }
+
+  .request-hero-card,
+  .request-main-card {
+    border-radius: 22px !important;
+  }
+
+  .hero-badge,
+  .details-mini-badge {
+    padding: 7px 12px;
+    font-size: 0.78rem;
+  }
+
+  .hero-title {
+    font-size: 1.9rem !important;
+    line-height: 1.08;
+  }
+
+  .hero-side {
+    flex-direction: column;
+  }
+
+  .stat-card {
+    width: 100%;
+    min-width: 100%;
+  }
+
+  .toolbar-wrap .d-flex.ga-2.flex-wrap.align-center {
+    width: 100%;
+  }
+
+  .toolbar-chip {
+    flex: 1 1 calc(50% - 8px);
+    justify-content: center;
+  }
+
+  .toolbar-action-btn {
+    width: 100%;
+  }
+
+  .search-field,
+  .quick-tip-card {
+    width: 100%;
+  }
+
+  .request-table {
+    min-width: 720px;
+  }
+
+  .details-header-content {
+    padding: 16px;
+  }
+
+  .details-actions {
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+
+  .details-actions .v-btn {
+    flex: 1 1 100%;
+  }
+}
+
 </style>

@@ -3,10 +3,10 @@
     <AppNavbar />
 
     <v-main class="seat-selection-page" :class="browserThemeClass">
-      <v-container fluid class="py-8 px-4 px-md-6">
-        <v-row v-if="event && venue" class="ga-0">
+      <v-container fluid class="py-6 py-md-8 px-3 px-sm-4 px-md-6 page-shell">
+        <v-row v-if="event && venue" class="ga-0 align-stretch">
           <!-- LEFT PANEL -->
-          <v-col cols="12" lg="4" xl="3" class="pr-lg-4 mb-4 mb-lg-0">
+          <v-col cols="12" lg="4" xl="3" class="pr-lg-4 mb-4 mb-lg-0 panel-column panel-column-left">
             <v-card rounded="xl" class="glass-card sidebar-card elevated-card">
               <v-card-text class="pa-5 pa-md-6">
                 <div class="d-flex align-start justify-space-between mb-4">
@@ -225,11 +225,14 @@
                     prepend-icon="mdi-arrow-left"
                     @click="goBack"
                     @contextmenu.prevent="showRouteContextMenu($event, getBackNavigationTarget(), 'Back')"
+                    @touchstart.passive="startRouteLongPress($event, getBackNavigationTarget(), 'Back')"
+                    @touchend="clearRouteLongPress"
+                    @touchcancel="clearRouteLongPress"
                   >
                     Back
                   </v-btn>
                   <div class="text-caption text-medium-emphasis mt-2">
-                    Right-click navigation buttons to open them in a new tab or window.
+                    {{ isMobile ? 'Long press navigation buttons to open more options.' : 'Right-click navigation buttons to open them in a new tab or window.' }}
                   </div>
                 </v-sheet>
 
@@ -248,6 +251,9 @@
                       class="contextual-nav-btn"
                       @click="router.push('/O_login')"
                       @contextmenu.prevent="showRouteContextMenu($event, '/O_login', 'Login')"
+                      @touchstart.passive="startRouteLongPress($event, '/O_login', 'Login')"
+                      @touchend="clearRouteLongPress"
+                      @touchcancel="clearRouteLongPress"
                     >
                       Login
                     </v-btn>
@@ -258,7 +264,7 @@
           </v-col>
 
           <!-- RIGHT PANEL -->
-          <v-col cols="12" lg="8" xl="9">
+          <v-col cols="12" lg="8" xl="9" class="panel-column panel-column-right">
             <v-card rounded="xl" class="glass-card canvas-card elevated-card">
               <v-card-text class="pa-4 pa-md-5">
                 <div class="d-flex flex-column flex-md-row align-md-center justify-space-between mb-4 ga-3">
@@ -305,7 +311,7 @@
                     </div>
 
                     <div class="text-caption text-medium-emphasis">
-                      Hover for a cleaner seat read, click to select, right-click supported on navigation buttons.
+                      {{ isMobile ? 'Tap to select seats, long press a seat for quick details, long press navigation buttons for more options.' : 'Hover for a cleaner seat read, click to select, right-click supported on navigation buttons.' }}
                     </div>
                   </div>
                 </v-sheet>
@@ -357,11 +363,15 @@
                       :style="getSeatStyle(seat)"
                       :disabled="isSeatReserved(seat)"
                       :title="buildSeatAriaLabel(seat)"
-                      @click="toggleSeat(seat)"
+                      @click="handleSeatClick(seat)"
                       @mouseenter="setHoveredSeat(seat)"
                       @mouseleave="clearHoveredSeat"
                       @focus="setHoveredSeat(seat)"
                       @blur="clearHoveredSeat"
+                      @touchstart.passive="handleSeatTouchStart($event, seat)"
+                      @touchmove.passive="handleSeatTouchMove($event)"
+                      @touchend="handleSeatTouchEnd"
+                      @touchcancel="handleSeatTouchCancel"
                     >
                       <div class="seat-shell">
                         <div class="seat-icon-wrap">
@@ -493,6 +503,9 @@
                   prepend-icon="mdi-home-outline"
                   @click="router.push('/n_mainpage')"
                   @contextmenu.prevent="showRouteContextMenu($event, '/n_mainpage', 'Go home')"
+                  @touchstart.passive="startRouteLongPress($event, '/n_mainpage', 'Go home')"
+                  @touchend="clearRouteLongPress"
+                  @touchcancel="clearRouteLongPress"
                 >
                   Go home
                 </v-btn>
@@ -538,7 +551,7 @@
       </v-menu>
 
       <!-- PAYMENT DIALOG -->
-      <v-dialog v-model="paymentDialog" max-width="620">
+      <v-dialog v-model="paymentDialog" max-width="620" :content-class="`theme-dialog ${browserThemeClass}`">
         <v-card rounded="xl">
           <v-card-title class="d-flex align-center justify-space-between py-4 px-5">
             <span class="text-h6 font-weight-bold">Card payment</span>
@@ -655,7 +668,7 @@
       </v-dialog>
 
       <!-- SUCCESS DIALOG -->
-      <v-dialog v-model="successDialog" max-width="520">
+      <v-dialog v-model="successDialog" max-width="520" :content-class="`theme-dialog ${browserThemeClass}`">
         <v-card rounded="xl" class="success-dialog-card">
           <v-card-text class="pa-7 text-center">
             <v-avatar size="72" color="success" variant="tonal" class="mb-4 success-pulse-avatar">
@@ -683,6 +696,9 @@
                 prepend-icon="mdi-ticket-confirmation-outline"
                 @click="goToBookings"
                 @contextmenu.prevent="showRouteContextMenu($event, '/K_mybookings', 'My bookings')"
+                @touchstart.passive="startRouteLongPress($event, '/K_mybookings', 'My bookings')"
+                @touchend="clearRouteLongPress"
+                @touchcancel="clearRouteLongPress"
               >
                 My bookings
               </v-btn>
@@ -693,6 +709,9 @@
                 prepend-icon="mdi-home-outline"
                 @click="goHome"
                 @contextmenu.prevent="showRouteContextMenu($event, '/n_mainpage', 'Home')"
+                @touchstart.passive="startRouteLongPress($event, '/n_mainpage', 'Home')"
+                @touchend="clearRouteLongPress"
+                @touchcancel="clearRouteLongPress"
               >
                 Home
               </v-btn>
@@ -708,7 +727,7 @@
 import { computed, onBeforeUnmount, onMounted, reactive, ref, watch } from "vue"
 import { useRoute, useRouter } from "vue-router"
 import AppNavbar from "@/components/AppNavbar.vue"
-import { useTheme } from "vuetify"
+import { useDisplay, useTheme } from "vuetify"
 import { get_Current_User } from "@/dataModel/user"
 import { get_Event_By_Id } from "@/dataModel/event"
 import { get_Venue_By_Id } from "@/dataModel/venue"
@@ -726,8 +745,15 @@ const BLASSTI_PAYMENT_STORAGE_KEY = "blassti_payment_records"
 const router = useRouter()
 const route = useRoute()
 const theme = useTheme()
+const display = useDisplay()
+const THEME_STORAGE_KEY = "blassti-theme"
 const browserPrefersDark = ref(true)
-const browserMediaQuery = ref(null)
+const liveThemeName = computed(() => {
+  return theme?.global?.name?.value === "light" ? "light" : "dark"
+})
+const seatLongPressTimer = ref(null)
+const routeLongPressTimer = ref(null)
+const suppressSeatClickKey = ref("")
 const routeContextMenu = reactive({
   show: false,
   x: 0,
@@ -736,9 +762,9 @@ const routeContextMenu = reactive({
   label: "",
 })
 
-const browserVuetifyTheme = computed(() => (browserPrefersDark.value ? "dark" : "light"))
+const browserVuetifyTheme = computed(() => liveThemeName.value)
 const browserThemeClass = computed(() =>
-  browserPrefersDark.value ? "browser-theme-dark" : "browser-theme-light"
+  liveThemeName.value === "dark" ? "browser-theme-dark" : "browser-theme-light"
 )
 
 
@@ -756,6 +782,7 @@ const isPaying = ref(false)
 const paymentError = ref("")
 const selectedSeatKeys = ref([])
 const hoveredSeatKey = ref("")
+const hoveredSeatPointer = ref({ x: 0, y: 0 })
 const paymentForm = reactive({
   cardType: "Visa",
   cardHolder: "",
@@ -766,22 +793,63 @@ const paymentForm = reactive({
 
 const fallbackSelection = reactive({})
 
-function syncBrowserTheme(eventOrMatches) {
-  const matches =
-    typeof eventOrMatches === "boolean"
-      ? eventOrMatches
-      : Boolean(eventOrMatches?.matches)
+const isMobile = computed(() => display.mdAndDown.value)
 
-  browserPrefersDark.value = matches
+function applyThemeChoice(themeName) {
+  const normalizedTheme = themeName === "light" ? "light" : "dark"
+  browserPrefersDark.value = normalizedTheme === "dark"
 
   if (theme?.global?.name) {
-    theme.global.name.value = matches ? "dark" : "light"
+    theme.global.name.value = normalizedTheme
+  }
+
+  if (typeof document !== "undefined") {
+    document.documentElement.setAttribute("data-app-theme", normalizedTheme)
+    document.documentElement.style.colorScheme = normalizedTheme
   }
 }
 
-function handleBrowserThemeChange(event) {
-  syncBrowserTheme(event)
+function loadSavedTheme() {
+  const savedTheme = localStorage.getItem(THEME_STORAGE_KEY)
+  applyThemeChoice(savedTheme === "light" ? "light" : "dark")
 }
+
+function handleStoredThemeChange() {
+  const savedTheme = localStorage.getItem(THEME_STORAGE_KEY)
+  if (savedTheme === "light" || savedTheme === "dark") {
+    applyThemeChoice(savedTheme)
+  }
+}
+
+function handleWindowStorage(event) {
+  if (!event.key || event.key === THEME_STORAGE_KEY) {
+    handleStoredThemeChange()
+  }
+}
+
+function handleThemeBroadcast(event) {
+  const nextTheme = event?.detail?.theme
+  if (nextTheme === "light" || nextTheme === "dark") {
+    applyThemeChoice(nextTheme)
+    return
+  }
+
+  handleStoredThemeChange()
+}
+
+watch(
+  () => theme?.global?.name?.value,
+  (newTheme) => {
+    const normalizedTheme = newTheme === "light" ? "light" : "dark"
+    browserPrefersDark.value = normalizedTheme === "dark"
+
+    if (typeof document !== "undefined") {
+      document.documentElement.setAttribute("data-app-theme", normalizedTheme)
+      document.documentElement.style.colorScheme = normalizedTheme
+    }
+  },
+  { immediate: true }
+)
 
 function showRouteContextMenu(event, path, label = "Navigation") {
   routeContextMenu.x = event.clientX
@@ -820,6 +888,91 @@ function openRouteInNewWindow(path) {
   window.open(href, "_blank", "noopener,noreferrer,width=1280,height=900")
 }
 
+function clearRouteLongPress() {
+  if (routeLongPressTimer.value) {
+    window.clearTimeout(routeLongPressTimer.value)
+    routeLongPressTimer.value = null
+  }
+}
+
+function startRouteLongPress(event, path, label = "Navigation") {
+  if (!isMobile.value) return
+
+  const touch = event?.touches?.[0] || event?.changedTouches?.[0]
+  if (!touch) return
+
+  const point = {
+    x: touch.clientX,
+    y: touch.clientY,
+  }
+
+  clearRouteLongPress()
+  routeLongPressTimer.value = window.setTimeout(() => {
+    showRouteContextMenu(
+      { clientX: point.x, clientY: point.y },
+      path,
+      label
+    )
+  }, 520)
+}
+
+function clearSeatLongPress() {
+  if (seatLongPressTimer.value) {
+    window.clearTimeout(seatLongPressTimer.value)
+    seatLongPressTimer.value = null
+  }
+}
+
+function handleSeatClick(seat) {
+  if (suppressSeatClickKey.value && suppressSeatClickKey.value === seat?.key) {
+    suppressSeatClickKey.value = ""
+    return
+  }
+
+  toggleSeat(seat)
+}
+
+function handleSeatTouchStart(event, seat) {
+  if (!isMobile.value || isSeatReserved(seat)) return
+
+  const touch = event?.touches?.[0] || event?.changedTouches?.[0]
+  const point = touch
+    ? { x: touch.clientX, y: touch.clientY }
+    : null
+
+  clearSeatLongPress()
+  seatLongPressTimer.value = window.setTimeout(() => {
+    suppressSeatClickKey.value = seat?.key || ""
+    setHoveredSeat(seat, point)
+  }, 450)
+}
+
+function handleSeatTouchMove(event) {
+  if (!isMobile.value) return
+
+  const touch = event?.touches?.[0] || event?.changedTouches?.[0]
+  if (touch) {
+    hoveredSeatPointer.value = {
+      x: touch.clientX,
+      y: touch.clientY,
+    }
+  }
+}
+
+function handleSeatTouchEnd() {
+  clearSeatLongPress()
+}
+
+function handleSeatTouchCancel() {
+  clearSeatLongPress()
+  if (isMobile.value) {
+    window.setTimeout(() => {
+      clearHoveredSeat()
+      suppressSeatClickKey.value = ""
+    }, 700)
+  }
+}
+
 function getBackNavigationTarget() {
   const fallbackPath =
     String(route.query.from || route.query.returnTo || "").trim() || "/n_mainpage"
@@ -832,36 +985,21 @@ function getBackNavigationTarget() {
 }
 
 onMounted(() => {
-  if (typeof window !== "undefined" && typeof window.matchMedia === "function") {
-    const media = window.matchMedia("(prefers-color-scheme: dark)")
-    browserMediaQuery.value = media
-    syncBrowserTheme(media.matches)
-
-    if (typeof media.addEventListener === "function") {
-      media.addEventListener("change", handleBrowserThemeChange)
-    } else if (typeof media.addListener === "function") {
-      media.addListener(handleBrowserThemeChange)
-    }
-  } else {
-    syncBrowserTheme(true)
-  }
-
+  loadSavedTheme()
+  window.addEventListener("storage", handleWindowStorage)
+  window.addEventListener("focus", handleStoredThemeChange)
+  window.addEventListener("blassti-theme-change", handleThemeBroadcast)
   window.addEventListener("click", closeRouteContextMenu)
   window.addEventListener("blur", closeRouteContextMenu)
   window.addEventListener("scroll", closeRouteContextMenu, true)
 })
 
 onBeforeUnmount(() => {
-  const media = browserMediaQuery.value
-
-  if (media) {
-    if (typeof media.removeEventListener === "function") {
-      media.removeEventListener("change", handleBrowserThemeChange)
-    } else if (typeof media.removeListener === "function") {
-      media.removeListener(handleBrowserThemeChange)
-    }
-  }
-
+  clearSeatLongPress()
+  clearRouteLongPress()
+  window.removeEventListener("storage", handleWindowStorage)
+  window.removeEventListener("focus", handleStoredThemeChange)
+  window.removeEventListener("blassti-theme-change", handleThemeBroadcast)
   window.removeEventListener("click", closeRouteContextMenu)
   window.removeEventListener("blur", closeRouteContextMenu)
   window.removeEventListener("scroll", closeRouteContextMenu, true)
@@ -896,12 +1034,32 @@ function normalizeSeatClassName(value) {
     .replace(/\s+/g, "-")
 }
 
+function getEventPrivateMeta() {
+  if (!event.value?.id) return null
+
+  try {
+    const allMeta = JSON.parse(localStorage.getItem("blassti_event_private_meta_v3") || "{}")
+    return Object.values(allMeta).find(item => item?.event_id === event.value.id) || null
+  } catch (error) {
+    console.error("Failed to load private event meta.", error)
+    return null
+  }
+}
+
 function defaultClassPrice(name) {
   const normalized = String(name || "").trim().toLowerCase()
+  const privateMeta = getEventPrivateMeta()
+  const ticketPrices = privateMeta?.ticket_prices || {}
 
-  if (normalized.includes("vip")) return 75
-  if (normalized.includes("special")) return 75
-  return 40
+  if (normalized.includes("vip")) {
+    return numeric(ticketPrices.vip, 75) || 75
+  }
+
+  if (normalized.includes("special")) {
+    return numeric(ticketPrices.special, 75) || 75
+  }
+
+  return numeric(ticketPrices.regular, 40) || 40
 }
 
 function normalizeCanvasSeat(seat, index) {
@@ -970,6 +1128,7 @@ function normalizeAsset(asset, index, fallbackName) {
 
 function getRawSeatArrays(raw) {
   const arrays = [
+    event.value?.seat_layout?.seats,
     raw?.seat_layout?.seats,
     raw?.design_layout?.seats,
     raw?.layout?.seats,
@@ -986,6 +1145,7 @@ function getRawSeatArrays(raw) {
 function getRawAssetArrays(raw, kind) {
   const map = {
     screens: [
+      event.value?.seat_layout?.screens,
       raw?.seat_layout?.screens,
       raw?.design_layout?.screens,
       raw?.layout?.screens,
@@ -994,6 +1154,7 @@ function getRawAssetArrays(raw, kind) {
       Array.isArray(raw?.elements) ? raw.elements.filter(item => item?.type === "screen" || item?.itemType === "screen") : [],
     ],
     stages: [
+      event.value?.seat_layout?.stages,
       raw?.seat_layout?.stages,
       raw?.design_layout?.stages,
       raw?.layout?.stages,
@@ -1002,6 +1163,7 @@ function getRawAssetArrays(raw, kind) {
       Array.isArray(raw?.elements) ? raw.elements.filter(item => item?.type === "stage" || item?.itemType === "stage") : [],
     ],
     audioSources: [
+      event.value?.seat_layout?.audio_sources,
       raw?.seat_layout?.audio_sources,
       raw?.design_layout?.audio_sources,
       raw?.layout?.audio_sources,
@@ -1043,6 +1205,7 @@ const canvasBounds = computed(() => {
   ]
 
   const metaWidth =
+    numeric(event.value?.seat_layout?.width, 0) ||
     numeric(rawVenue.value?.seat_layout?.width, 0) ||
     numeric(rawVenue.value?.design_layout?.width, 0) ||
     numeric(rawVenue.value?.layout?.width, 0) ||
@@ -1050,6 +1213,7 @@ const canvasBounds = computed(() => {
     numeric(rawVenue.value?.width_meters, 0)
 
   const metaHeight =
+    numeric(event.value?.seat_layout?.height, 0) ||
     numeric(rawVenue.value?.seat_layout?.height, 0) ||
     numeric(rawVenue.value?.design_layout?.height, 0) ||
     numeric(rawVenue.value?.layout?.height, 0) ||
@@ -1089,8 +1253,15 @@ function isSeatSelected(seat) {
   return selectedSeatKeys.value.includes(seat.key)
 }
 
-function setHoveredSeat(seat) {
+function setHoveredSeat(seat, pointer = null) {
   hoveredSeatKey.value = seat?.key || ""
+
+  if (pointer?.x != null && pointer?.y != null) {
+    hoveredSeatPointer.value = {
+      x: pointer.x,
+      y: pointer.y,
+    }
+  }
 }
 
 function clearHoveredSeat() {
@@ -1350,6 +1521,15 @@ function getAssetStyle(asset) {
 }
 
 function getSeatHoverCardStyle(seat) {
+  if (isMobile.value && hoveredSeatPointer.value?.x && hoveredSeatPointer.value?.y) {
+    return {
+      left: `${hoveredSeatPointer.value.x}px`,
+      top: `${Math.max(92, hoveredSeatPointer.value.y - 18)}px`,
+      position: "fixed",
+      transform: "translate(-50%, -100%)",
+    }
+  }
+
   const seatX = numeric(seat?.x, 0) + numeric(seat?.width, 1.2) / 2
   const seatY = numeric(seat?.y, 0) - 0.3
   const left = (seatX / canvasBounds.value.width) * 100
@@ -1893,7 +2073,6 @@ function goBack() {
 .browser-theme-light .seat-icon-wrap {
   background: rgba(15, 23, 42, 0.08);
 }
-</style>
 .browser-theme-dark {
   color-scheme: dark;
 }
@@ -2059,6 +2238,50 @@ function goBack() {
   100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(34, 197, 94, 0); }
 }
 
+
+.page-shell {
+  max-width: 1800px;
+  margin: 0 auto;
+}
+
+.panel-column {
+  display: flex;
+  flex-direction: column;
+}
+
+.seat-selection-page :deep(.v-overlay__content.theme-dialog .v-card) {
+  background: rgba(10, 16, 30, 0.96) !important;
+  color: white;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 0 24px 56px rgba(0, 0, 0, 0.34);
+}
+
+.browser-theme-light :deep(.v-overlay__content.theme-dialog .v-card) {
+  background: rgba(255, 255, 255, 0.98) !important;
+  color: #0f172a;
+  border-color: rgba(15, 23, 42, 0.08);
+  box-shadow: 0 24px 56px rgba(15, 23, 42, 0.14);
+}
+
+.browser-theme-light :deep(.v-overlay__content.theme-dialog .v-divider) {
+  border-color: rgba(15, 23, 42, 0.08) !important;
+}
+
+.browser-theme-light :deep(.v-overlay__content.theme-dialog .v-field) {
+  color: #0f172a;
+}
+
+.browser-theme-light :deep(.v-overlay__content.theme-dialog .v-field__outline),
+.browser-theme-light :deep(.v-overlay__content.theme-dialog .v-field__overlay) {
+  --v-field-border-opacity: 0.18;
+}
+
+.browser-theme-light :deep(.v-overlay__content.theme-dialog .v-label),
+.browser-theme-light :deep(.v-overlay__content.theme-dialog .text-body-2),
+.browser-theme-light :deep(.v-overlay__content.theme-dialog .text-medium-emphasis) {
+  color: rgba(15, 23, 42, 0.72) !important;
+}
+
 @media (max-width: 1264px) {
   .sidebar-card,
   .canvas-card {
@@ -2074,11 +2297,20 @@ function goBack() {
 }
 
 @media (max-width: 960px) {
+  .page-shell {
+    padding-top: 20px !important;
+  }
+
   .venue-canvas-wrapper,
   .venue-canvas-grid,
   .fallback-selector {
     min-height: 540px;
     height: 540px;
+  }
+
+  .seat-hover-card {
+    min-width: 150px;
+    max-width: 200px;
   }
 }
 
@@ -2087,20 +2319,57 @@ function goBack() {
     padding-bottom: 28px;
   }
 
+  .page-shell {
+    padding-left: 12px !important;
+    padding-right: 12px !important;
+  }
+
+  .sidebar-card .v-card-text,
+  .canvas-card .v-card-text {
+    padding: 18px !important;
+  }
+
   .venue-canvas-wrapper,
   .venue-canvas-grid,
   .fallback-selector {
     min-height: 460px;
     height: 460px;
+    border-radius: 22px;
   }
 
   .canvas-seat {
-    min-width: 28px;
-    min-height: 28px;
+    min-width: 30px;
+    min-height: 30px;
     border-radius: 12px;
+    padding: 2px;
+  }
+
+  .seat-icon-wrap {
+    width: 18px;
+    height: 18px;
   }
 
   .seat-label {
-    font-size: 9px;
+    font-size: 8px;
+  }
+
+  .selected-seat-item,
+  .fallback-class-row {
+    align-items: flex-start;
+    flex-wrap: wrap;
+  }
+
+  .summary-row {
+    gap: 10px;
+  }
+
+  .seat-hover-card {
+    min-width: 144px;
+    max-width: min(78vw, 210px);
+  }
+
+  .canvas-toolbar .text-caption {
+    width: 100%;
   }
 }
+</style>

@@ -2,7 +2,135 @@ import { reactive } from "vue"
 
 const EVENTS_STORAGE_KEY = "events"
 const EVENTS_VERSION_KEY = "events_seed_version"
-const EVENTS_SEED_VERSION = "v4_events_with_ticket_guardrails_and_status_helpers"
+const EVENTS_SEED_VERSION = "v5_events_with_venue_layout_sync"
+
+function toNumber(value, fallback = 0) {
+  const n = Number(value)
+  return Number.isFinite(n) ? n : fallback
+}
+
+function deepClone(value) {
+  try {
+    return JSON.parse(JSON.stringify(value))
+  } catch (error) {
+    console.error("Failed to deep clone event data.", error)
+    return null
+  }
+}
+
+function normalizeSeatClass(value) {
+  const text = String(value ?? "").trim().toLowerCase()
+  if (!text) return null
+  if (text === "regular" || text === "normal") return "Normal"
+  if (text === "special") return "Special"
+  if (text === "vip") return "VIP"
+  return String(value ?? "").trim() || null
+}
+
+function normalizeSeatClasses(seatClasses = [], seatLayout = null) {
+  const result = []
+  const pushUnique = value => {
+    const normalized = normalizeSeatClass(value)
+    if (normalized && !result.includes(normalized)) {
+      result.push(normalized)
+    }
+  }
+
+  if (Array.isArray(seatClasses)) {
+    seatClasses.forEach(pushUnique)
+  }
+
+  if (Array.isArray(seatLayout?.seats)) {
+    seatLayout.seats.forEach(seat => {
+      pushUnique(seat?.seat_class)
+    })
+  }
+
+  return result
+}
+
+function normalizeSeatLayout(seatLayout = null) {
+  if (!seatLayout || typeof seatLayout !== "object") return null
+
+  return {
+    width: toNumber(seatLayout?.width, 20),
+    height: toNumber(seatLayout?.height, 12),
+
+    seats: Array.isArray(seatLayout?.seats)
+      ? seatLayout.seats.map((seat, index) => {
+          const row = String(seat?.row ?? "").trim()
+          const number = String(seat?.number ?? "").trim()
+          const seatNumber =
+            String(
+              seat?.seat_number ??
+              (row && number ? `${row}${number}` : "")
+            ).trim() || `S${index + 1}`
+
+          return {
+            ...deepClone(seat),
+            id: seat?.id ?? `seat-${index + 1}`,
+            x: toNumber(seat?.x, 0),
+            y: toNumber(seat?.y, 0),
+            width: toNumber(seat?.width, 1.2),
+            height: toNumber(seat?.height, 1.2),
+            rotation: toNumber(seat?.rotation, 0),
+            row,
+            number,
+            seat_number: seatNumber,
+            label: String(seat?.label ?? seatNumber).trim() || seatNumber,
+            location_key:
+              String(seat?.location_key ?? seat?.location ?? seatNumber).trim() || seatNumber,
+            seat_class: normalizeSeatClass(seat?.seat_class) ?? "Normal",
+            price: toNumber(seat?.price, 0),
+          }
+        })
+      : [],
+
+    stages: Array.isArray(seatLayout?.stages)
+      ? seatLayout.stages.map((item, index) => ({
+          ...deepClone(item),
+          id: item?.id ?? `stage-${index + 1}`,
+          name: String(item?.name ?? item?.title ?? `Stage ${index + 1}`).trim() || `Stage ${index + 1}`,
+          x: toNumber(item?.x, 0),
+          y: toNumber(item?.y, 0),
+          width: toNumber(item?.width, 140),
+          height: toNumber(item?.height, 50),
+          rotation: toNumber(item?.rotation, 0),
+        }))
+      : [],
+
+    screens: Array.isArray(seatLayout?.screens)
+      ? seatLayout.screens.map((item, index) => ({
+          ...deepClone(item),
+          id: item?.id ?? `screen-${index + 1}`,
+          name: String(item?.name ?? item?.title ?? `Screen ${index + 1}`).trim() || `Screen ${index + 1}`,
+          x: toNumber(item?.x, 0),
+          y: toNumber(item?.y, 0),
+          width: toNumber(item?.width, 140),
+          height: toNumber(item?.height, 50),
+          rotation: toNumber(item?.rotation, 0),
+        }))
+      : [],
+
+    audio_sources: Array.isArray(seatLayout?.audio_sources)
+      ? seatLayout.audio_sources.map((item, index) => ({
+          ...deepClone(item),
+          id: item?.id ?? `audio-${index + 1}`,
+          name: String(item?.name ?? item?.title ?? `Audio Source ${index + 1}`).trim() || `Audio Source ${index + 1}`,
+          x: toNumber(item?.x, 0),
+          y: toNumber(item?.y, 0),
+          width: toNumber(item?.width, 24),
+          height: toNumber(item?.height, 24),
+          rotation: toNumber(item?.rotation, 0),
+        }))
+      : [],
+
+    elements: Array.isArray(seatLayout?.elements) ? deepClone(seatLayout.elements) : [],
+    metadata: seatLayout?.metadata && typeof seatLayout.metadata === "object"
+      ? deepClone(seatLayout.metadata)
+      : {},
+  }
+}
 
 export class Event {
   constructor({
@@ -27,10 +155,17 @@ export class Event {
     accessible_seats,
     review_rating,
     seat_classes,
+    seat_layout,
     sound_quality,
     route_path,
     creator_user_id,
   }) {
+    const normalizedSeatLayout = normalizeSeatLayout(seat_layout)
+    const normalizedSeatClasses = normalizeSeatClasses(seat_classes, normalizedSeatLayout)
+    const layoutSeatCount = Array.isArray(normalizedSeatLayout?.seats)
+      ? normalizedSeatLayout.seats.length
+      : 0
+
     this.id = id ?? crypto.randomUUID()
     this.title = title
     this.date = date
@@ -42,17 +177,20 @@ export class Event {
     this.type = type
     this.description = description
     this.image = image ?? ""
-    this.images = images ?? (image ? [image] : [])
-    this.featured_artist_ids = featured_artist_ids ?? []
+    this.images = Array.isArray(images)
+      ? images.filter(Boolean)
+      : (image ? [image] : [])
+    this.featured_artist_ids = Array.isArray(featured_artist_ids) ? featured_artist_ids : []
     this.age_restriction = age_restriction ?? "All ages"
-    this.tickets_sold = tickets_sold ?? 0
-    this.capacity = capacity ?? 0
+    this.tickets_sold = toNumber(tickets_sold, 0)
+    this.capacity = toNumber(capacity, layoutSeatCount || 0) || layoutSeatCount
     this.featured = featured ?? false
     this.last_call = last_call ?? false
     this.accessible_seats = accessible_seats ?? false
-    this.review_rating = review_rating ?? 0
-    this.seat_classes = seat_classes ?? []
-    this.sound_quality = sound_quality ?? 0
+    this.review_rating = toNumber(review_rating, 0)
+    this.seat_classes = normalizedSeatClasses
+    this.seat_layout = normalizedSeatLayout
+    this.sound_quality = toNumber(sound_quality, 0)
     this.route_path = route_path ?? ""
     this.creator_user_id = creator_user_id ?? null
   }
@@ -870,7 +1008,7 @@ function loadEvents() {
         }
       }
 
-      return mergedEvents
+      return mergedEvents.map(event => new Event(event))
     } catch (error) {
       console.error("Failed to parse saved events. Loading defaults instead.", error)
     }

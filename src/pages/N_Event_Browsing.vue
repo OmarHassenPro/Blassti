@@ -2,7 +2,7 @@
   <v-app>
     <AppNavbar />
 
-    <v-main class="event-page-shell" :class="browserThemeClass">
+    <v-main class="event-page-shell" :class="[browserThemeClass, `theme-${currentTheme}`, { 'is-mobile-view': isMobile }]">
       <div class="page-background-orb orb-1"></div>
       <div class="page-background-orb orb-2"></div>
 
@@ -93,7 +93,7 @@
         </v-row>
 
         <v-row class="ga-md-0">
-          <v-col cols="12" lg="3" xl="3">
+          <v-col cols="12" lg="3" xl="3" class="filter-column">
             <v-card class="pa-4 pa-md-5 rounded-xl rounded-xxl filter-card" elevation="0">
               <div class="d-flex align-center justify-space-between mb-4">
                 <div class="d-flex align-center">
@@ -104,6 +104,12 @@
                     <div class="text-h6 font-weight-bold">Filters</div>
                     <div class="text-caption text-medium-emphasis">
                       Narrow down your results
+                    </div>
+                    <div
+                      v-if="isMobile"
+                      class="text-caption text-medium-emphasis mt-1 mobile-filter-note"
+                    >
+                      Optimized for touch and smaller screens
                     </div>
                   </div>
                 </div>
@@ -353,7 +359,7 @@
             </v-card>
           </v-col>
 
-          <v-col cols="12" lg="9" xl="8">
+          <v-col cols="12" lg="9" xl="8" class="results-column">
             <v-card class="pa-4 pa-md-5 rounded-xl rounded-xxl results-card" elevation="0">
               <div class="d-flex flex-column flex-md-row align-md-center justify-space-between mb-5 ga-4">
                 <div>
@@ -411,7 +417,18 @@
                   :key="event.id"
                   cols="12"
                 >
-                  <v-card class="rounded-xl rounded-xxl pa-3 pa-md-4 event-card" :class="{ 'event-card-muted': isPastEvent(event) || event.seats_left === 0 }" elevation="0">
+                  <v-card
+                    class="rounded-xl rounded-xxl pa-3 pa-md-4 event-card"
+                    :class="{
+                      'event-card-muted': isPastEvent(event) || event.seats_left === 0,
+                      'event-card-mobile': isMobile
+                    }"
+                    elevation="0"
+                    @touchstart.passive="handleCardTouchStart($event, event)"
+                    @touchend="clearLongPress"
+                    @touchmove="clearLongPress"
+                    @touchcancel="clearLongPress"
+                  >
                     <v-row class="align-stretch">
                       <v-col cols="12" md="4">
                         <div class="event-image-wrap">
@@ -506,14 +523,19 @@
                           <strong>Artist:</strong>&nbsp;{{ getArtistNames(event).join(", ") }}
                         </div>
 
-                        <v-row style="margin-top:16px" class="align-center">
+                        <v-row style="margin-top:16px" class="align-center action-row">
                           <v-btn
                             size="small"
                             :color="canBuyTicket(event) ? 'primary' : (isPastEvent(event) ? 'grey-darken-1' : 'error')"
                             class="action-btn primary-action-btn"
+                            :class="{ 'action-btn-mobile': isMobile }"
                             :disabled="!canBuyTicket(event)"
                             @click="goToSeatSelection(event)"
                             @contextmenu.prevent.stop="openSeatSelectionContextMenu($event, event)"
+                            @touchstart.passive.stop="handleSeatSelectionTouchStart($event, event)"
+                            @touchend.stop="clearLongPress"
+                            @touchmove.stop="clearLongPress"
+                            @touchcancel.stop="clearLongPress"
                           >
                             <v-icon start size="18">{{ canBuyTicket(event) ? 'mdi-ticket-outline' : (isPastEvent(event) ? 'mdi-calendar-remove-outline' : 'mdi-close-circle-outline') }}</v-icon>
                             {{ canBuyTicket(event) ? 'Buy Ticket' : (isPastEvent(event) ? 'Event Ended' : 'Sold Out') }}
@@ -523,8 +545,13 @@
                             size="small"
                             variant="outlined"
                             class="ml-2 action-btn"
+                            :class="{ 'action-btn-mobile': isMobile }"
                             @click="goToMoreInfo(event)"
                             @contextmenu.prevent.stop="openMoreInfoContextMenu($event, event)"
+                            @touchstart.passive.stop="handleMoreInfoTouchStart($event, event)"
+                            @touchend.stop="clearLongPress"
+                            @touchmove.stop="clearLongPress"
+                            @touchcancel.stop="clearLongPress"
                           >
                             <v-icon start size="18">mdi-information-outline</v-icon>
                             More Info
@@ -590,6 +617,12 @@
         prepend-icon="mdi-open-in-app"
         @click="openContextMenuTargetInNewWindow"
       />
+      <v-list-item
+        v-if="isMobile"
+        title="Long press is enabled on mobile"
+        prepend-icon="mdi-cellphone-cog"
+        disabled
+      />
     </v-list>
   </v-menu>
 </template>
@@ -598,10 +631,14 @@
 import AppNavbar from "@/components/AppNavbar.vue"
 import { ref, computed, onMounted, onBeforeUnmount } from "vue"
 import { useRouter } from "vue-router"
+import { useDisplay, useTheme } from "vuetify"
 import { get_All_Events, can_Buy_Event_Tickets, is_Event_Past } from "@/dataModel/event"
 import { get_All_Artists, get_User_By_Id } from "@/dataModel/user"
 
 const router = useRouter()
+const theme = useTheme()
+const display = useDisplay()
+const THEME_STORAGE_KEY = "blassti-theme"
 const events = get_All_Events()
 const artists = get_All_Artists()
 
@@ -655,6 +692,14 @@ const availability = ref({
 
 const artist = ref(null)
 
+const isMobile = computed(() => display.mdAndDown.value)
+
+const currentTheme = computed(() => {
+  return theme.global.name.value === "light" ? "light" : "dark"
+})
+
+const isDarkTheme = computed(() => currentTheme.value === "dark")
+
 const linkContextMenu = ref({
   show: false,
   x: 0,
@@ -663,44 +708,108 @@ const linkContextMenu = ref({
   label: "",
 })
 
-const isBrowserDark = ref(false)
-let browserThemeMedia = null
+const longPressTimeout = ref(null)
+const longPressTriggered = ref(false)
+const LONG_PRESS_DELAY = 520
 
-function applyBrowserThemePreference() {
-  if (typeof window === "undefined" || !window.matchMedia) return
-  isBrowserDark.value = window.matchMedia("(prefers-color-scheme: dark)").matches
+function applyThemeChoice(themeName) {
+  const normalizedTheme = themeName === "light" ? "light" : "dark"
+  theme.global.name.value = normalizedTheme
+  if (typeof window !== "undefined") {
+    localStorage.setItem(THEME_STORAGE_KEY, normalizedTheme)
+  }
+  document.documentElement.setAttribute("data-app-theme", normalizedTheme)
+  document.documentElement.style.colorScheme = normalizedTheme
 }
 
-function handleBrowserThemeChange(event) {
-  isBrowserDark.value = !!event.matches
+function loadSavedTheme() {
+  if (typeof window === "undefined") return
+  const savedTheme = localStorage.getItem(THEME_STORAGE_KEY)
+  applyThemeChoice(savedTheme === "light" ? "light" : "dark")
+}
+
+function handleWindowStorage(event) {
+  if (!event.key || event.key === THEME_STORAGE_KEY) {
+    const savedTheme = localStorage.getItem(THEME_STORAGE_KEY)
+    if (savedTheme === "light" || savedTheme === "dark") {
+      theme.global.name.value = savedTheme
+      document.documentElement.setAttribute("data-app-theme", savedTheme)
+      document.documentElement.style.colorScheme = savedTheme
+    }
+  }
 }
 
 onMounted(() => {
-  if (typeof window === "undefined" || !window.matchMedia) return
-
-  browserThemeMedia = window.matchMedia("(prefers-color-scheme: dark)")
-  applyBrowserThemePreference()
-
-  if (browserThemeMedia.addEventListener) {
-    browserThemeMedia.addEventListener("change", handleBrowserThemeChange)
-  } else if (browserThemeMedia.addListener) {
-    browserThemeMedia.addListener(handleBrowserThemeChange)
-  }
+  loadSavedTheme()
+  window.addEventListener("storage", handleWindowStorage)
 })
 
 onBeforeUnmount(() => {
-  if (!browserThemeMedia) return
-
-  if (browserThemeMedia.removeEventListener) {
-    browserThemeMedia.removeEventListener("change", handleBrowserThemeChange)
-  } else if (browserThemeMedia.removeListener) {
-    browserThemeMedia.removeListener(handleBrowserThemeChange)
-  }
+  clearLongPress()
+  window.removeEventListener("storage", handleWindowStorage)
 })
 
 const browserThemeClass = computed(() => {
-  return isBrowserDark.value ? "browser-dark" : "browser-light"
+  return isDarkTheme.value ? "browser-dark" : "browser-light"
 })
+
+function getPointerPosition(event) {
+  if (event?.touches?.[0]) {
+    return {
+      clientX: event.touches[0].clientX,
+      clientY: event.touches[0].clientY,
+    }
+  }
+
+  if (event?.changedTouches?.[0]) {
+    return {
+      clientX: event.changedTouches[0].clientX,
+      clientY: event.changedTouches[0].clientY,
+    }
+  }
+
+  return {
+    clientX: event?.clientX ?? window.innerWidth / 2,
+    clientY: event?.clientY ?? window.innerHeight / 2,
+  }
+}
+
+function startLongPress(event, callback) {
+  if (!isMobile.value) return
+  clearLongPress()
+  longPressTriggered.value = false
+
+  longPressTimeout.value = window.setTimeout(() => {
+    longPressTriggered.value = true
+    callback()
+  }, LONG_PRESS_DELAY)
+}
+
+function clearLongPress() {
+  if (longPressTimeout.value) {
+    window.clearTimeout(longPressTimeout.value)
+    longPressTimeout.value = null
+  }
+}
+
+function handleCardTouchStart(event, item) {
+  startLongPress(event, () => {
+    openMoreInfoContextMenu(event, item)
+  })
+}
+
+function handleMoreInfoTouchStart(event, item) {
+  startLongPress(event, () => {
+    openMoreInfoContextMenu(event, item)
+  })
+}
+
+function handleSeatSelectionTouchStart(event, item) {
+  if (!canBuyTicket(item)) return
+  startLongPress(event, () => {
+    openSeatSelectionContextMenu(event, item)
+  })
+}
 
 function getRouteHref(path, query = undefined) {
   return router.resolve({ path, query }).href
@@ -717,10 +826,12 @@ function openHrefInNewWindow(href) {
 }
 
 function openRouteContextMenu(event, path, label, query = undefined) {
+  const { clientX, clientY } = getPointerPosition(event)
+
   linkContextMenu.value = {
     show: true,
-    x: event.clientX,
-    y: event.clientY,
+    x: clientX,
+    y: clientY,
     href: getRouteHref(path, query),
     label,
   }
@@ -860,10 +971,18 @@ function getArtistNames(event) {
 }
 
 function goToMoreInfo(event) {
+  if (longPressTriggered.value) {
+    longPressTriggered.value = false
+    return
+  }
   router.push(`/o_eventinfo?id=${event.id}`)
 }
 
 function goToSeatSelection(event) {
+  if (longPressTriggered.value) {
+    longPressTriggered.value = false
+    return
+  }
   if (!canBuyTicket(event)) return
   router.push(`/seatSelection?id=${event.id}`)
 }
@@ -1833,6 +1952,192 @@ const filteredEvents = computed(() => {
   to {
     opacity: 1;
     transform: translateY(0);
+  }
+}
+
+
+.mobile-filter-note {
+  line-height: 1.45;
+}
+
+.filter-column,
+.results-column {
+  min-width: 0;
+}
+
+.action-row {
+  row-gap: 10px;
+}
+
+.event-card-mobile {
+  cursor: default;
+}
+
+.action-btn-mobile {
+  min-height: 42px;
+}
+
+.browser-light .hero-search-field :deep(.v-field) {
+  background: rgba(255, 255, 255, 0.82);
+}
+
+.browser-dark .hero-search-field :deep(.v-field) {
+  background: rgba(16, 24, 38, 0.82);
+}
+
+.event-card,
+.filter-card,
+.results-card,
+.hero-surface,
+.info-pill,
+.status-chip,
+.quick-filter-chip,
+.active-filter-chip,
+.summary-chip,
+.filter-count-chip {
+  max-width: 100%;
+}
+
+.event-title,
+.event-description,
+.artist-line,
+.event-location-line,
+.info-pill {
+  overflow-wrap: anywhere;
+}
+
+.action-btn + .action-btn {
+  margin-left: 8px;
+}
+
+@media (max-width: 1264px) {
+  .page-header--single .hero-copy {
+    max-width: 100%;
+  }
+
+  .event-image-wrap {
+    min-height: 220px;
+  }
+}
+
+@media (max-width: 959px) {
+  .page-container {
+    padding-top: 4px;
+  }
+
+  .page-header {
+    gap: 18px;
+  }
+
+  .hero-surface,
+  .filter-card,
+  .results-card {
+    border-radius: 22px !important;
+  }
+
+  .filter-card {
+    margin-bottom: 16px;
+  }
+
+  .event-card {
+    padding: 14px !important;
+  }
+
+  .status-chip-group {
+    width: 100%;
+  }
+
+  .action-row {
+    margin-top: 18px !important;
+  }
+
+  .action-row :deep(.v-col),
+  .action-row :deep(.v-col-auto) {
+    width: 100%;
+    max-width: 100%;
+    flex: 1 1 100%;
+  }
+
+  .action-btn,
+  .action-btn-mobile {
+    width: 100%;
+    min-height: 44px;
+  }
+
+  .action-btn + .action-btn {
+    margin-left: 0;
+  }
+
+  .ml-2 {
+    margin-left: 0;
+  }
+
+  .event-image-wrap {
+    min-height: 210px;
+  }
+}
+
+@media (max-width: 600px) {
+  .event-page-shell {
+    overflow-x: hidden;
+  }
+
+  .page-container {
+    padding-left: 10px !important;
+    padding-right: 10px !important;
+  }
+
+  .hero-surface {
+    padding: 20px !important;
+  }
+
+  .page-title {
+    font-size: 1.9rem !important;
+    line-height: 1.08;
+  }
+
+  .page-subtitle {
+    font-size: 0.98rem;
+    line-height: 1.6;
+  }
+
+  .hero-search-wrap {
+    max-width: 100%;
+  }
+
+  .hero-tags,
+  .event-info-pills,
+  .status-chip-group {
+    gap: 8px;
+  }
+
+  .filter-toolbar,
+  .active-filters-wrap {
+    padding: 12px;
+  }
+
+  .event-title {
+    font-size: 1.24rem !important;
+  }
+
+  .event-description {
+    font-size: 0.94rem;
+  }
+
+  .info-pill {
+    width: 100%;
+    justify-content: flex-start;
+    padding: 10px 12px;
+  }
+
+  .empty-state-sheet {
+    min-height: 220px;
+    height: auto !important;
+    padding: 20px 12px;
+  }
+
+  .context-menu-list {
+    min-width: 240px;
   }
 }
 

@@ -395,6 +395,10 @@
                         class="pa-3 pa-md-4 upcoming-event-card"
                         @click="goToEvent(evt.id)"
                         @contextmenu.prevent="openNavigationMenu($event, getEventNavigationUrl(evt.id), 'event')"
+                        @touchstart.passive="startLongPress($event, getEventNavigationUrl(evt.id), 'event')"
+                        @touchend="cancelLongPress"
+                        @touchmove="cancelLongPress"
+                        @touchcancel="cancelLongPress"
                         style="cursor: pointer;"
                       >
                         <div class="upcoming-event-accent"></div>
@@ -461,6 +465,10 @@
                               class="px-0 text-decoration-underline event-view-btn"
                               @click.stop="goToEvent(evt.id)"
                               @contextmenu.prevent.stop="openNavigationMenu($event, getEventNavigationUrl(evt.id), 'event')"
+                              @touchstart.passive.stop="startLongPress($event, getEventNavigationUrl(evt.id), 'event')"
+                              @touchend.stop="cancelLongPress"
+                              @touchmove.stop="cancelLongPress"
+                              @touchcancel.stop="cancelLongPress"
                             >
                               <v-icon start size="16">mdi-open-in-new</v-icon>
                               View event
@@ -515,6 +523,10 @@
                     :disabled="!venue || !venue.id || !venue.availability"
                     @click="bookVenue"
                     @contextmenu.prevent="openNavigationMenu($event, getReservationNavigationUrl(), 'reservation')"
+                    @touchstart.passive="startLongPress($event, getReservationNavigationUrl(), 'reservation')"
+                    @touchend="cancelLongPress"
+                    @touchmove="cancelLongPress"
+                    @touchcancel="cancelLongPress"
                   >
                     <v-icon start>mdi-calendar-check-outline</v-icon>
                     Book venue now
@@ -526,7 +538,7 @@
 
                   <div class="right-click-tip mt-4">
                     <v-icon size="15" class="me-1">mdi-mouse-right-click-outline</v-icon>
-                    Right-click navigation buttons/cards to open in a new tab or window.
+                    {{ isMobile ? "Long-press navigation buttons or cards to open quick link actions." : "Right-click navigation buttons or cards to open in a new tab or window." }}
                   </div>
                 </v-card>
               </div>
@@ -553,6 +565,7 @@
           :location="'top start'"
           :close-on-content-click="true"
           content-class="navigation-context-menu"
+          :class="`theme-${currentTheme}`"
         >
           <template #activator="{ props }">
             <div
@@ -562,7 +575,7 @@
             ></div>
           </template>
 
-          <v-card rounded="xl" min-width="240" class="pa-2">
+          <v-card rounded="xl" min-width="240" class="pa-2 context-menu-card" :class="`theme-${currentTheme}`">
             <v-list density="comfortable" nav>
               <v-list-subheader class="text-caption">
                 Navigation options
@@ -594,6 +607,7 @@
           timeout="2200"
           rounded="pill"
           location="bottom right"
+          :class="`theme-${currentTheme}`"
         >
           Link copied successfully
         </v-snackbar>
@@ -605,6 +619,7 @@
 <script setup>
 import { computed, ref, watch, onMounted, onBeforeUnmount } from "vue"
 import { useRoute, useRouter } from "vue-router"
+import { useDisplay, useTheme } from "vuetify"
 import AppNavbar from "@/components/AppNavbar.vue"
 import { get_Venue_By_Id, maskBankAccountNumber } from "@/dataModel/venue"
 import { get_All_Events } from "@/dataModel/event"
@@ -612,9 +627,13 @@ import { get_Current_User } from "@/dataModel/user"
 
 const route = useRoute()
 const router = useRouter()
+const theme = useTheme()
+const display = useDisplay()
 const currentUser = ref(get_Current_User())
-const prefersDark = ref(false)
 const linkCopiedSnackbar = ref(false)
+
+const THEME_STORAGE_KEY = "blassti-theme"
+const LONG_PRESS_DURATION = 520
 
 const navigationMenu = ref({
   open: false,
@@ -624,8 +643,7 @@ const navigationMenu = ref({
   type: ""
 })
 
-let mediaQuery = null
-let mediaQueryHandler = null
+let longPressTimer = null
 
 const venue = computed(() => {
   const venueId = String(route.query.id ?? "")
@@ -634,6 +652,12 @@ const venue = computed(() => {
 })
 
 const currentImageIndex = ref(0)
+
+const isMobile = computed(() => display.smAndDown.value)
+
+const currentTheme = computed(() => {
+  return theme.global.name.value === "light" ? "light" : "dark"
+})
 
 watch(
   () => route.query.id,
@@ -684,7 +708,7 @@ const upcomingEvents = computed(() => {
 })
 
 const browserThemeClass = computed(() => {
-  return prefersDark.value ? "browser-theme-dark" : "browser-theme-light"
+  return currentTheme.value === "dark" ? "browser-theme-dark" : "browser-theme-light"
 })
 
 const navigationAnchorStyle = computed(() => {
@@ -793,36 +817,77 @@ async function copyNavigationLink() {
   navigationMenu.value.open = false
 }
 
-function syncBrowserTheme() {
-  if (typeof window === "undefined" || typeof window.matchMedia !== "function") return
-  prefersDark.value = window.matchMedia("(prefers-color-scheme: dark)").matches
+function applyThemeChoice(themeName) {
+  const normalizedTheme = themeName === "light" ? "light" : "dark"
+  theme.global.name.value = normalizedTheme
+
+  if (typeof document !== "undefined") {
+    document.documentElement.setAttribute("data-app-theme", normalizedTheme)
+    document.documentElement.style.colorScheme = normalizedTheme
+  }
+}
+
+function loadSavedTheme() {
+  if (typeof window === "undefined") return
+  const savedTheme = window.localStorage.getItem(THEME_STORAGE_KEY)
+  applyThemeChoice(savedTheme === "light" ? "light" : "dark")
+}
+
+function handleWindowStorage(event) {
+  if (!event.key || event.key === THEME_STORAGE_KEY) {
+    const savedTheme = window.localStorage.getItem(THEME_STORAGE_KEY)
+    if (savedTheme === "light" || savedTheme === "dark") {
+      applyThemeChoice(savedTheme)
+    }
+  }
+}
+
+function openNavigationMenuFromTarget(targetElement, url, type = "") {
+  if (!targetElement || !url) return
+
+  const rect = targetElement.getBoundingClientRect()
+
+  openNavigationMenu(
+    {
+      clientX: rect.left + Math.min(rect.width / 2, 40),
+      clientY: rect.top + Math.min(rect.height / 2, 40)
+    },
+    url,
+    type
+  )
+}
+
+function clearLongPressTimer() {
+  if (longPressTimer) {
+    clearTimeout(longPressTimer)
+    longPressTimer = null
+  }
+}
+
+function startLongPress(event, url, type = "") {
+  if (!isMobile.value || !url) return
+
+  clearLongPressTimer()
+
+  const targetElement = event.currentTarget
+  longPressTimer = window.setTimeout(() => {
+    openNavigationMenuFromTarget(targetElement, url, type)
+    longPressTimer = null
+  }, LONG_PRESS_DURATION)
+}
+
+function cancelLongPress() {
+  clearLongPressTimer()
 }
 
 onMounted(() => {
-  syncBrowserTheme()
-
-  if (typeof window !== "undefined" && typeof window.matchMedia === "function") {
-    mediaQuery = window.matchMedia("(prefers-color-scheme: dark)")
-    mediaQueryHandler = (event) => {
-      prefersDark.value = event.matches
-    }
-
-    if (typeof mediaQuery.addEventListener === "function") {
-      mediaQuery.addEventListener("change", mediaQueryHandler)
-    } else if (typeof mediaQuery.addListener === "function") {
-      mediaQuery.addListener(mediaQueryHandler)
-    }
-  }
+  loadSavedTheme()
+  window.addEventListener("storage", handleWindowStorage)
 })
 
 onBeforeUnmount(() => {
-  if (mediaQuery && mediaQueryHandler) {
-    if (typeof mediaQuery.removeEventListener === "function") {
-      mediaQuery.removeEventListener("change", mediaQueryHandler)
-    } else if (typeof mediaQuery.removeListener === "function") {
-      mediaQuery.removeListener(mediaQueryHandler)
-    }
-  }
+  clearLongPressTimer()
+  window.removeEventListener("storage", handleWindowStorage)
 })
 </script>
 
@@ -1281,6 +1346,20 @@ onBeforeUnmount(() => {
 .context-menu-anchor {
   position: fixed;
   z-index: 9999;
+}
+
+.context-menu-card {
+  border: 1px solid rgba(var(--v-border-color), 0.12);
+  background: rgba(var(--v-theme-surface), 0.96);
+  backdrop-filter: blur(10px);
+}
+
+.theme-light :deep(.v-overlay__content .context-menu-card),
+.theme-dark :deep(.v-overlay__content .context-menu-card) {
+  transition:
+    background-color 0.22s ease,
+    color 0.22s ease,
+    border-color 0.22s ease;
 }
 
 .min-width-0 {

@@ -1,7 +1,7 @@
 <template>
   <AppNavbar />
 
-  <div class="event-page-shell" :class="browserThemeClass">
+  <div class="event-page-shell" :class="[browserThemeClass, { 'is-mobile-layout': isMobile, 'is-tablet-layout': isTablet }]">
     <v-container fluid class="event-builder-page pb-10 pt-6">
       <v-row justify="center">
         <v-col cols="12" xxl="10" xl="11">
@@ -228,6 +228,11 @@
                   rounded="lg"
                   prepend-icon="mdi-store-search-outline"
                   @click="browseVenues"
+                  @contextmenu.prevent="openRouteContextMenu($event, '/venueBrowsing', 'Browse venues')"
+                  @touchstart.passive="startLongPressContextMenu($event, '/venueBrowsing', 'Browse venues')"
+                  @touchend="cancelLongPressContextMenu"
+                  @touchmove="cancelLongPressContextMenu"
+                  @touchcancel="cancelLongPressContextMenu"
                   class="action-btn"
                 >
                   Browse venues
@@ -669,6 +674,11 @@
                     rounded="lg"
                     prepend-icon="mdi-store-search-outline"
                     @click="browseVenues"
+                    @contextmenu.prevent="openRouteContextMenu($event, '/venueBrowsing', 'Browse venues')"
+                    @touchstart.passive="startLongPressContextMenu($event, '/venueBrowsing', 'Browse venues')"
+                    @touchend="cancelLongPressContextMenu"
+                    @touchmove="cancelLongPressContextMenu"
+                    @touchcancel="cancelLongPressContextMenu"
                     class="action-btn"
                   >
                     Browse venues
@@ -701,7 +711,7 @@
         {{ snackbar.text }}
       </v-snackbar>
 
-      <v-dialog v-model="publishDialog" max-width="540" class="publish-dialog">
+      <v-dialog v-model="publishDialog" :max-width="isMobile ? undefined : 540" :fullscreen="isMobile" class="publish-dialog">
         <v-card rounded="xl" class="publish-dialog-card">
           <v-card-title class="text-h6 font-weight-bold">
             Event published 🎉
@@ -713,12 +723,34 @@
 
           <v-card-actions class="justify-end">
             <v-btn variant="text" @click="closePublishDialog">Close</v-btn>
-            <v-btn color="primary" rounded="lg" @click="goToPublishedEvent">
+            <v-btn color="primary" rounded="lg" @click="goToPublishedEvent"
+              @contextmenu.prevent="openRouteContextMenu($event, publishedEventRoute, 'Open event page')"
+              @touchstart.passive="startLongPressContextMenu($event, publishedEventRoute, 'Open event page')"
+              @touchend="cancelLongPressContextMenu"
+              @touchmove="cancelLongPressContextMenu"
+              @touchcancel="cancelLongPressContextMenu">
               Open event page
             </v-btn>
           </v-card-actions>
         </v-card>
       </v-dialog>
+
+      <v-menu
+        v-model="linkContextMenu.show"
+        :target="[linkContextMenu.x, linkContextMenu.y]"
+        location="end top"
+        absolute
+        scrim="false"
+        class="route-context-menu"
+      >
+        <v-list rounded="xl" class="context-menu-list">
+          <v-list-subheader>{{ linkContextMenu.label || "Open link" }}</v-list-subheader>
+          <v-list-item prepend-icon="mdi-open-in-new" title="Open in new tab" @click="handleContextMenuAction('tab')" />
+          <v-list-item prepend-icon="mdi-monitor-share" title="Open in new window" @click="handleContextMenuAction('window')" />
+          <v-list-item prepend-icon="mdi-content-copy" title="Copy link" @click="handleContextMenuAction('copy')" />
+        </v-list>
+      </v-menu>
+
     </v-container>
   </div>
 </template>
@@ -726,6 +758,7 @@
 <script setup>
 import AppNavbar from "@/components/AppNavbar.vue"
 import { computed, onBeforeUnmount, onMounted, reactive, ref } from "vue"
+import { useDisplay, useTheme } from "vuetify"
 import { useRouter } from "vue-router"
 import { fileToDataUrl, loadImageElement } from "@/utils/imageUtils"
 import { get_Current_User, get_All_Users, create_Event_For_User } from "@/dataModel/user"
@@ -734,14 +767,107 @@ import { get_Venue_By_Id } from "@/dataModel/venue"
 import { add_Notification } from "@/dataModel/notification"
 
 const router = useRouter()
-const browserPrefersDark = ref(true)
-const browserThemeClass = computed(() => browserPrefersDark.value ? "event-page-shell--dark" : "event-page-shell--light")
+const display = useDisplay()
+const theme = useTheme()
 
-let colorSchemeMediaQuery = null
+const THEME_STORAGE_KEY = "blassti-theme"
+const currentTheme = computed(() => {
+  return theme.global.name.value === "light" ? "light" : "dark"
+})
+const browserThemeClass = computed(() => currentTheme.value === "dark" ? "event-page-shell--dark" : "event-page-shell--light")
+const isMobile = computed(() => display.smAndDown.value)
+const isTablet = computed(() => display.md.value)
+const publishedEventRoute = computed(() => {
+  return publishedEventId.value ? `/o_eventinfo?id=${publishedEventId.value}` : "/o_eventinfo"
+})
 
-function syncBrowserThemePreference(event) {
-  const prefersDark = typeof event?.matches === "boolean" ? event.matches : window.matchMedia("(prefers-color-scheme: dark)").matches
-  browserPrefersDark.value = prefersDark
+const linkContextMenu = reactive({
+  show: false,
+  x: 0,
+  y: 0,
+  href: "",
+  label: "",
+})
+
+let longPressTimer = null
+
+function applyThemeChoice(themeName) {
+  const normalizedTheme = themeName === "light" ? "light" : "dark"
+  theme.global.name.value = normalizedTheme
+  localStorage.setItem(THEME_STORAGE_KEY, normalizedTheme)
+  document.documentElement.setAttribute("data-app-theme", normalizedTheme)
+  document.documentElement.style.colorScheme = normalizedTheme
+}
+
+function loadSavedTheme() {
+  const savedTheme = localStorage.getItem(THEME_STORAGE_KEY)
+  applyThemeChoice(savedTheme === "light" ? "light" : "dark")
+}
+
+function handleWindowStorage(event) {
+  if (!event.key || event.key === THEME_STORAGE_KEY) {
+    const savedTheme = localStorage.getItem(THEME_STORAGE_KEY)
+    if (savedTheme === "light" || savedTheme === "dark") {
+      theme.global.name.value = savedTheme
+      document.documentElement.setAttribute("data-app-theme", savedTheme)
+      document.documentElement.style.colorScheme = savedTheme
+    }
+  }
+}
+
+function openRouteContextMenu(event, path, label = "Open link") {
+  const href = router.resolve(path).href
+  const point = Array.isArray(event?.changedTouches) ? event.changedTouches[0] : event
+
+  linkContextMenu.x = Number(point?.clientX || window.innerWidth / 2)
+  linkContextMenu.y = Number(point?.clientY || window.innerHeight / 2)
+  linkContextMenu.href = href
+  linkContextMenu.label = label
+  linkContextMenu.show = true
+}
+
+function startLongPressContextMenu(event, path, label) {
+  if (!isMobile.value) return
+  cancelLongPressContextMenu()
+  longPressTimer = window.setTimeout(() => {
+    openRouteContextMenu(event, path, label)
+  }, 520)
+}
+
+function cancelLongPressContextMenu() {
+  if (longPressTimer) {
+    window.clearTimeout(longPressTimer)
+    longPressTimer = null
+  }
+}
+
+async function handleContextMenuAction(action) {
+  const href = linkContextMenu.href
+  if (!href) return
+
+  if (action === "copy") {
+    try {
+      const absoluteHref = new URL(href, window.location.origin).href
+      await navigator.clipboard.writeText(absoluteHref)
+      notify("Link copied.", "success")
+    } catch (error) {
+      console.error("Copy link failed:", error)
+      notify("Failed to copy link.", "error")
+    } finally {
+      linkContextMenu.show = false
+    }
+    return
+  }
+
+  const absoluteHref = new URL(href, window.location.origin).href
+
+  if (action === "window") {
+    window.open(absoluteHref, "_blank", "noopener,noreferrer")
+  } else {
+    window.open(absoluteHref, "_blank", "noopener,noreferrer")
+  }
+
+  linkContextMenu.show = false
 }
 
 const step = ref(1)
@@ -896,26 +1022,13 @@ const lockedEndTime = computed(() => {
 })
 
 onMounted(() => {
-  if (typeof window === "undefined" || typeof window.matchMedia !== "function") return
-
-  colorSchemeMediaQuery = window.matchMedia("(prefers-color-scheme: dark)")
-  syncBrowserThemePreference(colorSchemeMediaQuery)
-
-  if (typeof colorSchemeMediaQuery.addEventListener === "function") {
-    colorSchemeMediaQuery.addEventListener("change", syncBrowserThemePreference)
-  } else if (typeof colorSchemeMediaQuery.addListener === "function") {
-    colorSchemeMediaQuery.addListener(syncBrowserThemePreference)
-  }
+  loadSavedTheme()
+  window.addEventListener("storage", handleWindowStorage)
 })
 
 onBeforeUnmount(() => {
-  if (!colorSchemeMediaQuery) return
-
-  if (typeof colorSchemeMediaQuery.removeEventListener === "function") {
-    colorSchemeMediaQuery.removeEventListener("change", syncBrowserThemePreference)
-  } else if (typeof colorSchemeMediaQuery.removeListener === "function") {
-    colorSchemeMediaQuery.removeListener(syncBrowserThemePreference)
-  }
+  cancelLongPressContextMenu()
+  window.removeEventListener("storage", handleWindowStorage)
 })
 
 function notify(text, color = "primary") {
@@ -1248,6 +1361,44 @@ function toEventTimeString(dateValue) {
   }).format(date)
 }
 
+function getTicketPriceForSeatClass(seatClass) {
+  const normalized = normalizeSeatClass(seatClass)
+
+  if (normalized === "VIP") {
+    return Number(form.ticket_prices.vip || 0)
+  }
+
+  if (normalized === "Special") {
+    return Number(form.ticket_prices.special || 0)
+  }
+
+  return Number(form.ticket_prices.regular || 0)
+}
+
+function buildEventSeatLayoutFromVenue(venue) {
+  if (!venue?.seat_layout || typeof venue.seat_layout !== "object") {
+    return null
+  }
+
+  return {
+    ...JSON.parse(JSON.stringify(venue.seat_layout)),
+    seats: Array.isArray(venue.seat_layout.seats)
+      ? venue.seat_layout.seats.map((seat, index) => {
+          const normalizedSeatClass = normalizeSeatClass(
+            seat?.seat_class || seat?.type || seat?.category || "Regular"
+          )
+
+          return {
+            ...JSON.parse(JSON.stringify(seat)),
+            id: seat?.id ?? `event-seat-${index + 1}`,
+            seat_class: normalizedSeatClass,
+            price: getTicketPriceForSeatClass(normalizedSeatClass),
+          }
+        })
+      : [],
+  }
+}
+
 function buildEventPayload(preGeneratedId, options = {}) {
   const reservation = selectedReservation.value
   const venue = selectedVenue.value
@@ -1261,6 +1412,10 @@ function buildEventPayload(preGeneratedId, options = {}) {
 
   const useExtraImages = options.useExtraImages ?? true
   const coverImageOverride = options.coverImageOverride ?? form.image
+  const eventSeatLayout = buildEventSeatLayoutFromVenue(venue)
+  const eventCapacity = Array.isArray(eventSeatLayout?.seats) && eventSeatLayout.seats.length
+    ? eventSeatLayout.seats.length
+    : Number(venue.capacity || 0)
 
   return {
     id: preGeneratedId,
@@ -1274,11 +1429,11 @@ function buildEventPayload(preGeneratedId, options = {}) {
     type: form.type,
     description: form.description.trim(),
     image: coverImageOverride,
-    images: useExtraImages ? form.extra_images.slice(0, 3) : [],
+    images: useExtraImages ? [coverImageOverride, ...form.extra_images.slice(0, 3)].filter(Boolean) : [coverImageOverride].filter(Boolean),
     featured_artist_ids: [...new Set(form.featured_artist_ids)],
     age_restriction: form.age_restriction,
     tickets_sold: 0,
-    capacity: Number(venue.capacity || 0),
+    capacity: eventCapacity,
     featured: false,
     last_call: false,
     accessible_seats: Boolean(venue.accessible_seats),
@@ -1286,6 +1441,7 @@ function buildEventPayload(preGeneratedId, options = {}) {
     seat_classes: selectedSeatClasses.value.map(seatClass =>
       seatClass === "Regular" ? "Normal" : seatClass
     ),
+    seat_layout: eventSeatLayout,
     sound_quality: 2,
     route_path: `/o_eventinfo?id=${preGeneratedId}`,
   }
@@ -1494,7 +1650,7 @@ function closePublishDialog() {
 function goToPublishedEvent() {
   publishDialog.value = false
   if (publishedEventId.value) {
-    router.push(`/o_eventinfo?id=${publishedEventId.value}`)
+    router.push(publishedEventRoute.value)
   }
 }
 </script>
@@ -1929,4 +2085,224 @@ function goToPublishedEvent() {
     width: 100%;
   }
 }
+
+.route-context-menu :deep(.v-overlay__content) {
+  min-width: 230px;
+}
+
+.context-menu-list {
+  backdrop-filter: blur(14px);
+  overflow: hidden;
+}
+
+.event-page-shell--dark .context-menu-list {
+  background: rgba(18, 20, 29, 0.96);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.event-page-shell--light .context-menu-list {
+  background: rgba(255, 255, 255, 0.98);
+  border: 1px solid rgba(25, 118, 210, 0.12);
+}
+
+.event-page-shell--dark :deep(.context-menu-list .v-list-item:hover) {
+  background: rgba(76, 175, 255, 0.08);
+}
+
+.event-page-shell--light :deep(.context-menu-list .v-list-item:hover) {
+  background: rgba(227, 242, 253, 0.92);
+}
+
+.event-page-shell.is-mobile-layout .event-builder-page {
+  padding-top: 18px !important;
+  padding-left: 10px !important;
+  padding-right: 10px !important;
+}
+
+.event-page-shell.is-mobile-layout .event-main-card {
+  border-radius: 22px !important;
+}
+
+.event-page-shell.is-mobile-layout .page-hero {
+  padding: 16px;
+  border-radius: 20px;
+}
+
+.event-page-shell.is-mobile-layout .hero-title {
+  font-size: clamp(1.7rem, 5.4vw, 2.05rem) !important;
+  line-height: 1.08;
+}
+
+.event-page-shell.is-mobile-layout .hero-subtitle {
+  max-width: 100%;
+  font-size: 0.94rem;
+}
+
+.event-page-shell.is-mobile-layout .hero-chip-group {
+  width: 100%;
+  gap: 8px !important;
+}
+
+.event-page-shell.is-mobile-layout .hero-chip-group :deep(.v-chip) {
+  min-height: 34px;
+}
+
+.event-page-shell.is-mobile-layout .reservation-option {
+  border-radius: 20px !important;
+}
+
+.event-page-shell.is-mobile-layout .reservation-option .v-card-text {
+  padding: 16px !important;
+}
+
+.event-page-shell.is-mobile-layout .reservation-radio-group :deep(.v-selection-control) {
+  min-height: 34px;
+}
+
+.event-page-shell.is-mobile-layout .info-row {
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+}
+
+.event-page-shell.is-mobile-layout .preview-image {
+  height: 180px;
+}
+
+.event-page-shell.is-mobile-layout .sticky-preview-card {
+  position: static;
+  top: auto;
+}
+
+.event-page-shell.is-mobile-layout .action-bar,
+.event-page-shell.is-mobile-layout .action-bar > div {
+  width: 100%;
+}
+
+.event-page-shell.is-mobile-layout .action-bar > div {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.event-page-shell.is-mobile-layout .action-btn {
+  width: 100%;
+  min-height: 46px;
+}
+
+.event-page-shell.is-mobile-layout :deep(.v-btn) {
+  min-height: 46px;
+}
+
+.event-page-shell.is-mobile-layout :deep(.v-field) {
+  border-radius: 16px !important;
+}
+
+.event-page-shell.is-mobile-layout :deep(.v-field__input) {
+  min-height: 50px;
+}
+
+.event-page-shell.is-mobile-layout :deep(textarea.v-field__input) {
+  min-height: 132px;
+}
+
+.event-page-shell.is-mobile-layout :deep(.v-file-input .v-field__input) {
+  padding-top: 12px;
+  padding-bottom: 12px;
+}
+
+.event-page-shell.is-mobile-layout :deep(.v-stepper-header) {
+  flex-wrap: wrap;
+  row-gap: 10px;
+}
+
+.event-page-shell.is-mobile-layout :deep(.v-stepper-item) {
+  flex: 1 1 calc(50% - 6px);
+  min-width: 0;
+}
+
+.event-page-shell.is-mobile-layout :deep(.v-stepper-item__content) {
+  overflow: hidden;
+}
+
+.event-page-shell.is-mobile-layout :deep(.v-stepper-item__title) {
+  white-space: normal;
+  text-align: center;
+  line-height: 1.25;
+}
+
+.event-page-shell.is-mobile-layout :deep(.v-dialog > .v-overlay__content) {
+  margin: 0 !important;
+  max-width: 100% !important;
+  max-height: 100% !important;
+}
+
+@media (hover: none) and (pointer: coarse) {
+  .clean-section-card:hover,
+  .reservation-option:hover,
+  .preview-box:hover,
+  .action-btn:hover {
+    transform: none;
+  }
+}
+
+@media (max-width: 960px) {
+  .event-main-card {
+    border-radius: 24px !important;
+  }
+
+  .page-stepper {
+    padding-top: 4px;
+  }
+
+  .section-title {
+    font-size: 1rem;
+  }
+
+  .sticky-preview-card {
+    position: static;
+    top: auto;
+  }
+}
+
+@media (max-width: 760px) {
+  .event-builder-page {
+    padding-bottom: 84px !important;
+  }
+
+  .page-hero::after {
+    right: -60px;
+    top: -50px;
+    width: 150px;
+    height: 150px;
+  }
+
+  .quick-meta-row {
+    gap: 8px !important;
+  }
+}
+
+@media (max-width: 600px) {
+  .event-main-card {
+    padding: 16px !important;
+  }
+
+  .clean-section-card {
+    border-radius: 20px !important;
+  }
+
+  .preview-image {
+    height: 172px;
+  }
+
+  .empty-preview {
+    min-height: 190px;
+  }
+
+  .floating-snackbar :deep(.v-snackbar__wrapper) {
+    width: calc(100vw - 24px);
+    margin: 0 12px 12px;
+  }
+}
+
 </style>

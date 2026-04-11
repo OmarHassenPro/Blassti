@@ -1,8 +1,8 @@
 <template>
   <AppNavbar />
 
-  <div class="manage-page-shell" :class="browserThemeClass">
-    <v-container fluid class="py-8 manage-page">
+  <div class="manage-page-shell" :class="`theme-${currentTheme}`" :style="themeCssVars">
+    <v-container fluid class="py-6 py-md-8 manage-page">
     <v-row>
       <v-col cols="12">
         <v-card rounded="xl" class="pa-4 pa-md-6 mb-6 hero-card surface-card">
@@ -483,10 +483,15 @@
                                 slotClass(day.date, slot.hour),
                                 { selected: isCellSelected(day.date, slot.hour) }
                               ]"
-                              @mousedown.prevent="startCellSelection(day.date, slot.hour)"
+                              @mousedown.prevent="handleCellMouseDown(day.date, slot.hour)"
                               @mouseenter="continueCellSelection(day.date, slot.hour)"
                               @mouseup.prevent="endSelection"
                               @dblclick.prevent="openSlotMenu($event, day.date, slot.hour)"
+                              @contextmenu.prevent="handleDesktopSlotContextMenu($event, day.date, slot.hour)"
+                              @touchstart.passive="handleCellTouchStart($event, day.date, slot.hour)"
+                              @touchmove.passive="handleCellTouchMove"
+                              @touchend.prevent="handleCellTouchEnd(day.date, slot.hour)"
+                              @touchcancel="cancelCellTouchInteraction"
                             >
                               <span v-if="isEventSlot(day.date, slot.hour)">Event</span>
                               <span v-else-if="isAdministrationSlot(day.date, slot.hour)">Administration</span>
@@ -852,7 +857,7 @@
       absolute
       :close-on-content-click="true"
     >
-      <v-list class="slot-menu-list">
+      <v-list class="slot-menu-list" :style="themeCssVars">
         <v-list-item
           v-if="slotMenu.slot?.canDelete"
           prepend-icon="mdi-delete-outline"
@@ -882,7 +887,7 @@
 
     <!-- Save/discard dialog -->
     <v-dialog v-model="leaveDialog.show" max-width="500" persistent>
-      <v-card rounded="xl">
+      <v-card rounded="xl" class="surface-card themed-dialog-card" :style="themeCssVars">
         <v-card-title class="d-flex align-center ga-2">
           <v-icon>mdi-content-save-alert-outline</v-icon>
           Unsaved changes
@@ -902,7 +907,7 @@
 
     <!-- Delete venue dialog -->
     <v-dialog v-model="deleteDialog" max-width="520">
-      <v-card rounded="xl">
+      <v-card rounded="xl" class="surface-card themed-dialog-card" :style="themeCssVars">
         <v-card-title class="d-flex align-center ga-2">
           <v-icon color="error">mdi-delete-alert-outline</v-icon>
           Delete venue
@@ -924,7 +929,7 @@
       </v-card>
     </v-dialog>
 
-    <v-snackbar v-model="snackbar.show" :timeout="2600" rounded="lg">
+    <v-snackbar v-model="snackbar.show" :timeout="2600" rounded="lg" :class="[`theme-snackbar`, `theme-snackbar--${currentTheme}`]">
       {{ snackbar.text }}
     </v-snackbar>
       </v-container>
@@ -933,6 +938,7 @@
 
 <script setup>
 import { computed, onMounted, onBeforeUnmount, ref, watch } from "vue"
+import { useDisplay, useTheme } from "vuetify"
 import { onBeforeRouteLeave, useRouter } from "vue-router"
 import AppNavbar from "@/components/AppNavbar.vue"
 import { cropAndResizeImage, fileToDataUrl } from "@/utils/imageUtils"
@@ -952,10 +958,50 @@ import { get_All_Events } from "@/dataModel/event"
 import { get_Current_User, is_Moderator } from "@/dataModel/user"
 
 const router = useRouter()
+const theme = useTheme()
+const display = useDisplay()
 
+const THEME_STORAGE_KEY = "blassti-theme"
+const isMobile = computed(() => display.mdAndDown.value)
+const currentTheme = computed(() => (theme.global.name.value === "light" ? "light" : "dark"))
 
-const browserThemeClass = ref("theme-light-surface")
-let browserThemeMedia = null
+const themeCssVars = computed(() => {
+  if (currentTheme.value === "light") {
+    return {
+      "--page-bg": "radial-gradient(circle at top left, rgba(25, 118, 210, 0.08), transparent 28%), linear-gradient(180deg, #f6f8fc 0%, #eef2f7 100%)",
+      "--surface-bg": "rgba(255, 255, 255, 0.88)",
+      "--surface-border": "rgba(15, 23, 42, 0.08)",
+      "--surface-shadow": "0 16px 40px rgba(15, 23, 42, 0.08)",
+      "--surface-secondary": "rgba(255, 255, 255, 0.68)",
+      "--surface-strong": "rgba(255, 255, 255, 0.96)",
+      "--timeline-header": "rgba(255, 255, 255, 0.96)",
+      "--timeline-soft": "rgba(15, 23, 42, 0.04)",
+      "--text-strong": "#102033",
+      "--slot-free": "rgba(71, 85, 105, 0.12)",
+      "--slot-free-text": "#263445",
+      "--overlay-bg": "linear-gradient(to top, rgba(10, 17, 30, 0.8), rgba(10, 17, 30, 0.16) 58%)",
+      "--hero-badge-bg": "rgba(25, 118, 210, 0.1)",
+      "--hero-badge-color": "#145ea8",
+    }
+  }
+
+  return {
+    "--page-bg": "radial-gradient(circle at top left, rgba(66, 165, 245, 0.12), transparent 26%), linear-gradient(180deg, #0c1018 0%, #121826 100%)",
+    "--surface-bg": "rgba(18, 18, 24, 0.88)",
+    "--surface-border": "rgba(255, 255, 255, 0.08)",
+    "--surface-shadow": "0 18px 46px rgba(0, 0, 0, 0.34)",
+    "--surface-secondary": "rgba(255, 255, 255, 0.03)",
+    "--surface-strong": "rgba(16, 16, 22, 0.98)",
+    "--timeline-header": "rgba(16, 16, 22, 0.98)",
+    "--timeline-soft": "rgba(255, 255, 255, 0.06)",
+    "--text-strong": "#ffffff",
+    "--slot-free": "rgba(55, 65, 81, 0.18)",
+    "--slot-free-text": "rgba(255,255,255,0.85)",
+    "--overlay-bg": "linear-gradient(to top, rgba(0,0,0,0.72), transparent 58%)",
+    "--hero-badge-bg": "rgba(87, 163, 255, 0.14)",
+    "--hero-badge-color": "#b9d8ff",
+  }
+})
 
 const tab = ref("pricing")
 const venueSearch = ref("")
@@ -984,6 +1030,9 @@ const jumpToDate = ref("")
 const selectedCells = ref([])
 const isDraggingSelection = ref(false)
 const dragMode = ref("add")
+let cellLongPressTimer = null
+let cellLongPressTriggered = false
+let cellTouchMoved = false
 
 const placeholderExtraImage =
   "https://images.unsplash.com/photo-1513694203232-719a280e022f?q=80&w=1200&auto=format&fit=crop"
@@ -1032,37 +1081,46 @@ function showSnack(text) {
   snackbar.value = { show: true, text }
 }
 
-function applyBrowserTheme() {
-  if (typeof window === "undefined" || typeof window.matchMedia !== "function") {
-    browserThemeClass.value = "theme-light-surface"
-    return
-  }
-
-  browserThemeClass.value = window.matchMedia("(prefers-color-scheme: dark)").matches
-    ? "theme-dark-surface"
-    : "theme-light-surface"
+function applyThemeChoice(themeName) {
+  const normalizedTheme = themeName === "light" ? "light" : "dark"
+  theme.global.name.value = normalizedTheme
+  localStorage.setItem(THEME_STORAGE_KEY, normalizedTheme)
+  document.documentElement.setAttribute("data-app-theme", normalizedTheme)
+  document.documentElement.style.colorScheme = normalizedTheme
 }
 
-function handleBrowserThemeChange() {
-  applyBrowserTheme()
+function loadSavedTheme() {
+  const savedTheme = localStorage.getItem(THEME_STORAGE_KEY)
+  applyThemeChoice(savedTheme === "light" ? "light" : "dark")
+}
+
+function handleWindowStorage(event) {
+  if (!event.key || event.key === "currentUser") {
+    syncCurrentUser()
+  }
+
+  if (!event.key || event.key === THEME_STORAGE_KEY) {
+    const savedTheme = localStorage.getItem(THEME_STORAGE_KEY)
+    if (savedTheme === "light" || savedTheme === "dark") {
+      theme.global.name.value = savedTheme
+      document.documentElement.setAttribute("data-app-theme", savedTheme)
+      document.documentElement.style.colorScheme = savedTheme
+    }
+  }
 }
 
 function syncCurrentUser() {
   currentUser.value = get_Current_User()
 }
 
-onMounted(() => {
-  syncCurrentUser()
-  applyBrowserTheme()
+watch(currentTheme, value => {
+  document.documentElement.setAttribute("data-app-theme", value)
+  document.documentElement.style.colorScheme = value
+}, { immediate: true })
 
-  if (typeof window !== "undefined" && typeof window.matchMedia === "function") {
-    browserThemeMedia = window.matchMedia("(prefers-color-scheme: dark)")
-    if (typeof browserThemeMedia.addEventListener === "function") {
-      browserThemeMedia.addEventListener("change", handleBrowserThemeChange)
-    } else if (typeof browserThemeMedia.addListener === "function") {
-      browserThemeMedia.addListener(handleBrowserThemeChange)
-    }
-  }
+onMounted(() => {
+  loadSavedTheme()
+  syncCurrentUser()
 
   if (!managedVenues.value.length) {
     selectedVenueId.value = null
@@ -1070,22 +1128,17 @@ onMounted(() => {
   }
 
   window.addEventListener("beforeunload", handleBeforeUnload)
-  window.addEventListener("storage", syncCurrentUser)
+  window.addEventListener("storage", handleWindowStorage)
+  window.addEventListener("focus", syncCurrentUser)
   window.addEventListener("mouseup", endSelection)
 })
 
 onBeforeUnmount(() => {
   window.removeEventListener("beforeunload", handleBeforeUnload)
-  window.removeEventListener("storage", syncCurrentUser)
+  window.removeEventListener("storage", handleWindowStorage)
+  window.removeEventListener("focus", syncCurrentUser)
   window.removeEventListener("mouseup", endSelection)
-
-  if (browserThemeMedia) {
-    if (typeof browserThemeMedia.removeEventListener === "function") {
-      browserThemeMedia.removeEventListener("change", handleBrowserThemeChange)
-    } else if (typeof browserThemeMedia.removeListener === "function") {
-      browserThemeMedia.removeListener(handleBrowserThemeChange)
-    }
-  }
+  cancelCellTouchInteraction()
 })
 
 const allVenues = computed(() => get_All_Venues())
@@ -1569,6 +1622,83 @@ function getReservationAt(dayDate, hour) {
       const reservationEnd = new Date(item.end_datetime || item.end_date)
       return start < reservationEnd && end > reservationStart
     }) || null
+}
+
+
+function toggleCellSelection(dayDate, hour) {
+  if (isEventSlot(dayDate, hour)) return
+
+  if (isCellSelected(dayDate, hour)) {
+    removeCellSelection(dayDate, hour)
+  } else {
+    addCellSelection(dayDate, hour)
+  }
+}
+
+function clearCellLongPressTimer() {
+  if (cellLongPressTimer) {
+    clearTimeout(cellLongPressTimer)
+    cellLongPressTimer = null
+  }
+}
+
+function cancelCellTouchInteraction() {
+  clearCellLongPressTimer()
+  cellLongPressTriggered = false
+  cellTouchMoved = false
+  endSelection()
+}
+
+function handleCellMouseDown(dayDate, hour) {
+  if (isMobile.value) return
+  startCellSelection(dayDate, hour)
+}
+
+function handleDesktopSlotContextMenu(event, dayDate, hour) {
+  if (isMobile.value) return
+  openSlotMenu(event, dayDate, hour)
+}
+
+function handleCellTouchStart(event, dayDate, hour) {
+  if (!isMobile.value) return
+
+  cellLongPressTriggered = false
+  cellTouchMoved = false
+
+  clearCellLongPressTimer()
+  cellLongPressTimer = window.setTimeout(() => {
+    const touch = event.touches?.[0] || event.changedTouches?.[0]
+    const pointEvent = {
+      clientX: touch?.clientX ?? window.innerWidth / 2,
+      clientY: touch?.clientY ?? window.innerHeight / 2,
+    }
+
+    cellLongPressTriggered = true
+    openSlotMenu(pointEvent, dayDate, hour)
+
+    if (navigator.vibrate) {
+      navigator.vibrate(15)
+    }
+  }, 520)
+}
+
+function handleCellTouchMove() {
+  if (!isMobile.value) return
+  cellTouchMoved = true
+  clearCellLongPressTimer()
+}
+
+function handleCellTouchEnd(dayDate, hour) {
+  if (!isMobile.value) return
+
+  clearCellLongPressTimer()
+
+  if (!cellLongPressTriggered && !cellTouchMoved) {
+    toggleCellSelection(dayDate, hour)
+  }
+
+  cellLongPressTriggered = false
+  cellTouchMoved = false
 }
 
 function openSlotMenu(event, dayDate, hour) {
@@ -2068,7 +2198,7 @@ watch(workingVenue, value => {
   transition: background 0.25s ease, color 0.25s ease;
 }
 
-.manage-page-shell.theme-light-surface {
+.manage-page-shell.theme-light {
   --page-bg: radial-gradient(circle at top left, rgba(25, 118, 210, 0.08), transparent 28%), linear-gradient(180deg, #f6f8fc 0%, #eef2f7 100%);
   --surface-bg: rgba(255, 255, 255, 0.88);
   --surface-border: rgba(15, 23, 42, 0.08);
@@ -2085,7 +2215,7 @@ watch(workingVenue, value => {
   --hero-badge-color: #145ea8;
 }
 
-.manage-page-shell.theme-dark-surface {
+.manage-page-shell.theme-dark {
   --page-bg: radial-gradient(circle at top left, rgba(66, 165, 245, 0.12), transparent 26%), linear-gradient(180deg, #0c1018 0%, #121826 100%);
   --surface-bg: rgba(18, 18, 24, 0.88);
   --surface-border: rgba(255, 255, 255, 0.08);
@@ -2546,6 +2676,53 @@ watch(workingVenue, value => {
   background: transparent;
 }
 
+
+.themed-dialog-card {
+  color: var(--text-strong);
+}
+
+.theme-snackbar {
+  backdrop-filter: blur(14px);
+}
+
+:deep(.theme-snackbar--light .v-snackbar__wrapper) {
+  background: rgba(255, 255, 255, 0.94) !important;
+  color: #102033 !important;
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  box-shadow: 0 16px 40px rgba(15, 23, 42, 0.08);
+}
+
+:deep(.theme-snackbar--dark .v-snackbar__wrapper) {
+  background: rgba(18, 18, 24, 0.94) !important;
+  color: #ffffff !important;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 0 18px 46px rgba(0, 0, 0, 0.34);
+}
+
+.manage-page-shell {
+  overflow-x: hidden;
+}
+
+.hero-card,
+.venue-browser-card,
+.main-editor-card,
+.sidebar-card,
+.clean-section-card,
+.empty-state-card {
+  animation: pageEntrance 0.24s ease-out;
+}
+
+@keyframes pageEntrance {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
 @media (max-width: 1279px) {
   .sticky-panel {
     position: static;
@@ -2561,6 +2738,73 @@ watch(workingVenue, value => {
   .workspace-sidebar-col,
   .workspace-main-col {
     transition: none;
+  }
+}
+
+
+@media (max-width: 959px) {
+  .manage-page {
+    padding-left: 4px;
+    padding-right: 4px;
+  }
+
+  .hero-copy,
+  .hero-chip-group {
+    width: 100%;
+  }
+
+  .hero-chip-group {
+    justify-content: flex-start;
+  }
+
+  .hero-stat-chip {
+    min-height: 40px;
+  }
+
+  .venue-list {
+    max-height: none;
+    overflow: visible;
+    padding-right: 0;
+  }
+
+  .slot-cell {
+    min-height: 60px;
+    font-size: 0.8rem;
+  }
+
+  .day-header,
+  .timeline-corner {
+    min-height: 68px;
+  }
+
+  .time-label {
+    min-height: 60px;
+    min-width: 74px;
+    padding-inline: 8px;
+  }
+}
+
+@media (max-width: 599px) {
+  .hero-title {
+    font-size: 1.55rem !important;
+    line-height: 1.18;
+  }
+
+  .hero-subtitle {
+    font-size: 0.95rem;
+  }
+
+  .hero-badge {
+    padding: 7px 12px;
+    font-size: 0.82rem;
+  }
+
+  .collapsed-sidebar-card {
+    min-height: auto;
+  }
+
+  .action-footer :deep(.v-btn) {
+    width: 100%;
   }
 }
 

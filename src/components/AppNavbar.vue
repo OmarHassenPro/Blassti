@@ -1,8 +1,9 @@
 <template>
   <v-app-bar
     elevation="0"
-    height="76"
-    class="px-3 pl-5 navbar-glass"
+    :height="isMobile ? 70 : 76"
+    class="px-3 pl-5 navbar-glass app-navbar"
+    :class="[`theme-${currentTheme}`, { 'navbar-mobile': isMobile }]"
   >
     <div
       class="d-flex align-center ga-5 brand-block"
@@ -24,270 +25,284 @@
 
     <v-spacer />
 
-    <div class="search-wrapper mr-4">
-      <v-autocomplete
-        v-model="selectedUser"
-        v-model:search="userSearch"
-        :items="filteredUserSearchItems"
-        item-title="title"
-        item-value="id"
-        return-object
-        variant="outlined"
-        density="comfortable"
-        rounded="xl"
-        prepend-inner-icon="mdi-magnify"
-        placeholder="Search users..."
-        hide-details
-        hide-no-data
-        clearable
-        no-filter
-        menu-icon=""
-        class="user-search"
-        @update:modelValue="goToUserDetails"
-      >
-        <template #prepend-inner>
-          <v-icon size="18" class="search-leading-icon">mdi-magnify</v-icon>
-        </template>
+    <div v-if="!isMobile" class="desktop-nav-shell d-flex align-center">
+      <div class="search-wrapper mr-4">
+        <v-autocomplete
+          v-model="selectedUser"
+          v-model:search="userSearch"
+          :items="filteredUserSearchItems"
+          item-title="title"
+          item-value="id"
+          return-object
+          variant="outlined"
+          density="comfortable"
+          rounded="xl"
+          prepend-inner-icon="mdi-magnify"
+          placeholder="Search users..."
+          hide-details
+          hide-no-data
+          clearable
+          no-filter
+          menu-icon=""
+          class="user-search"
+          @update:modelValue="goToUserDetails"
+        >
+          <template #prepend-inner>
+            <v-icon size="18" class="search-leading-icon">mdi-magnify</v-icon>
+          </template>
 
-        <template #append-inner>
-          <v-fade-transition>
-            <v-chip
-              v-if="userSearch && filteredUserSearchItems.length"
-              size="x-small"
-              variant="tonal"
-              color="primary"
-              class="search-chip"
+          <template #append-inner>
+            <v-fade-transition>
+              <v-chip
+                v-if="userSearch && filteredUserSearchItems.length"
+                size="x-small"
+                variant="tonal"
+                color="primary"
+                class="search-chip"
+              >
+                {{ filteredUserSearchItems.length }}
+              </v-chip>
+            </v-fade-transition>
+          </template>
+
+          <template #item="{ props, item }">
+            <v-list-item
+              v-bind="props"
+              class="dropdown-item fast-dropdown-item user-search-item"
+              @contextmenu.prevent="openUserProfileContextMenu($event, item.raw)"
             >
-              {{ filteredUserSearchItems.length }}
-            </v-chip>
-          </v-fade-transition>
-        </template>
+              <template #prepend>
+                <v-avatar size="36" class="search-result-avatar">
+                  <v-img :src="item.raw.avatar" cover />
+                </v-avatar>
+              </template>
 
-        <template #item="{ props, item }">
-          <v-list-item
-            v-bind="props"
-            class="dropdown-item fast-dropdown-item user-search-item"
-            @contextmenu.prevent="openUserProfileContextMenu($event, item.raw)"
-          >
-            <template #prepend>
-              <v-avatar size="36" class="search-result-avatar">
+              <v-list-item-title class="search-result-title">
+                {{ item.raw.title }}
+              </v-list-item-title>
+
+              <v-list-item-subtitle class="search-result-subtitle">
+                {{ item.raw.subtitle }}
+              </v-list-item-subtitle>
+
+              <template #append>
+                <v-icon size="18" class="search-result-open-icon">
+                  mdi-open-in-new
+                </v-icon>
+              </template>
+            </v-list-item>
+          </template>
+
+          <template #selection="{ item }">
+            <div
+              class="d-flex align-center ga-2 selected-user-pill"
+              @contextmenu.prevent="openUserProfileContextMenu($event, item.raw)"
+            >
+              <v-avatar size="24" class="selected-user-avatar">
                 <v-img :src="item.raw.avatar" cover />
               </v-avatar>
-            </template>
-
-            <v-list-item-title class="search-result-title">
-              {{ item.raw.title }}
-            </v-list-item-title>
-
-            <v-list-item-subtitle class="search-result-subtitle">
-              {{ item.raw.subtitle }}
-            </v-list-item-subtitle>
-
-            <template #append>
-              <v-icon size="18" class="search-result-open-icon">
-                mdi-open-in-new
-              </v-icon>
-            </template>
-          </v-list-item>
-        </template>
-
-        <template #selection="{ item }">
-          <div
-            class="d-flex align-center ga-2 selected-user-pill"
-            @contextmenu.prevent="openUserProfileContextMenu($event, item.raw)"
-          >
-            <v-avatar size="24" class="selected-user-avatar">
-              <v-img :src="item.raw.avatar" cover />
-            </v-avatar>
-            <span>{{ item.raw.title }}</span>
-          </div>
-        </template>
-
-        <template #no-data>
-          <div class="search-empty-state">
-            <v-icon size="22" class="mb-2">mdi-account-search-outline</v-icon>
-            <div class="text-body-2 font-weight-medium">No users found</div>
-            <div class="text-caption text-medium-emphasis">
-              Try another name, city, or role.
+              <span>{{ item.raw.title }}</span>
             </div>
-          </div>
+          </template>
+
+          <template #no-data>
+            <div class="search-empty-state">
+              <v-icon size="22" class="mb-2">mdi-account-search-outline</v-icon>
+              <div class="text-body-2 font-weight-medium">No users found</div>
+              <div class="text-caption text-medium-emphasis">
+                Try another name, city, or role.
+              </div>
+            </div>
+          </template>
+        </v-autocomplete>
+      </div>
+
+      <!-- Events -->
+      <v-menu open-on-hover transition="slide-y-transition" offset="12">
+        <template #activator="{ props }">
+          <v-btn
+            v-bind="props"
+            variant="text"
+            class="nav-btn"
+            :class="{ 'nav-active': isActiveGroup(['/', '/n_mainpage', '/N_Event_Browsing', '/K_mybookings']) }"
+          >
+            Events
+            <v-icon size="18" class="ml-1">mdi-chevron-down</v-icon>
+          </v-btn>
         </template>
-      </v-autocomplete>
+
+        <v-list class="dropdown-list fast-dropdown-list popup-surface" :class="`popup-theme-${currentTheme}`">
+          <v-list-item
+            class="dropdown-item fast-dropdown-item"
+            title="Browse events"
+            prepend-icon="mdi-calendar-star"
+            @click="navigateTo('/N_Event_Browsing')"
+            @contextmenu.prevent="openRouteContextMenu($event, '/N_Event_Browsing', 'Browse events')"
+          />
+          <v-list-item
+            class="dropdown-item fast-dropdown-item"
+            title="My bookings"
+            prepend-icon="mdi-ticket-confirmation-outline"
+            @click="goProtected('/K_mybookings')"
+            @contextmenu.prevent="openProtectedRouteContextMenu($event, '/K_mybookings', 'My bookings')"
+          />
+        </v-list>
+      </v-menu>
+
+      <!-- Venue -->
+      <v-menu open-on-hover transition="slide-y-transition" offset="12">
+        <template #activator="{ props }">
+          <v-btn
+            v-bind="props"
+            variant="text"
+            class="nav-btn"
+            :class="{ 'nav-active': isActiveGroup(['/venueBrowsing', '/O_venueinfo', '/reservations', '/reserved_venues']) }"
+          >
+            Venue
+            <v-icon size="18" class="ml-1">mdi-chevron-down</v-icon>
+          </v-btn>
+        </template>
+
+        <v-list class="dropdown-list fast-dropdown-list popup-surface" :class="`popup-theme-${currentTheme}`">
+          <v-list-item
+            class="dropdown-item fast-dropdown-item"
+            title="Browse venues"
+            prepend-icon="mdi-map-search-outline"
+            @click="navigateTo('/venueBrowsing')"
+            @contextmenu.prevent="openRouteContextMenu($event, '/venueBrowsing', 'Browse venues')"
+          />
+          <v-list-item
+            class="dropdown-item fast-dropdown-item"
+            title="My venues"
+            prepend-icon="mdi-domain"
+            @click="goProtected('/reserved_venues')"
+            @contextmenu.prevent="openProtectedRouteContextMenu($event, '/reserved_venues', 'My venues')"
+          />
+        </v-list>
+      </v-menu>
+
+      <!-- Carpools -->
+      <v-menu open-on-hover transition="slide-y-transition" offset="12">
+        <template #activator="{ props }">
+          <v-btn
+            v-bind="props"
+            variant="text"
+            class="nav-btn"
+            :class="{ 'nav-active': isActiveGroup(['/O_CurrentCarpools', '/F_CarpoolCreate']) }"
+          >
+            Carpools
+            <v-icon size="18" class="ml-1">mdi-chevron-down</v-icon>
+          </v-btn>
+        </template>
+
+        <v-list class="dropdown-list fast-dropdown-list popup-surface" :class="`popup-theme-${currentTheme}`">
+          <v-list-item
+            class="dropdown-item fast-dropdown-item"
+            title="Current"
+            prepend-icon="mdi-car-multiple"
+            @click="goProtected('/O_CurrentCarpools')"
+            @contextmenu.prevent="openProtectedRouteContextMenu($event, '/O_CurrentCarpools', 'Current carpools')"
+          />
+          <v-list-item
+            class="dropdown-item fast-dropdown-item"
+            title="Search/Create"
+            prepend-icon="mdi-car-search"
+            @click="goProtected('/F_CarpoolCreate')"
+            @contextmenu.prevent="openProtectedRouteContextMenu($event, '/F_CarpoolCreate', 'Search/Create carpools')"
+          />
+        </v-list>
+      </v-menu>
+
+      <!-- Manage -->
+      <v-menu open-on-hover transition="slide-y-transition" offset="12">
+        <template #activator="{ props }">
+          <v-btn
+            v-bind="props"
+            variant="text"
+            class="nav-btn"
+            :class="{ 'nav-active': isActiveGroup(['/o_CreateVenue', '/CreateEvent', '/venueRequest', '/stastistics', '/manageVenue', '/payments']) || route.path === '/CreateEvent' || reportsDialog }"
+          >
+            Manage
+            <v-icon size="18" class="ml-1">mdi-chevron-down</v-icon>
+          </v-btn>
+        </template>
+
+        <v-list class="dropdown-list fast-dropdown-list popup-surface" :class="`popup-theme-${currentTheme}`">
+          <v-list-item
+            class="dropdown-item fast-dropdown-item"
+            title="Create event"
+            prepend-icon="mdi-calendar-plus"
+            @click="goProtected('/CreateEvent')"
+            @contextmenu.prevent="openProtectedRouteContextMenu($event, '/CreateEvent', 'Create event')"
+          />
+          <v-list-item
+            class="dropdown-item fast-dropdown-item"
+            title="Add venue"
+            prepend-icon="mdi-store-plus-outline"
+            @click="goProtected('/o_CreateVenue')"
+            @contextmenu.prevent="openProtectedRouteContextMenu($event, '/o_CreateVenue', 'Add venue')"
+          />
+          <v-list-item
+            class="dropdown-item fast-dropdown-item"
+            title="Manage my venues"
+            prepend-icon="mdi-store-edit-outline"
+            @click="goProtected('/manageVenue')"
+            @contextmenu.prevent="openProtectedRouteContextMenu($event, '/manageVenue', 'Manage my venues')"
+          />
+          <v-list-item
+            class="dropdown-item fast-dropdown-item"
+            title="Manage my payments"
+            prepend-icon="mdi-cash-multiple"
+            @click="goProtected('/payments')"
+            @contextmenu.prevent="openProtectedRouteContextMenu($event, '/payments', 'Manage my payments')"
+          />
+
+          <template v-if="canModerate">
+            <v-divider class="my-1" />
+            <v-list-item
+              class="dropdown-item fast-dropdown-item"
+              title="Requests"
+              prepend-icon="mdi-store-clock-outline"
+              @click="navigateTo('/venueRequest')"
+              @contextmenu.prevent="openRouteContextMenu($event, '/venueRequest', 'Requests')"
+            />
+            <v-list-item
+              class="dropdown-item fast-dropdown-item"
+              title="Statistics"
+              prepend-icon="mdi-chart-box-outline"
+              @click="navigateTo('/stastistics')"
+              @contextmenu.prevent="openRouteContextMenu($event, '/stastistics', 'Statistics')"
+            />
+            <v-list-item
+              class="dropdown-item fast-dropdown-item"
+              title="Reports"
+              prepend-icon="mdi-flag-outline"
+              @click="openReportsDialog"
+            />
+            <v-list-item
+              class="dropdown-item fast-dropdown-item"
+              title="Send Notification"
+              prepend-icon="mdi-bell-badge-outline"
+              @click="openBroadcastDialog"
+            />
+          </template>
+        </v-list>
+      </v-menu>
+
+      <v-divider vertical class="mx-3 header-divider" />
+
     </div>
 
-    <!-- Events -->
-    <v-menu open-on-hover transition="slide-y-transition" offset="12">
-      <template #activator="{ props }">
-        <v-btn
-          v-bind="props"
-          variant="text"
-          class="nav-btn"
-          :class="{ 'nav-active': isActiveGroup(['/', '/n_mainpage', '/N_Event_Browsing', '/K_mybookings']) }"
-        >
-          Events
-          <v-icon size="18" class="ml-1">mdi-chevron-down</v-icon>
-        </v-btn>
-      </template>
-
-      <v-list class="dropdown-list fast-dropdown-list">
-        <v-list-item
-          class="dropdown-item fast-dropdown-item"
-          title="Browse events"
-          prepend-icon="mdi-calendar-star"
-          @click="navigateTo('/N_Event_Browsing')"
-          @contextmenu.prevent="openRouteContextMenu($event, '/N_Event_Browsing', 'Browse events')"
-        />
-        <v-list-item
-          class="dropdown-item fast-dropdown-item"
-          title="My bookings"
-          prepend-icon="mdi-ticket-confirmation-outline"
-          @click="goProtected('/K_mybookings')"
-          @contextmenu.prevent="openProtectedRouteContextMenu($event, '/K_mybookings', 'My bookings')"
-        />
-      </v-list>
-    </v-menu>
-
-    <!-- Venue -->
-    <v-menu open-on-hover transition="slide-y-transition" offset="12">
-      <template #activator="{ props }">
-        <v-btn
-          v-bind="props"
-          variant="text"
-          class="nav-btn"
-          :class="{ 'nav-active': isActiveGroup(['/venueBrowsing', '/O_venueinfo', '/reservations', '/reserved_venues']) }"
-        >
-          Venue
-          <v-icon size="18" class="ml-1">mdi-chevron-down</v-icon>
-        </v-btn>
-      </template>
-
-      <v-list class="dropdown-list fast-dropdown-list">
-        <v-list-item
-          class="dropdown-item fast-dropdown-item"
-          title="Browse venues"
-          prepend-icon="mdi-map-search-outline"
-          @click="navigateTo('/venueBrowsing')"
-          @contextmenu.prevent="openRouteContextMenu($event, '/venueBrowsing', 'Browse venues')"
-        />
-        <v-list-item
-          class="dropdown-item fast-dropdown-item"
-          title="My venues"
-          prepend-icon="mdi-domain"
-          @click="goProtected('/reserved_venues')"
-          @contextmenu.prevent="openProtectedRouteContextMenu($event, '/reserved_venues', 'My venues')"
-        />
-      </v-list>
-    </v-menu>
-
-    <!-- Carpools -->
-    <v-menu open-on-hover transition="slide-y-transition" offset="12">
-      <template #activator="{ props }">
-        <v-btn
-          v-bind="props"
-          variant="text"
-          class="nav-btn"
-          :class="{ 'nav-active': isActiveGroup(['/O_CurrentCarpools', '/F_CarpoolCreate']) }"
-        >
-          Carpools
-          <v-icon size="18" class="ml-1">mdi-chevron-down</v-icon>
-        </v-btn>
-      </template>
-
-      <v-list class="dropdown-list fast-dropdown-list">
-        <v-list-item
-          class="dropdown-item fast-dropdown-item"
-          title="Current"
-          prepend-icon="mdi-car-multiple"
-          @click="goProtected('/O_CurrentCarpools')"
-          @contextmenu.prevent="openProtectedRouteContextMenu($event, '/O_CurrentCarpools', 'Current carpools')"
-        />
-        <v-list-item
-          class="dropdown-item fast-dropdown-item"
-          title="Search/Create"
-          prepend-icon="mdi-car-search"
-          @click="goProtected('/F_CarpoolCreate')"
-          @contextmenu.prevent="openProtectedRouteContextMenu($event, '/F_CarpoolCreate', 'Search/Create carpools')"
-        />
-      </v-list>
-    </v-menu>
-
-    <!-- Manage -->
-    <v-menu open-on-hover transition="slide-y-transition" offset="12">
-      <template #activator="{ props }">
-        <v-btn
-          v-bind="props"
-          variant="text"
-          class="nav-btn"
-          :class="{ 'nav-active': isActiveGroup(['/o_CreateVenue', '/CreateEvent', '/venueRequest', '/stastistics', '/manageVenue', '/payments']) || route.path === '/CreateEvent' || reportsDialog }"
-        >
-          Manage
-          <v-icon size="18" class="ml-1">mdi-chevron-down</v-icon>
-        </v-btn>
-      </template>
-
-      <v-list class="dropdown-list fast-dropdown-list">
-        <v-list-item
-          class="dropdown-item fast-dropdown-item"
-          title="Create event"
-          prepend-icon="mdi-calendar-plus"
-          @click="goProtected('/CreateEvent')"
-          @contextmenu.prevent="openProtectedRouteContextMenu($event, '/CreateEvent', 'Create event')"
-        />
-        <v-list-item
-          class="dropdown-item fast-dropdown-item"
-          title="Add venue"
-          prepend-icon="mdi-store-plus-outline"
-          @click="goProtected('/o_CreateVenue')"
-          @contextmenu.prevent="openProtectedRouteContextMenu($event, '/o_CreateVenue', 'Add venue')"
-        />
-        <v-list-item
-          class="dropdown-item fast-dropdown-item"
-          title="Manage my venues"
-          prepend-icon="mdi-store-edit-outline"
-          @click="goProtected('/manageVenue')"
-          @contextmenu.prevent="openProtectedRouteContextMenu($event, '/manageVenue', 'Manage my venues')"
-        />
-        <v-list-item
-          class="dropdown-item fast-dropdown-item"
-          title="Manage my payments"
-          prepend-icon="mdi-cash-multiple"
-          @click="goProtected('/payments')"
-          @contextmenu.prevent="openProtectedRouteContextMenu($event, '/payments', 'Manage my payments')"
-        />
-
-        <template v-if="canModerate">
-          <v-divider class="my-1" />
-          <v-list-item
-            class="dropdown-item fast-dropdown-item"
-            title="Requests"
-            prepend-icon="mdi-store-clock-outline"
-            @click="navigateTo('/venueRequest')"
-            @contextmenu.prevent="openRouteContextMenu($event, '/venueRequest', 'Requests')"
-          />
-          <v-list-item
-            class="dropdown-item fast-dropdown-item"
-            title="Statistics"
-            prepend-icon="mdi-chart-box-outline"
-            @click="navigateTo('/stastistics')"
-            @contextmenu.prevent="openRouteContextMenu($event, '/stastistics', 'Statistics')"
-          />
-          <v-list-item
-            class="dropdown-item fast-dropdown-item"
-            title="Reports"
-            prepend-icon="mdi-flag-outline"
-            @click="openReportsDialog"
-          />
-          <v-list-item
-            class="dropdown-item fast-dropdown-item"
-            title="Send Notification"
-            prepend-icon="mdi-bell-badge-outline"
-            @click="openBroadcastDialog"
-          />
-        </template>
-      </v-list>
-    </v-menu>
-
-    <v-divider vertical class="mx-3 header-divider" />
+    <v-btn
+      v-else
+      icon
+      variant="text"
+      class="mobile-menu-btn ml-1"
+      aria-label="Open navigation menu"
+      @click="mobileDrawer = !mobileDrawer"
+    >
+      <v-icon>{{ mobileDrawer ? "mdi-close" : "mdi-menu" }}</v-icon>
+    </v-btn>
 
     <!-- Notifications -->
     <v-menu
@@ -318,7 +333,7 @@
         </v-btn>
       </template>
 
-      <v-card class="notifications-card fast-dropdown-list" rounded="xl">
+      <v-card class="notifications-card fast-dropdown-list popup-surface" :class="`popup-theme-${currentTheme}`" rounded="xl">
         <v-card-title class="d-flex align-center justify-space-between py-4 px-4">
           <span class="text-subtitle-1 font-weight-bold">Notifications</span>
 
@@ -406,7 +421,7 @@
           </v-btn>
         </template>
 
-        <v-list min-width="260" class="dropdown-list fast-dropdown-list">
+        <v-list min-width="228" class="dropdown-list fast-dropdown-list profile-dropdown-list popup-surface" :class="`popup-theme-${currentTheme}`">
           <v-list-item
             class="dropdown-item fast-dropdown-item"
             :title="fullNameFromCurrentUser"
@@ -448,6 +463,35 @@
           />
 
           <v-list-item
+            class="dropdown-item fast-dropdown-item theme-toggle-item"
+            :title="themeToggleTitle"
+            :subtitle="themeToggleSubtitle"
+            @click.stop="toggleTheme"
+          >
+            <div
+              class="theme-toggle-shell"
+              :class="{ 'theme-toggle-shell--dark': isDarkTheme }"
+              role="switch"
+              :aria-checked="String(isDarkTheme)"
+              :aria-label="themeToggleTitle"
+            >
+              <div class="theme-toggle-track">
+                <div class="theme-toggle-knob"></div>
+
+                <div class="theme-toggle-option theme-toggle-option--light" :class="{ 'is-active': !isDarkTheme }">
+                  <span>Light</span>
+                  <v-icon size="15">mdi-weather-sunny</v-icon>
+                </div>
+
+                <div class="theme-toggle-option theme-toggle-option--dark" :class="{ 'is-active': isDarkTheme }">
+                  <span>Dark</span>
+                  <v-icon size="15">mdi-weather-night</v-icon>
+                </div>
+              </div>
+            </div>
+          </v-list-item>
+
+          <v-list-item
             class="dropdown-item fast-dropdown-item"
             title="Logout"
             prepend-icon="mdi-logout"
@@ -470,9 +514,278 @@
       </v-btn>
     </template>
 
+
+    <v-navigation-drawer
+      v-model="mobileDrawer"
+      temporary
+      location="right"
+      width="340"
+      class="mobile-nav-drawer"
+      :class="`theme-${currentTheme}`"
+    >
+      <div class="mobile-drawer-shell">
+        <div class="mobile-drawer-header">
+          <div
+            class="d-flex align-center ga-3 mobile-drawer-brand"
+            @click="goHome"
+            @contextmenu.prevent="openRouteContextMenu($event, '/n_mainpage', 'Blassti Home')"
+          >
+            <v-avatar size="44" rounded="0" class="logo-avatar">
+              <v-img :src="logoSrc" alt="Blassti Logo" contain />
+            </v-avatar>
+
+            <div>
+              <div class="text-subtitle-1 font-weight-bold brand-title">Blassti</div>
+              <div class="text-caption text-medium-emphasis">Navigation</div>
+            </div>
+          </div>
+
+          <v-btn icon variant="text" size="small" @click="mobileDrawer = false">
+            <v-icon>mdi-close</v-icon>
+          </v-btn>
+        </div>
+
+        <div class="mobile-drawer-search">
+          <v-autocomplete
+            v-model="selectedUser"
+            v-model:search="userSearch"
+            :items="filteredUserSearchItems"
+            item-title="title"
+            item-value="id"
+            return-object
+            variant="outlined"
+            density="comfortable"
+            rounded="xl"
+            prepend-inner-icon="mdi-magnify"
+            placeholder="Search users..."
+            hide-details
+            hide-no-data
+            clearable
+            no-filter
+            menu-icon=""
+            class="user-search mobile-user-search"
+            @update:modelValue="goToUserDetails"
+          >
+            <template #prepend-inner>
+              <v-icon size="18" class="search-leading-icon">mdi-magnify</v-icon>
+            </template>
+
+            <template #append-inner>
+              <v-fade-transition>
+                <v-chip
+                  v-if="userSearch && filteredUserSearchItems.length"
+                  size="x-small"
+                  variant="tonal"
+                  color="primary"
+                  class="search-chip"
+                >
+                  {{ filteredUserSearchItems.length }}
+                </v-chip>
+              </v-fade-transition>
+            </template>
+
+            <template #item="{ props, item }">
+              <v-list-item
+                v-bind="props"
+                class="dropdown-item fast-dropdown-item user-search-item"
+                @contextmenu.prevent="openUserProfileContextMenu($event, item.raw)"
+              >
+                <template #prepend>
+                  <v-avatar size="36" class="search-result-avatar">
+                    <v-img :src="item.raw.avatar" cover />
+                  </v-avatar>
+                </template>
+
+                <v-list-item-title class="search-result-title">
+                  {{ item.raw.title }}
+                </v-list-item-title>
+
+                <v-list-item-subtitle class="search-result-subtitle">
+                  {{ item.raw.subtitle }}
+                </v-list-item-subtitle>
+              </v-list-item>
+            </template>
+
+            <template #selection="{ item }">
+              <div
+                class="d-flex align-center ga-2 selected-user-pill"
+                @contextmenu.prevent="openUserProfileContextMenu($event, item.raw)"
+              >
+                <v-avatar size="24" class="selected-user-avatar">
+                  <v-img :src="item.raw.avatar" cover />
+                </v-avatar>
+                <span>{{ item.raw.title }}</span>
+              </div>
+            </template>
+
+            <template #no-data>
+              <div class="search-empty-state">
+                <v-icon size="22" class="mb-2">mdi-account-search-outline</v-icon>
+                <div class="text-body-2 font-weight-medium">No users found</div>
+                <div class="text-caption text-medium-emphasis">
+                  Try another name, city, or role.
+                </div>
+              </div>
+            </template>
+          </v-autocomplete>
+        </div>
+
+        <v-list class="mobile-nav-list" nav>
+          <v-list-subheader class="mobile-nav-subheader">Explore</v-list-subheader>
+
+          <v-list-group value="events">
+            <template #activator="{ props }">
+              <v-list-item
+                v-bind="props"
+                class="mobile-nav-item"
+                prepend-icon="mdi-calendar-star"
+                title="Events"
+              />
+            </template>
+
+            <v-list-item
+              class="mobile-nav-child-item"
+              title="Browse events"
+              prepend-icon="mdi-calendar-star"
+              @click="navigateTo('/N_Event_Browsing')"
+              @contextmenu.prevent="openRouteContextMenu($event, '/N_Event_Browsing', 'Browse events')"
+            />
+            <v-list-item
+              class="mobile-nav-child-item"
+              title="My bookings"
+              prepend-icon="mdi-ticket-confirmation-outline"
+              @click="goProtected('/K_mybookings')"
+              @contextmenu.prevent="openProtectedRouteContextMenu($event, '/K_mybookings', 'My bookings')"
+            />
+          </v-list-group>
+
+          <v-list-group value="venues">
+            <template #activator="{ props }">
+              <v-list-item
+                v-bind="props"
+                class="mobile-nav-item"
+                prepend-icon="mdi-map-search-outline"
+                title="Venue"
+              />
+            </template>
+
+            <v-list-item
+              class="mobile-nav-child-item"
+              title="Browse venues"
+              prepend-icon="mdi-map-search-outline"
+              @click="navigateTo('/venueBrowsing')"
+              @contextmenu.prevent="openRouteContextMenu($event, '/venueBrowsing', 'Browse venues')"
+            />
+            <v-list-item
+              class="mobile-nav-child-item"
+              title="My venues"
+              prepend-icon="mdi-domain"
+              @click="goProtected('/reserved_venues')"
+              @contextmenu.prevent="openProtectedRouteContextMenu($event, '/reserved_venues', 'My venues')"
+            />
+          </v-list-group>
+
+          <v-list-group value="carpools">
+            <template #activator="{ props }">
+              <v-list-item
+                v-bind="props"
+                class="mobile-nav-item"
+                prepend-icon="mdi-car-multiple"
+                title="Carpools"
+              />
+            </template>
+
+            <v-list-item
+              class="mobile-nav-child-item"
+              title="Current"
+              prepend-icon="mdi-car-multiple"
+              @click="goProtected('/O_CurrentCarpools')"
+              @contextmenu.prevent="openProtectedRouteContextMenu($event, '/O_CurrentCarpools', 'Current carpools')"
+            />
+            <v-list-item
+              class="mobile-nav-child-item"
+              title="Search/Create"
+              prepend-icon="mdi-car-search"
+              @click="goProtected('/F_CarpoolCreate')"
+              @contextmenu.prevent="openProtectedRouteContextMenu($event, '/F_CarpoolCreate', 'Search/Create carpools')"
+            />
+          </v-list-group>
+
+          <v-list-group value="manage">
+            <template #activator="{ props }">
+              <v-list-item
+                v-bind="props"
+                class="mobile-nav-item"
+                prepend-icon="mdi-cog-outline"
+                title="Manage"
+              />
+            </template>
+
+            <v-list-item
+              class="mobile-nav-child-item"
+              title="Create event"
+              prepend-icon="mdi-calendar-plus"
+              @click="goProtected('/CreateEvent')"
+              @contextmenu.prevent="openProtectedRouteContextMenu($event, '/CreateEvent', 'Create event')"
+            />
+            <v-list-item
+              class="mobile-nav-child-item"
+              title="Add venue"
+              prepend-icon="mdi-store-plus-outline"
+              @click="goProtected('/o_CreateVenue')"
+              @contextmenu.prevent="openProtectedRouteContextMenu($event, '/o_CreateVenue', 'Add venue')"
+            />
+            <v-list-item
+              class="mobile-nav-child-item"
+              title="Manage my venues"
+              prepend-icon="mdi-store-edit-outline"
+              @click="goProtected('/manageVenue')"
+              @contextmenu.prevent="openProtectedRouteContextMenu($event, '/manageVenue', 'Manage my venues')"
+            />
+            <v-list-item
+              class="mobile-nav-child-item"
+              title="Manage my payments"
+              prepend-icon="mdi-cash-multiple"
+              @click="goProtected('/payments')"
+              @contextmenu.prevent="openProtectedRouteContextMenu($event, '/payments', 'Manage my payments')"
+            />
+
+            <template v-if="canModerate">
+              <v-list-item
+                class="mobile-nav-child-item"
+                title="Requests"
+                prepend-icon="mdi-store-clock-outline"
+                @click="navigateTo('/venueRequest')"
+                @contextmenu.prevent="openRouteContextMenu($event, '/venueRequest', 'Requests')"
+              />
+              <v-list-item
+                class="mobile-nav-child-item"
+                title="Statistics"
+                prepend-icon="mdi-chart-box-outline"
+                @click="navigateTo('/stastistics')"
+                @contextmenu.prevent="openRouteContextMenu($event, '/stastistics', 'Statistics')"
+              />
+              <v-list-item
+                class="mobile-nav-child-item"
+                title="Reports"
+                prepend-icon="mdi-flag-outline"
+                @click="openReportsDialog"
+              />
+              <v-list-item
+                class="mobile-nav-child-item"
+                title="Send notification"
+                prepend-icon="mdi-bell-badge-outline"
+                @click="openBroadcastDialog"
+              />
+            </template>
+          </v-list-group>
+        </v-list>
+      </div>
+    </v-navigation-drawer>
+
     <!-- Subscribed Dialog -->
     <v-dialog v-model="subscribedDialog" max-width="980">
-      <v-card rounded="xl" class="dialog-card subscribed-dialog-card">
+      <v-card rounded="xl" class="dialog-card subscribed-dialog-card popup-surface" :class="`popup-theme-${currentTheme}`">
         <v-card-title class="d-flex align-center justify-space-between flex-wrap ga-3 px-6 py-5">
           <div class="d-flex align-center ga-3">
             <v-avatar size="46" class="subscribed-title-avatar">
@@ -572,7 +885,7 @@
 
     <!-- Reports Dialog -->
     <v-dialog v-model="reportsDialog" max-width="1120">
-      <v-card rounded="xl" class="dialog-card subscribed-dialog-card">
+      <v-card rounded="xl" class="dialog-card subscribed-dialog-card popup-surface" :class="`popup-theme-${currentTheme}`">
         <v-card-title class="d-flex align-center justify-space-between flex-wrap ga-3 px-6 py-5">
           <div class="d-flex align-center ga-3 flex-wrap">
             <v-avatar size="46" class="subscribed-title-avatar report-title-avatar">
@@ -709,7 +1022,7 @@
 
     <!-- Report Details Dialog -->
     <v-dialog :model-value="Boolean(selectedReportGroup)" max-width="980" @update:model-value="value => { if (!value) closeReportDetails() }">
-      <v-card rounded="xl" class="dialog-card subscribed-dialog-card">
+      <v-card rounded="xl" class="dialog-card subscribed-dialog-card popup-surface" :class="`popup-theme-${currentTheme}`">
         <v-card-title class="d-flex align-center justify-space-between flex-wrap ga-3 px-6 py-5">
           <div class="d-flex align-center ga-3">
             <v-avatar size="46" class="subscribed-title-avatar">
@@ -797,7 +1110,7 @@
 
     <!-- Clear Reports Confirm Dialog -->
     <v-dialog v-model="clearReportsDialog" max-width="520">
-      <v-card rounded="xl" class="dialog-card popup-decor-card clear-reports-dialog">
+      <v-card rounded="xl" class="dialog-card popup-decor-card clear-reports-dialog popup-surface" :class="`popup-theme-${currentTheme}`">
         <div class="popup-orb popup-orb--one"></div>
         <div class="popup-orb popup-orb--two"></div>
 
@@ -857,7 +1170,7 @@
       :close-on-content-click="true"
       transition="scale-transition"
     >
-      <v-list min-width="220" class="dropdown-list fast-dropdown-list">
+      <v-list min-width="220" class="dropdown-list fast-dropdown-list popup-surface" :class="`popup-theme-${currentTheme}`">
         <v-list-subheader>{{ linkContextMenu.label || "Open" }}</v-list-subheader>
 
         <v-list-item
@@ -877,7 +1190,7 @@
 
     <!-- Logout Dialog -->
     <v-dialog v-model="logoutDialog" max-width="430">
-      <v-card rounded="xl" class="dialog-card">
+      <v-card rounded="xl" class="dialog-card popup-surface" :class="`popup-theme-${currentTheme}`">
         <v-card-title class="text-h6 font-weight-bold d-flex align-center ga-2">
           <v-icon>mdi-logout</v-icon>
           Logout
@@ -900,7 +1213,7 @@
 
     <!-- Login Required -->
     <v-dialog v-model="loginRequiredDialog" max-width="460">
-      <v-card rounded="xl" class="dialog-card">
+      <v-card rounded="xl" class="dialog-card popup-surface" :class="`popup-theme-${currentTheme}`">
         <v-card-title class="d-flex align-center justify-space-between">
           <span class="text-h6 font-weight-bold">Login Required</span>
 
@@ -926,7 +1239,7 @@
 
     <!-- Broadcast Notification Dialog -->
     <v-dialog v-model="broadcastDialog" max-width="540">
-      <v-card rounded="xl" class="dialog-card">
+      <v-card rounded="xl" class="dialog-card popup-surface" :class="`popup-theme-${currentTheme}`">
         <v-card-title class="d-flex align-center justify-space-between">
           <span class="text-h6 font-weight-bold">Send Notification</span>
 
@@ -989,7 +1302,8 @@
 </template>
 
 <script setup>
-import { computed, onBeforeUnmount, onMounted, ref } from "vue"
+import { computed, onBeforeUnmount, onMounted, ref, watch } from "vue"
+import { useDisplay, useTheme } from "vuetify"
 import { useRoute, useRouter } from "vue-router"
 import {
   get_All_Users,
@@ -1010,6 +1324,10 @@ import { clear_All_Reports, delete_Reports_For_User, get_Grouped_User_Reports } 
 
 const router = useRouter()
 const route = useRoute()
+const theme = useTheme()
+const display = useDisplay()
+
+const THEME_STORAGE_KEY = "blassti-theme"
 
 const logoSrc = new URL("@/assets/blassti-logo.png", import.meta.url).href
 const fallbackAvatar = "https://api.dicebear.com/7.x/bottts-neutral/svg?seed=guest-user"
@@ -1035,6 +1353,7 @@ const linkContextMenu = ref({
   href: "",
   label: "",
 })
+const mobileDrawer = ref(false)
 
 const broadcastForm = ref({
   title: "",
@@ -1044,20 +1363,82 @@ const broadcastForm = ref({
 
 const users = get_All_Users()
 
+const isMobile = computed(() => display.mdAndDown.value)
+
+const currentTheme = computed(() => {
+  return theme.global.name.value === "light" ? "light" : "dark"
+})
+
+const isDarkTheme = computed(() => currentTheme.value === "dark")
+
+const themeToggleIcon = computed(() => {
+  return isDarkTheme.value ? "mdi-weather-sunny" : "mdi-weather-night"
+})
+
+const themeToggleTitle = computed(() => {
+  return isDarkTheme.value ? "Switch to light mode" : "Switch to dark mode"
+})
+
+const themeToggleSubtitle = computed(() => {
+  return isDarkTheme.value ? "Dark mode is currently enabled" : "Light mode is currently enabled"
+})
+
+function applyThemeChoice(themeName) {
+  const normalizedTheme = themeName === "light" ? "light" : "dark"
+  theme.global.name.value = normalizedTheme
+  localStorage.setItem(THEME_STORAGE_KEY, normalizedTheme)
+  document.documentElement.setAttribute("data-app-theme", normalizedTheme)
+  document.documentElement.style.colorScheme = normalizedTheme
+}
+
+function loadSavedTheme() {
+  const savedTheme = localStorage.getItem(THEME_STORAGE_KEY)
+  applyThemeChoice(savedTheme === "light" ? "light" : "dark")
+}
+
+function toggleTheme() {
+  applyThemeChoice(isDarkTheme.value ? "light" : "dark")
+  snackbar.value = {
+    show: true,
+    text: `Switched to ${theme.global.name.value} mode.`,
+  }
+}
+
+
 function syncCurrentUser() {
   const user = get_Current_User()
   currentUser.value = user || null
 }
 
+function handleWindowStorage(event) {
+  if (!event.key || event.key === "currentUser") {
+    syncCurrentUser()
+  }
+
+  if (!event.key || event.key === THEME_STORAGE_KEY) {
+    const savedTheme = localStorage.getItem(THEME_STORAGE_KEY)
+    if (savedTheme === "light" || savedTheme === "dark") {
+      theme.global.name.value = savedTheme
+      document.documentElement.setAttribute("data-app-theme", savedTheme)
+      document.documentElement.style.colorScheme = savedTheme
+    }
+  }
+}
+
 onMounted(() => {
+  loadSavedTheme()
   syncCurrentUser()
-  window.addEventListener("storage", syncCurrentUser)
+  window.addEventListener("storage", handleWindowStorage)
   window.addEventListener("focus", syncCurrentUser)
 })
 
 onBeforeUnmount(() => {
-  window.removeEventListener("storage", syncCurrentUser)
+  window.removeEventListener("storage", handleWindowStorage)
   window.removeEventListener("focus", syncCurrentUser)
+})
+
+watch(() => route.fullPath, () => {
+  mobileDrawer.value = false
 })
 
 const canModerate = computed(() => {
@@ -1463,10 +1844,6 @@ function logout() {
 </script>
 
 <style scoped>
-:root {
-  color-scheme: light dark;
-}
-
 .navbar-glass {
   background:
     linear-gradient(180deg, rgba(14, 18, 28, 0.92), rgba(16, 20, 30, 0.78)) !important;
@@ -1980,307 +2357,473 @@ function logout() {
   }
 }
 
-@media (prefers-color-scheme: light) {
-  .navbar-glass {
-    background:
-      linear-gradient(180deg, rgba(250, 252, 255, 0.92), rgba(243, 247, 255, 0.84)) !important;
-    border-bottom: 1px solid rgba(44, 76, 122, 0.12);
-    box-shadow:
-      0 10px 26px rgba(82, 109, 150, 0.08),
-      inset 0 -1px 0 rgba(255, 255, 255, 0.35);
-  }
 
-  .brand-title,
-  .nav-btn,
-  .notif-btn,
-  .profile-btn,
-  .brand-divider {
-    color: rgba(19, 34, 58, 0.96) !important;
-    text-shadow: none;
-  }
-
-  .nav-btn:hover {
-    background: rgba(36, 88, 165, 0.06);
-    color: rgba(15, 34, 63, 1) !important;
-  }
-
-  .nav-active {
-    color: rgba(15, 34, 63, 1) !important;
-  }
-
-  .nav-active::after {
-    background: rgba(58, 120, 219, 0.8);
-    box-shadow: 0 0 12px rgba(58, 120, 219, 0.2);
-  }
-
-  :deep(.user-search .v-field) {
-    border-color: rgba(45, 74, 114, 0.14);
-    background:
-      linear-gradient(180deg, rgba(255, 255, 255, 0.96), rgba(247, 250, 255, 0.94));
-    box-shadow:
-      0 6px 18px rgba(39, 72, 117, 0.05),
-      inset 0 1px 0 rgba(255, 255, 255, 0.7);
-  }
-
-  :deep(.user-search .v-field:hover) {
-    border-color: rgba(73, 126, 205, 0.22);
-  }
-
-  :deep(.user-search .v-field--focused) {
-    border-color: rgba(73, 126, 205, 0.35);
-    box-shadow:
-      0 0 0 1px rgba(73, 126, 205, 0.1),
-      0 10px 24px rgba(73, 126, 205, 0.08);
-    background: rgba(255, 255, 255, 0.98);
-  }
-
-  .dropdown-list,
-  .notifications-card,
-  .dialog-card {
-    background:
-      linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(248, 251, 255, 0.97));
-    border: 1px solid rgba(45, 74, 114, 0.1);
-    box-shadow: 0 18px 42px rgba(63, 92, 138, 0.12);
-  }
-
-  .dropdown-item:hover,
-  .notification-item:hover,
-  .subscribed-item:hover {
-    background: rgba(70, 120, 210, 0.06);
-    box-shadow: inset 0 0 0 1px rgba(70, 120, 210, 0.05);
-  }
-
-  .notification-unread {
-    background: rgba(70, 120, 210, 0.08);
-  }
-
-  .notification-avatar,
-  .subscribed-title-avatar {
-    background: rgba(70, 120, 210, 0.1);
-    color: rgba(36, 76, 145, 1);
-  }
-
-  .login-top-btn {
-    background: linear-gradient(
-      180deg,
-      rgba(250, 252, 255, 0.98),
-      rgba(238, 245, 255, 0.96)
-    ) !important;
-    color: rgba(24, 51, 94, 1) !important;
-    border-color: rgba(70, 120, 210, 0.55) !important;
-    box-shadow:
-      0 0 0 1px rgba(70, 120, 210, 0.08),
-      0 10px 26px rgba(63, 92, 138, 0.08);
-  }
-
-  .notif-has-items {
-    color: rgba(36, 76, 145, 1) !important;
-    text-shadow: none;
-    box-shadow: inset 0 0 18px rgba(70, 120, 210, 0.05);
-  }
-
-  .profile-avatar-ring {
-    box-shadow:
-      0 0 0 1px rgba(45, 74, 114, 0.12),
-      0 0 0 0 rgba(73, 126, 205, 0);
-  }
-
-  .profile-btn:hover .profile-avatar-ring {
-    box-shadow:
-      0 0 0 1px rgba(73, 126, 205, 0.24),
-      0 0 16px rgba(73, 126, 205, 0.12);
-  }
-
-  .report-entry-card {
-    background: rgba(70, 120, 210, 0.03);
-  }
-
-  .brand-divider {
-    color: rgba(70, 120, 210, 0.85) !important;
-  }
-
-  .search-empty-state,
-  .empty-notifications,
-  .subscribed-empty-state {
-    color: rgba(19, 34, 58, 0.92);
-  }
-}
-</style>
-.popup-decor-card,
-.report-entry-card,
-.report-group-item,
-.app-snackbar :deep(.v-snackbar__wrapper) {
-  position: relative;
-  overflow: hidden;
+.desktop-nav-shell {
+  min-width: 0;
 }
 
-.popup-decor-card {
-  background:
-    radial-gradient(circle at top right, rgba(255, 255, 255, 0.08), transparent 30%),
-    linear-gradient(180deg, rgba(17, 24, 39, 0.98), rgba(12, 18, 28, 0.96)) !important;
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.35);
-  animation: popupFloatIn 0.28s ease;
+.theme-switch {
+  margin-inline-start: 12px;
+  pointer-events: auto;
 }
 
-.popup-orb {
-  position: absolute;
-  border-radius: 999px;
-  filter: blur(12px);
-  pointer-events: none;
-  opacity: 0.45;
+.theme-toggle-item {
+  padding-block: 8px !important;
+  cursor: pointer;
 }
 
-.popup-orb--one {
-  width: 120px;
-  height: 120px;
-  top: -24px;
-  right: -16px;
-  background: rgba(103, 80, 164, 0.24);
+.theme-toggle-item :deep(.v-list-item__prepend) {
+  display: none !important;
 }
 
-.popup-orb--two {
-  width: 110px;
-  height: 110px;
-  bottom: -30px;
-  left: -18px;
-  background: rgba(244, 67, 54, 0.16);
+.theme-toggle-item :deep(.v-list-item__content) {
+  overflow: visible;
 }
 
-.report-title-avatar {
-  box-shadow: 0 12px 28px rgba(244, 67, 54, 0.18);
-}
-
-.report-count-chip {
+.theme-toggle-item :deep(.v-list-item-title) {
+  margin-bottom: 2px;
   font-weight: 700;
-  letter-spacing: 0.2px;
 }
 
-.report-summary-strip {
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.02), transparent);
-}
-
-.report-summary-card {
-  display: inline-flex;
-  flex-direction: column;
-  gap: 2px;
-  padding: 14px 16px;
-  border-radius: 18px;
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  background: rgba(255, 255, 255, 0.03);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.03);
-}
-
-.report-summary-label {
-  font-size: 12px;
-  text-transform: uppercase;
-  letter-spacing: 0.12em;
+.theme-toggle-item :deep(.v-list-item-subtitle) {
   opacity: 0.72;
 }
 
-.report-summary-value {
-  font-size: 28px;
-  font-weight: 800;
-  line-height: 1;
+.theme-toggle-shell {
+  width: 100%;
+  margin-top: 10px;
 }
 
-.report-summary-caption {
-  font-size: 13px;
-  opacity: 0.82;
+.theme-toggle-track {
+  position: relative;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  align-items: center;
+  min-height: 48px;
+  padding: 4px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.03);
+  overflow: hidden;
+  transition: background 0.24s ease, border-color 0.24s ease, box-shadow 0.24s ease, transform 0.18s ease;
 }
 
-.report-list-animate .report-group-item {
-  animation: softRiseIn 0.32s ease both;
+.theme-toggle-shell:hover .theme-toggle-track {
+  transform: translateY(-1px);
 }
 
-.report-list-animate .report-group-item:nth-child(2) { animation-delay: 0.04s; }
-.report-list-animate .report-group-item:nth-child(3) { animation-delay: 0.08s; }
-.report-list-animate .report-group-item:nth-child(4) { animation-delay: 0.12s; }
-.report-list-animate .report-group-item:nth-child(5) { animation-delay: 0.16s; }
-.report-list-animate .report-group-item:nth-child(6) { animation-delay: 0.2s; }
-
-.report-group-item {
-  transition: transform 0.18s ease, box-shadow 0.18s ease, background-color 0.18s ease;
+.theme-toggle-knob {
+  position: absolute;
+  top: 4px;
+  left: 4px;
+  width: calc(50% - 4px);
+  height: calc(100% - 8px);
+  border-radius: 999px;
+  background: linear-gradient(180deg, rgba(244, 249, 255, 0.98), rgba(223, 236, 255, 0.96));
+  border: 1px solid rgba(117, 184, 255, 0.22);
+  box-shadow:
+    0 10px 22px rgba(32, 92, 181, 0.18),
+    inset 0 1px 0 rgba(255, 255, 255, 0.75);
+  transform: translateX(0%);
+  transition:
+    transform 0.3s cubic-bezier(.2,.8,.2,1),
+    background 0.24s ease,
+    border-color 0.24s ease,
+    box-shadow 0.24s ease;
 }
 
-.report-group-item:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 14px 28px rgba(0, 0, 0, 0.14);
-  background: rgba(255, 255, 255, 0.02);
+.theme-toggle-shell--dark .theme-toggle-knob {
+  transform: translateX(100%);
+  background: linear-gradient(180deg, rgba(44, 56, 82, 0.96), rgba(28, 36, 54, 0.98));
+  border-color: rgba(126, 167, 255, 0.18);
+  box-shadow:
+    0 12px 24px rgba(0, 0, 0, 0.28),
+    inset 0 1px 0 rgba(255, 255, 255, 0.05);
 }
 
-.report-action-btn {
-  box-shadow: 0 8px 18px rgba(0, 0, 0, 0.14);
-}
-
-.report-details-banner {
+.theme-toggle-option {
+  position: relative;
+  z-index: 1;
   display: inline-flex;
   align-items: center;
-  gap: 10px;
-  padding: 10px 14px;
+  justify-content: center;
+  gap: 7px;
+  min-height: 40px;
+  padding-inline: 12px;
+  border-radius: 999px;
+  font-size: 0.9rem;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  color: rgba(255, 255, 255, 0.58);
+  transition: color 0.22s ease, opacity 0.22s ease, transform 0.22s ease;
+  user-select: none;
+  white-space: nowrap;
+}
+
+.theme-toggle-option .v-icon {
+  transition: transform 0.24s ease, opacity 0.24s ease;
+}
+
+.theme-toggle-option.is-active {
+  color: rgba(255, 255, 255, 0.98);
+}
+
+.theme-toggle-option.is-active .v-icon {
+  transform: scale(1.05);
+}
+
+.theme-toggle-item:hover .theme-toggle-option {
+  transform: none;
+}
+
+.profile-dropdown-list {
+  padding: 6px !important;
+}
+
+.profile-dropdown-list .dropdown-item {
+  min-height: 44px;
+  padding-inline: 10px !important;
+}
+
+.profile-dropdown-list .theme-toggle-item {
+  min-height: 96px;
+  align-items: stretch;
+}
+
+.popup-theme-light {
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.985), rgba(246, 250, 255, 0.975)) !important;
+  border: 1px solid rgba(45, 74, 114, 0.1) !important;
+  box-shadow: 0 18px 42px rgba(63, 92, 138, 0.12) !important;
+  color: rgba(20, 34, 58, 0.98) !important;
+}
+
+.popup-theme-dark {
+  background: linear-gradient(180deg, rgba(20, 20, 25, 0.98), rgba(18, 18, 22, 0.97)) !important;
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+  box-shadow: 0 16px 34px rgba(0, 0, 0, 0.28) !important;
+}
+
+.popup-theme-light .dropdown-item:hover,
+.popup-theme-light .notification-item:hover,
+.popup-theme-light .subscribed-item:hover,
+.popup-theme-light .mobile-nav-item:hover,
+.popup-theme-light .mobile-nav-child-item:hover {
+  background: rgba(70, 120, 210, 0.06) !important;
+  box-shadow: inset 0 0 0 1px rgba(70, 120, 210, 0.05);
+}
+
+.popup-theme-light .notification-unread {
+  background: rgba(70, 120, 210, 0.08) !important;
+}
+
+.popup-theme-light .notification-avatar,
+.popup-theme-light .subscribed-title-avatar,
+.popup-theme-light .theme-toggle-prepend {
+  background: rgba(70, 120, 210, 0.1);
+  color: rgba(36, 76, 145, 1);
+  border-color: rgba(70, 120, 210, 0.12);
+}
+
+.popup-theme-light .theme-toggle-track {
+  background: linear-gradient(180deg, rgba(234, 242, 255, 0.96), rgba(220, 232, 250, 0.9));
+  border-color: rgba(70, 120, 210, 0.14);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.92),
+    0 6px 18px rgba(63, 92, 138, 0.06);
+}
+
+.popup-theme-light .theme-toggle-knob {
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.99), rgba(243, 248, 255, 0.98));
+  border-color: rgba(70, 120, 210, 0.18);
+  box-shadow:
+    0 8px 18px rgba(63, 92, 138, 0.12),
+    inset 0 1px 0 rgba(255, 255, 255, 0.94);
+}
+
+.popup-theme-light .theme-toggle-shell--dark .theme-toggle-knob {
+  background: linear-gradient(180deg, rgba(82, 104, 145, 0.96), rgba(58, 77, 114, 0.98));
+  border-color: rgba(70, 120, 210, 0.22);
+}
+
+.popup-theme-light .theme-toggle-option {
+  color: rgba(34, 59, 97, 0.62);
+}
+
+.popup-theme-light .theme-toggle-option.is-active {
+  color: rgba(18, 43, 84, 0.98);
+}
+
+.popup-theme-light .notif-read-dot--seen {
+  background: rgba(36, 76, 145, 0.18);
+}
+
+.theme-toggle-item :deep(.v-list-item__append) {
+  margin-inline-start: 12px;
+}
+
+.mobile-menu-btn {
   border-radius: 14px;
+  transition: transform 0.18s ease, background 0.18s ease, box-shadow 0.18s ease;
+}
+
+.mobile-menu-btn:hover {
+  transform: translateY(-1px);
   background: rgba(255, 255, 255, 0.04);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  color: rgba(255, 255, 255, 0.84);
 }
 
-.report-entry-card {
-  border-color: rgba(255, 255, 255, 0.08) !important;
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.035), rgba(255, 255, 255, 0.02)) !important;
-  transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease;
-  animation: softRiseIn 0.28s ease both;
+.mobile-nav-drawer :deep(.v-navigation-drawer__content) {
+  background: transparent;
 }
 
-.report-entry-card:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 14px 28px rgba(0, 0, 0, 0.16);
-  border-color: rgba(244, 67, 54, 0.22) !important;
+.mobile-nav-drawer {
+  border-left: 1px solid rgba(255, 255, 255, 0.08) !important;
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  background:
+    linear-gradient(180deg, rgba(18, 22, 32, 0.98), rgba(14, 18, 28, 0.98)) !important;
+  box-shadow: -16px 0 36px rgba(0, 0, 0, 0.22);
 }
 
-.clear-reports-dialog {
-  animation: popupFloatIn 0.24s ease;
-}
-
-.clear-reports-avatar {
-  background: rgba(244, 67, 54, 0.14);
-  color: rgb(255, 126, 117);
-  box-shadow: 0 10px 24px rgba(244, 67, 54, 0.14);
-}
-
-.clear-reports-warning {
+.mobile-drawer-shell {
   display: flex;
-  align-items: flex-start;
-  gap: 10px;
-  padding: 14px 16px;
+  flex-direction: column;
+  min-height: 100%;
+  padding: 14px 12px 18px;
+}
+
+.mobile-drawer-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 6px 4px 12px;
+}
+
+.mobile-drawer-brand {
+  min-width: 0;
+  cursor: pointer;
+  border-radius: 18px;
+  padding: 6px 8px;
+  transition: transform 0.18s ease, background 0.18s ease;
+}
+
+.mobile-drawer-brand:hover {
+  transform: translateY(-1px);
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.mobile-drawer-search {
+  padding: 4px 4px 10px;
+}
+
+.mobile-user-search {
+  min-width: 0;
+  width: 100%;
+}
+
+.mobile-nav-list {
+  background: transparent !important;
+  padding-top: 4px;
+}
+
+.mobile-nav-subheader {
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  font-size: 0.75rem;
+  opacity: 0.7;
+}
+
+.mobile-nav-item,
+.mobile-nav-child-item {
   border-radius: 16px;
-  background: rgba(244, 67, 54, 0.08);
-  border: 1px solid rgba(244, 67, 54, 0.14);
+  min-height: 52px;
+  margin-bottom: 6px;
+  transition: background 0.16s ease, transform 0.16s ease, box-shadow 0.16s ease;
 }
 
-.app-snackbar :deep(.v-snackbar__wrapper) {
-  background: linear-gradient(180deg, rgba(21, 29, 43, 0.98), rgba(14, 19, 29, 0.98)) !important;
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  box-shadow: 0 18px 34px rgba(0, 0, 0, 0.28);
+.mobile-nav-child-item {
+  margin-inline-start: 10px;
 }
 
-@keyframes softRiseIn {
-  from {
-    opacity: 0;
-    transform: translateY(10px);
+.mobile-nav-item:hover,
+.mobile-nav-child-item:hover {
+  background: rgba(255, 255, 255, 0.05);
+  transform: translateX(1px);
+}
+
+.app-navbar.theme-light {
+  background:
+    linear-gradient(180deg, rgba(250, 252, 255, 0.92), rgba(243, 247, 255, 0.84)) !important;
+  border-bottom: 1px solid rgba(44, 76, 122, 0.12);
+  box-shadow:
+    0 10px 26px rgba(82, 109, 150, 0.08),
+    inset 0 -1px 0 rgba(255, 255, 255, 0.35);
+}
+
+.app-navbar.theme-light .brand-title,
+.app-navbar.theme-light .nav-btn,
+.app-navbar.theme-light .notif-btn,
+.app-navbar.theme-light .profile-btn,
+.app-navbar.theme-light .mobile-menu-btn,
+.app-navbar.theme-light .brand-divider {
+  color: rgba(19, 34, 58, 0.96) !important;
+  text-shadow: none;
+}
+
+.app-navbar.theme-light .nav-btn:hover,
+.app-navbar.theme-light .mobile-menu-btn:hover,
+.app-navbar.theme-light .notif-btn:hover,
+.app-navbar.theme-light .profile-btn:hover {
+  background: rgba(36, 88, 165, 0.06);
+  color: rgba(15, 34, 63, 1) !important;
+}
+
+.app-navbar.theme-light .nav-active {
+  color: rgba(15, 34, 63, 1) !important;
+}
+
+.app-navbar.theme-light .nav-active::after {
+  background: rgba(58, 120, 219, 0.8);
+  box-shadow: 0 0 12px rgba(58, 120, 219, 0.2);
+}
+
+.app-navbar.theme-light :deep(.user-search .v-field) {
+  border-color: rgba(45, 74, 114, 0.14);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.96), rgba(247, 250, 255, 0.94));
+  box-shadow:
+    0 6px 18px rgba(39, 72, 117, 0.05),
+    inset 0 1px 0 rgba(255, 255, 255, 0.7);
+}
+
+.app-navbar.theme-light :deep(.user-search .v-field:hover) {
+  border-color: rgba(73, 126, 205, 0.22);
+}
+
+.app-navbar.theme-light :deep(.user-search .v-field--focused) {
+  border-color: rgba(73, 126, 205, 0.35);
+  box-shadow:
+    0 0 0 1px rgba(73, 126, 205, 0.1),
+    0 10px 24px rgba(73, 126, 205, 0.08);
+  background: rgba(255, 255, 255, 0.98);
+}
+
+.app-navbar.theme-light .dropdown-list,
+.app-navbar.theme-light .notifications-card,
+.app-navbar.theme-light .dialog-card,
+.mobile-nav-drawer.theme-light {
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(248, 251, 255, 0.97));
+  border: 1px solid rgba(45, 74, 114, 0.1);
+  box-shadow: 0 18px 42px rgba(63, 92, 138, 0.12);
+}
+
+.app-navbar.theme-light .dropdown-item:hover,
+.app-navbar.theme-light .notification-item:hover,
+.app-navbar.theme-light .subscribed-item:hover,
+.app-navbar.theme-light .mobile-nav-item:hover,
+.app-navbar.theme-light .mobile-nav-child-item:hover {
+  background: rgba(70, 120, 210, 0.06);
+  box-shadow: inset 0 0 0 1px rgba(70, 120, 210, 0.05);
+}
+
+.app-navbar.theme-light .notification-unread {
+  background: rgba(70, 120, 210, 0.08);
+}
+
+.app-navbar.theme-light .notification-avatar,
+.app-navbar.theme-light .subscribed-title-avatar {
+  background: rgba(70, 120, 210, 0.1);
+  color: rgba(36, 76, 145, 1);
+}
+
+.app-navbar.theme-light .login-top-btn {
+  background: linear-gradient(
+    180deg,
+    rgba(250, 252, 255, 0.98),
+    rgba(238, 245, 255, 0.96)
+  ) !important;
+  color: rgba(24, 51, 94, 1) !important;
+  border-color: rgba(70, 120, 210, 0.55) !important;
+  box-shadow:
+    0 0 0 1px rgba(70, 120, 210, 0.08),
+    0 10px 26px rgba(63, 92, 138, 0.08);
+}
+
+.app-navbar.theme-light .notif-has-items {
+  color: rgba(36, 76, 145, 1) !important;
+  text-shadow: none;
+  box-shadow: inset 0 0 18px rgba(70, 120, 210, 0.05);
+}
+
+.app-navbar.theme-light .mobile-nav-drawer {
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.985), rgba(246, 250, 255, 0.98)) !important;
+  border-left: 1px solid rgba(45, 74, 114, 0.1) !important;
+  box-shadow: -16px 0 38px rgba(63, 92, 138, 0.12);
+}
+
+.app-navbar.theme-light .mobile-drawer-brand:hover {
+  background: rgba(70, 120, 210, 0.06);
+}
+
+@media (max-width: 960px) {
+  .app-navbar {
+    padding-inline: 10px !important;
   }
-  to {
-    opacity: 1;
-    transform: translateY(0);
+
+  .brand-block {
+    gap: 12px !important;
+    padding-right: 0;
+  }
+
+  .brand-title {
+    font-size: 1.2rem !important;
+  }
+
+  .logo-avatar {
+    width: 48px !important;
+    height: 48px !important;
+  }
+
+  .notif-btn,
+  .profile-btn,
+  .mobile-menu-btn {
+    width: 42px !important;
+    height: 42px !important;
+  }
+
+  .notifications-card {
+    width: min(92vw, 380px);
+  }
+
+  .dropdown-list {
+    max-width: min(92vw, 320px);
   }
 }
 
-@keyframes popupFloatIn {
-  from {
-    opacity: 0;
-    transform: translateY(10px) scale(0.985);
+@media (max-width: 600px) {
+  .app-navbar {
+    padding-inline: 6px !important;
   }
-  to {
-    opacity: 1;
-    transform: translateY(0) scale(1);
+
+  .brand-title {
+    font-size: 1.08rem !important;
+  }
+
+  .mobile-nav-drawer {
+    width: min(92vw, 340px) !important;
+  }
+
+  .mobile-drawer-shell {
+    padding: 12px 10px 16px;
+  }
+
+  .mobile-nav-item,
+  .mobile-nav-child-item {
+    min-height: 50px;
   }
 }
+
+</style>

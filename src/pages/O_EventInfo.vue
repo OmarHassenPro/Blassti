@@ -24,7 +24,7 @@
 
             <v-card
               rounded="xl"
-              class="hero-card mb-6 mb-md-8 overflow-hidden"
+              class="hero-card mb-6 mb-md-8 overflow-hidden page-entrance-card"
               elevation="0"
               variant="flat"
             >
@@ -97,7 +97,7 @@
                 <v-card
                   variant="flat"
                   rounded="xl"
-                  class="gallery-card pa-3 pa-md-4"
+                  class="gallery-card pa-3 pa-md-4 page-entrance-card page-entrance-card-delay-1"
                   elevation="0"
                 >
                   <div class="d-flex align-center justify-space-between mb-3">
@@ -125,12 +125,12 @@
                     </v-btn>
 
                     <v-sheet
-                      height="360"
+                      :height="isMobile ? 260 : isTabletOrDown ? 300 : 360"
                       class="gallery-main-sheet rounded-xl overflow-hidden"
                     >
                       <v-img
                         :src="currentImage"
-                        height="360"
+                        :height="isMobile ? 260 : isTabletOrDown ? 300 : 360"
                         cover
                         class="gallery-main-image"
                       >
@@ -204,7 +204,7 @@
                 <v-card
                   variant="flat"
                   rounded="xl"
-                  class="details-card pa-5 pa-md-6 mt-6"
+                  class="details-card pa-5 pa-md-6 mt-6 page-entrance-card page-entrance-card-delay-2"
                   elevation="0"
                 >
                   <div class="d-flex flex-column flex-md-row align-md-center justify-space-between ga-3 mb-5">
@@ -406,7 +406,7 @@
                 <v-card
                   variant="flat"
                   rounded="xl"
-                  class="booking-card pa-5 pa-md-6"
+                  class="booking-card pa-5 pa-md-6 page-entrance-card page-entrance-card-delay-1"
                   elevation="0"
                 >
                   <div class="booking-card-glow" />
@@ -462,7 +462,7 @@
                 <v-card
                   variant="flat"
                   rounded="xl"
-                  class="mini-info-card pa-4 mt-4"
+                  class="mini-info-card pa-4 mt-4 page-entrance-card page-entrance-card-delay-2"
                   elevation="0"
                 >
                   <div class="d-flex align-center ga-3">
@@ -485,7 +485,7 @@
           <div v-else>
             <v-card
               rounded="xl"
-              class="empty-state-card py-12 px-6"
+              class="empty-state-card py-12 px-6 page-entrance-card"
               elevation="0"
               variant="flat"
             >
@@ -511,7 +511,7 @@
 import AppNavbar from "@/components/AppNavbar.vue"
 import { ref, computed, watch, onMounted, onBeforeUnmount } from "vue"
 import { useRoute, useRouter } from "vue-router"
-import { useTheme } from "vuetify"
+import { useDisplay, useTheme } from "vuetify"
 import { can_Buy_Event_Tickets, get_Event_By_Id, is_Event_Past } from "@/dataModel/event"
 import { get_User_By_Id } from "@/dataModel/user"
 import { get_All_Venues } from "@/dataModel/venue"
@@ -519,17 +519,32 @@ import { get_All_Venues } from "@/dataModel/venue"
 const route = useRoute()
 const router = useRouter()
 const theme = useTheme()
+const display = useDisplay()
+
+const THEME_STORAGE_KEY = "blassti-theme"
 
 const event = computed(() => get_Event_By_Id(route.query.id))
 
 const currentImageIndex = ref(0)
-const prefersDark = ref(false)
+const isMobile = computed(() => display.smAndDown.value)
+const isTabletOrDown = computed(() => display.mdAndDown.value)
 
 watch(
   () => route.query.id,
   () => {
     currentImageIndex.value = 0
   }
+)
+
+watch(
+  () => theme.global.name.value,
+  (newTheme) => {
+    if (newTheme === "light" || newTheme === "dark") {
+      document.documentElement.setAttribute("data-app-theme", newTheme)
+      document.documentElement.style.colorScheme = newTheme
+    }
+  },
+  { immediate: true }
 )
 
 const currentImage = computed(() => {
@@ -551,8 +566,12 @@ const matchedVenue = computed(() => {
   return venues.find(venue => venue.title === event.value.venue) || null
 })
 
+const currentTheme = computed(() => {
+  return theme.global.name.value === "light" ? "light" : "dark"
+})
+
 const browserThemeClass = computed(() => {
-  return prefersDark.value ? "browser-dark" : "browser-light"
+  return currentTheme.value === "dark" ? "browser-dark" : "browser-light"
 })
 const canBuyTicket = computed(() => {
   return can_Buy_Event_Tickets(event.value)
@@ -626,11 +645,32 @@ const bookingHighlightClass = computed(() => {
 })
 
 
-function applyBrowserTheme() {
+function applyThemeChoice(themeName) {
   if (typeof window === "undefined") return
-  const media = window.matchMedia("(prefers-color-scheme: dark)")
-  prefersDark.value = media.matches
-  theme.global.name.value = media.matches ? "dark" : "light"
+  const normalizedTheme = themeName === "light" ? "light" : "dark"
+  theme.global.name.value = normalizedTheme
+  document.documentElement.setAttribute("data-app-theme", normalizedTheme)
+  document.documentElement.style.colorScheme = normalizedTheme
+}
+
+function loadSavedTheme() {
+  if (typeof window === "undefined") return
+  const savedTheme = localStorage.getItem(THEME_STORAGE_KEY)
+  applyThemeChoice(savedTheme === "light" ? "light" : "dark")
+}
+
+function handleWindowStorage(event) {
+  if (typeof window === "undefined") return
+  if (!event.key || event.key === THEME_STORAGE_KEY) {
+    const savedTheme = localStorage.getItem(THEME_STORAGE_KEY)
+    if (savedTheme === "light" || savedTheme === "dark") {
+      applyThemeChoice(savedTheme)
+    }
+  }
+}
+
+function handleWindowFocus() {
+  loadSavedTheme()
 }
 
 function previousImage() {
@@ -670,28 +710,19 @@ function goToSeatSelection() {
   })
 }
 
-let colorSchemeListener = null
-
 onMounted(() => {
-  applyBrowserTheme()
+  loadSavedTheme()
 
   if (typeof window !== "undefined") {
-    colorSchemeListener = window.matchMedia("(prefers-color-scheme: dark)")
-    if (colorSchemeListener.addEventListener) {
-      colorSchemeListener.addEventListener("change", applyBrowserTheme)
-    } else if (colorSchemeListener.addListener) {
-      colorSchemeListener.addListener(applyBrowserTheme)
-    }
+    window.addEventListener("storage", handleWindowStorage)
+    window.addEventListener("focus", handleWindowFocus)
   }
 })
 
 onBeforeUnmount(() => {
-  if (colorSchemeListener) {
-    if (colorSchemeListener.removeEventListener) {
-      colorSchemeListener.removeEventListener("change", applyBrowserTheme)
-    } else if (colorSchemeListener.removeListener) {
-      colorSchemeListener.removeListener(applyBrowserTheme)
-    }
+  if (typeof window !== "undefined") {
+    window.removeEventListener("storage", handleWindowStorage)
+    window.removeEventListener("focus", handleWindowFocus)
   }
 })
 </script>
@@ -1068,6 +1099,29 @@ onBeforeUnmount(() => {
   justify-content: center;
 }
 
+.page-entrance-card {
+  animation: pageFadeLift 0.32s ease-out both;
+}
+
+.page-entrance-card-delay-1 {
+  animation-delay: 0.04s;
+}
+
+.page-entrance-card-delay-2 {
+  animation-delay: 0.08s;
+}
+
+@keyframes pageFadeLift {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
 @media (max-width: 1180px) {
   .content-grid {
     grid-template-columns: 1fr;
@@ -1092,8 +1146,36 @@ onBeforeUnmount(() => {
 }
 
 @media (max-width: 700px) {
+  .event-info-container {
+    padding-left: 14px !important;
+    padding-right: 14px !important;
+  }
+
+  .hero-card,
+  .gallery-card,
+  .details-card,
+  .booking-card,
+  .mini-info-card,
+  .empty-state-card {
+    border-radius: 22px !important;
+  }
+
   .hero-title {
     font-size: 2rem !important;
+  }
+
+  .hero-subtitle {
+    line-height: 1.65;
+  }
+
+  .hero-stat-group {
+    width: 100%;
+    gap: 10px !important;
+  }
+
+  .hero-stat-card {
+    flex: 1 1 calc(50% - 8px);
+    min-width: calc(50% - 8px);
   }
 
   .gallery-main-sheet,
@@ -1101,19 +1183,37 @@ onBeforeUnmount(() => {
     max-height: 300px;
   }
 
+  .thumbnail-row {
+    gap: 6px;
+  }
+
   .thumbnail-strip {
     gap: 8px;
+    overflow-x: auto;
+    padding-bottom: 4px;
+    scrollbar-width: thin;
   }
 
   .thumbnail-card {
+    min-width: 84px;
     height: 72px !important;
+    flex: 0 0 84px;
+  }
+
+  .thumbnail-arrow {
+    width: 40px !important;
+    height: 40px !important;
   }
 }
 
 @media (max-width: 600px) {
+  .breadcrumb-row {
+    gap: 4px;
+  }
+
   .gallery-nav-btn {
-    width: 38px !important;
-    height: 38px !important;
+    width: 42px !important;
+    height: 42px !important;
   }
 
   .gallery-nav-btn-left {
@@ -1124,8 +1224,39 @@ onBeforeUnmount(() => {
     right: 8px;
   }
 
+  .image-counter {
+    right: 10px;
+    bottom: 10px;
+  }
+
   .hero-stat-card {
-    min-width: calc(50% - 6px);
+    min-width: 100%;
+    width: 100%;
+  }
+
+  .booking-highlight {
+    padding: 14px;
+  }
+
+  .book-btn {
+    min-height: 48px;
+  }
+}
+
+@media (hover: none) {
+  .hero-card:hover,
+  .gallery-card:hover,
+  .details-card:hover,
+  .booking-card:hover,
+  .mini-info-card:hover,
+  .hero-stat-card:hover,
+  .thumbnail-card:hover,
+  .book-btn:hover {
+    transform: none;
+  }
+
+  .gallery-main-sheet:hover .gallery-main-image {
+    transform: none;
   }
 }
 </style>

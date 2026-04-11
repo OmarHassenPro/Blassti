@@ -5,7 +5,7 @@
     <v-main
       class="carpool-page"
       :class="[
-        isBrowserDark ? 'carpool-page--dark' : 'carpool-page--light',
+        isDarkTheme ? 'carpool-page--dark' : 'carpool-page--light',
       ]"
     >
       <div class="page-background">
@@ -20,7 +20,7 @@
           rounded="xl"
           variant="flat"
           class="hero-card mb-6 mb-md-8"
-          :class="isBrowserDark ? 'hero-card--dark' : 'hero-card--light'"
+          :class="isDarkTheme ? 'hero-card--dark' : 'hero-card--light'"
         >
           <v-card-text class="pa-5 pa-md-7">
             <v-row align="center" class="ga-0">
@@ -39,7 +39,7 @@
                       Find or create a carpool for upcoming events
                     </div>
 
-                    <div class="d-flex flex-wrap ga-2">
+                    <div class="d-flex flex-column flex-sm-row flex-wrap ga-2 carpool-actions">
                       <v-chip
                         size="small"
                         variant="flat"
@@ -73,7 +73,7 @@
                         class="hero-chip"
                       >
                         <v-icon start size="16">mdi-theme-light-dark</v-icon>
-                        Browser theme aware
+                        Theme synced
                       </v-chip>
                     </div>
                   </div>
@@ -130,7 +130,7 @@
               rounded="xl"
               variant="outlined"
               class="glass-card sticky-card"
-              :class="isBrowserDark ? 'glass-card--dark' : 'glass-card--light'"
+              :class="isDarkTheme ? 'glass-card--dark' : 'glass-card--light'"
             >
               <div class="section-topbar" />
 
@@ -384,7 +384,7 @@
               rounded="xl"
               variant="outlined"
               class="glass-card mb-4"
-              :class="isBrowserDark ? 'glass-card--dark' : 'glass-card--light'"
+              :class="isDarkTheme ? 'glass-card--dark' : 'glass-card--light'"
             >
               <v-card-text class="pa-5">
                 <div class="d-flex flex-column flex-lg-row align-lg-center ga-3 mb-4">
@@ -450,7 +450,7 @@
                       hide-details
                       density="comfortable"
                       label="Only available"
-                      class="filter-checkbox"
+                      class="filter-checkbox mt-1 mt-md-0"
                       color="primary"
                     />
                   </v-col>
@@ -462,7 +462,7 @@
               rounded="xl"
               variant="outlined"
               class="glass-card"
-              :class="isBrowserDark ? 'glass-card--dark' : 'glass-card--light'"
+              :class="isDarkTheme ? 'glass-card--dark' : 'glass-card--light'"
             >
               <v-card-text class="pa-5">
                 <v-fade-transition group>
@@ -611,7 +611,8 @@
                         color="primary"
                         variant="flat"
                         rounded="lg"
-                        class="text-none"
+                        class="text-none action-btn"
+                        :block="isMobile"
                         @click="joinCarpool(carpool.id)"
                         prepend-icon="mdi-account-plus-outline"
                       >
@@ -621,7 +622,8 @@
                       <v-btn
                         variant="text"
                         rounded="lg"
-                        class="text-none"
+                        class="text-none action-btn"
+                        :block="isMobile"
                         @click="openDetails(carpool)"
                         prepend-icon="mdi-information-outline"
                       >
@@ -658,14 +660,16 @@
         <!-- DETAILS DIALOG -->
         <v-dialog
           v-model="detailsDialog"
-          max-width="880"
+          :max-width="isMobile ? undefined : 880"
+          :fullscreen="isMobile"
+          scrollable
           transition="dialog-bottom-transition"
         >
           <v-card
             v-if="selectedCarpool"
             rounded="xl"
             class="details-dialog-card"
-            :class="isBrowserDark ? 'details-dialog-card--dark' : 'details-dialog-card--light'"
+            :class="isDarkTheme ? 'details-dialog-card--dark' : 'details-dialog-card--light'"
           >
             <v-card-title class="details-header">
               <div class="d-flex align-start ga-3">
@@ -926,7 +930,7 @@
 <script setup>
 import { computed, onBeforeUnmount, onMounted, reactive, ref } from "vue"
 import { RouterLink } from "vue-router"
-import { useTheme } from "vuetify"
+import { useDisplay, useTheme } from "vuetify"
 import AppNavbar from "@/components/AppNavbar.vue"
 
 import {
@@ -941,6 +945,9 @@ import { get_All_Venues } from "@/dataModel/venue"
 import { get_Current_User } from "@/dataModel/user"
 
 const theme = useTheme()
+const display = useDisplay()
+
+const THEME_STORAGE_KEY = "blassti-theme"
 
 const currentUser = computed(() => get_Current_User())
 const events = computed(() => get_All_Events())
@@ -951,7 +958,12 @@ const selectedEventId = ref("all")
 const selectedVenueId = ref("all")
 const detailsDialog = ref(false)
 const selectedCarpool = ref(null)
-const isBrowserDark = ref(false)
+
+const isMobile = computed(() => display.smAndDown.value)
+const currentTheme = computed(() => {
+  return theme.global.name.value === "light" ? "light" : "dark"
+})
+const isDarkTheme = computed(() => currentTheme.value === "dark")
 
 const snackbar = reactive({
   show: false,
@@ -1026,23 +1038,33 @@ const selectedContactMethodTitle = computed(() => {
   return selectedMethod?.title || "Not selected yet"
 })
 
-let mediaQuery = null
-
-function applyBrowserThemePreference() {
+function applyStoredTheme() {
   if (typeof window === "undefined") return
 
-  isBrowserDark.value = !!window.matchMedia?.("(prefers-color-scheme: dark)").matches
+  const savedTheme = window.localStorage.getItem(THEME_STORAGE_KEY)
+  const normalizedTheme = savedTheme === "light" ? "light" : "dark"
 
   if (theme?.global?.name?.value) {
-    theme.global.name.value = isBrowserDark.value ? "dark" : "light"
+    theme.global.name.value = normalizedTheme
+  }
+
+  document.documentElement.setAttribute("data-app-theme", normalizedTheme)
+  document.documentElement.style.colorScheme = normalizedTheme
+}
+
+function handleWindowStorage(event) {
+  if (!event.key || event.key === THEME_STORAGE_KEY) {
+    applyStoredTheme()
   }
 }
 
-function handleThemePreferenceChange(event) {
-  isBrowserDark.value = event.matches
+function handleThemeSyncEvent() {
+  applyStoredTheme()
+}
 
-  if (theme?.global?.name?.value) {
-    theme.global.name.value = isBrowserDark.value ? "dark" : "light"
+function handleVisibilityThemeSync() {
+  if (typeof document !== "undefined" && document.visibilityState === "visible") {
+    applyStoredTheme()
   }
 }
 
@@ -1155,26 +1177,28 @@ function joinCarpool(id) {
 }
 
 onMounted(() => {
-  applyBrowserThemePreference()
+  applyStoredTheme()
 
-  if (typeof window !== "undefined" && window.matchMedia) {
-    mediaQuery = window.matchMedia("(prefers-color-scheme: dark)")
+  if (typeof window !== "undefined") {
+    window.addEventListener("storage", handleWindowStorage)
+    window.addEventListener("focus", handleThemeSyncEvent)
+    window.addEventListener("blassti-theme-updated", handleThemeSyncEvent)
+  }
 
-    if (typeof mediaQuery.addEventListener === "function") {
-      mediaQuery.addEventListener("change", handleThemePreferenceChange)
-    } else if (typeof mediaQuery.addListener === "function") {
-      mediaQuery.addListener(handleThemePreferenceChange)
-    }
+  if (typeof document !== "undefined") {
+    document.addEventListener("visibilitychange", handleVisibilityThemeSync)
   }
 })
 
 onBeforeUnmount(() => {
-  if (!mediaQuery) return
+  if (typeof window !== "undefined") {
+    window.removeEventListener("storage", handleWindowStorage)
+    window.removeEventListener("focus", handleThemeSyncEvent)
+    window.removeEventListener("blassti-theme-updated", handleThemeSyncEvent)
+  }
 
-  if (typeof mediaQuery.removeEventListener === "function") {
-    mediaQuery.removeEventListener("change", handleThemePreferenceChange)
-  } else if (typeof mediaQuery.removeListener === "function") {
-    mediaQuery.removeListener(handleThemePreferenceChange)
+  if (typeof document !== "undefined") {
+    document.removeEventListener("visibilitychange", handleVisibilityThemeSync)
   }
 })
 
@@ -1217,11 +1241,41 @@ resetForm()
   z-index: 1;
 }
 
+.page-content,
+.hero-card,
+.glass-card,
+.details-dialog-card {
+  animation: pageEnter 0.28s ease-out;
+}
+
+@keyframes pageEnter {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
 .bg-orb {
   position: absolute;
   border-radius: 999px;
   filter: blur(70px);
   opacity: 0.35;
+  animation: orbFloat 12s ease-in-out infinite;
+}
+
+@keyframes orbFloat {
+  0%, 100% {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+
+  50% {
+    transform: translate3d(0, -10px, 0) scale(1.04);
+  }
 }
 
 .bg-orb-1 {
@@ -2070,6 +2124,27 @@ resetForm()
   box-shadow: 0 16px 40px rgba(2, 8, 23, 0.22);
 }
 
+.carpool-actions {
+  width: 100%;
+}
+
+.action-btn {
+  min-height: 42px;
+}
+
+@media (hover: none) {
+  .hero-card:hover,
+  .stat-card:hover,
+  .glass-card:hover,
+  .carpool-item:hover,
+  .participant-card-clean:hover,
+  .clickable-avatar:hover,
+  .details-link:hover,
+  .clickable-link:hover {
+    transform: none;
+  }
+}
+
 @media (max-width: 959px) {
   .sticky-card {
     position: static;
@@ -2078,10 +2153,32 @@ resetForm()
 }
 
 @media (max-width: 600px) {
+  .page-content {
+    padding-left: 10px !important;
+    padding-right: 10px !important;
+  }
+
+  .hero-card :deep(.v-card-text),
+  .glass-card :deep(.v-card-text) {
+    padding-left: 16px !important;
+    padding-right: 16px !important;
+  }
+
   .hero-icon-wrap {
     width: 56px;
     height: 56px;
     border-radius: 16px;
+  }
+
+  .hero-chip,
+  .results-chip,
+  .mini-chip {
+    max-width: 100%;
+  }
+
+  .profile-strip,
+  .driver-line {
+    align-items: flex-start;
   }
 
   .details-header {
@@ -2090,6 +2187,10 @@ resetForm()
 
   .details-body {
     padding: 20px !important;
+  }
+
+  .action-btn {
+    width: 100%;
   }
 }
 </style>

@@ -1,5 +1,5 @@
 <template>
-  <v-app>
+  <v-app :class="['mainpage-app', `theme-${currentTheme}`, { 'is-mobile': isMobile }]">
     <AppNavbar />
 
     <v-main class="mainpage-root">
@@ -92,6 +92,9 @@
               class="state-action-btn"
               @click="router.push('/O_login')"
               @contextmenu.prevent="openRouteContextMenu($event, '/O_login', 'Login')"
+              @touchstart.passive="handleLongPressStart($event, '/O_login', 'Login')"
+              @touchend="handleLongPressEnd"
+              @touchcancel="handleLongPressEnd"
             >
               <v-icon start>mdi-login</v-icon>
               Login
@@ -136,6 +139,9 @@
                   style="cursor: pointer;"
                   @click="openEvent(event.id)"
                   @contextmenu.prevent="openEventContextMenu($event, event.id, event.title)"
+                  @touchstart.passive="handleLongPressStart($event, '/o_eventinfo', event.title || 'Event details', { id: event.id })"
+                  @touchend="handleLongPressEnd"
+                  @touchcancel="handleLongPressEnd"
                 >
                   <div class="card-media-wrap">
                     <v-img :src="event.image" height="220" cover class="card-media">
@@ -186,6 +192,9 @@
                       variant="flat"
                       @click.stop="openEvent(event.id)"
                       @contextmenu.prevent.stop="openEventContextMenu($event, event.id, event.title)"
+                      @touchstart.passive.stop="handleLongPressStart($event, '/o_eventinfo', event.title || 'Event details', { id: event.id })"
+                      @touchend.stop="handleLongPressEnd"
+                      @touchcancel.stop="handleLongPressEnd"
                     >
                       <v-icon start>mdi-arrow-right</v-icon>
                       More Details
@@ -215,6 +224,9 @@
                       style="cursor: pointer;"
                       @click="openEvent(event.id)"
                       @contextmenu.prevent="openEventContextMenu($event, event.id, event.title)"
+                  @touchstart.passive="handleLongPressStart($event, '/o_eventinfo', event.title || 'Event details', { id: event.id })"
+                  @touchend="handleLongPressEnd"
+                  @touchcancel="handleLongPressEnd"
                     >
                       <div class="card-media-wrap">
                         <v-img :src="event.image" height="220" cover class="card-media">
@@ -258,6 +270,9 @@
                           variant="flat"
                           @click.stop="openEvent(event.id)"
                           @contextmenu.prevent.stop="openEventContextMenu($event, event.id, event.title)"
+                      @touchstart.passive.stop="handleLongPressStart($event, '/o_eventinfo', event.title || 'Event details', { id: event.id })"
+                      @touchend.stop="handleLongPressEnd"
+                      @touchcancel.stop="handleLongPressEnd"
                         >
                           <v-icon start>mdi-arrow-right</v-icon>
                           More Details
@@ -319,6 +334,9 @@
                 style="cursor: pointer;"
                 @click="openVenue(venue.id)"
                 @contextmenu.prevent="openVenueContextMenu($event, venue.id, venue.title)"
+                @touchstart.passive="handleLongPressStart($event, '/o_venueinfo', venue.title || 'Venue details', { id: venue.id })"
+                @touchend="handleLongPressEnd"
+                @touchcancel="handleLongPressEnd"
               >
                 <div class="card-media-wrap">
                   <v-img :src="venue.image" height="220" cover class="card-media">
@@ -362,6 +380,9 @@
                     variant="flat"
                     @click.stop="openVenue(venue.id)"
                     @contextmenu.prevent.stop="openVenueContextMenu($event, venue.id, venue.title)"
+                    @touchstart.passive.stop="handleLongPressStart($event, '/o_venueinfo', venue.title || 'Venue details', { id: venue.id })"
+                    @touchend.stop="handleLongPressEnd"
+                    @touchcancel.stop="handleLongPressEnd"
                   >
                     <v-icon start>mdi-arrow-right</v-icon>
                     More Details
@@ -391,6 +412,9 @@
                     style="cursor: pointer;"
                     @click="openVenue(venue.id)"
                     @contextmenu.prevent="openVenueContextMenu($event, venue.id, venue.title)"
+                @touchstart.passive="handleLongPressStart($event, '/o_venueinfo', venue.title || 'Venue details', { id: venue.id })"
+                @touchend="handleLongPressEnd"
+                @touchcancel="handleLongPressEnd"
                   >
                     <div class="card-media-wrap">
                       <v-img :src="venue.image" height="220" cover class="card-media">
@@ -441,6 +465,9 @@
                         variant="flat"
                         @click.stop="openVenue(venue.id)"
                         @contextmenu.prevent.stop="openVenueContextMenu($event, venue.id, venue.title)"
+                    @touchstart.passive.stop="handleLongPressStart($event, '/o_venueinfo', venue.title || 'Venue details', { id: venue.id })"
+                    @touchend.stop="handleLongPressEnd"
+                    @touchcancel.stop="handleLongPressEnd"
                       >
                         <v-icon start>mdi-arrow-right</v-icon>
                         More Details
@@ -501,6 +528,9 @@
                 style="cursor: pointer;"
                 @click="openEvent(event.id)"
                 @contextmenu.prevent="openEventContextMenu($event, event.id, event.title)"
+                  @touchstart.passive="handleLongPressStart($event, '/o_eventinfo', event.title || 'Event details', { id: event.id })"
+                  @touchend="handleLongPressEnd"
+                  @touchcancel="handleLongPressEnd"
               >
                 <div class="card-media-wrap">
                   <v-img :src="event.image" height="220" cover class="card-media">
@@ -551,6 +581,9 @@
                     variant="flat"
                     @click.stop="openEvent(event.id)"
                     @contextmenu.prevent.stop="openEventContextMenu($event, event.id, event.title)"
+                      @touchstart.passive.stop="handleLongPressStart($event, '/o_eventinfo', event.title || 'Event details', { id: event.id })"
+                      @touchend.stop="handleLongPressEnd"
+                      @touchcancel.stop="handleLongPressEnd"
                   >
                     <v-icon start>mdi-arrow-right</v-icon>
                     More Details
@@ -580,6 +613,9 @@
                     style="cursor: pointer;"
                     @click="openEvent(event.id)"
                     @contextmenu.prevent="openEventContextMenu($event, event.id, event.title)"
+                  @touchstart.passive="handleLongPressStart($event, '/o_eventinfo', event.title || 'Event details', { id: event.id })"
+                  @touchend="handleLongPressEnd"
+                  @touchcancel="handleLongPressEnd"
                   >
                     <div class="card-media-wrap">
                       <v-img :src="event.image" height="220" cover class="card-media">
@@ -630,6 +666,9 @@
                         variant="flat"
                         @click.stop="openEvent(event.id)"
                         @contextmenu.prevent.stop="openEventContextMenu($event, event.id, event.title)"
+                      @touchstart.passive.stop="handleLongPressStart($event, '/o_eventinfo', event.title || 'Event details', { id: event.id })"
+                      @touchend.stop="handleLongPressEnd"
+                      @touchcancel.stop="handleLongPressEnd"
                       >
                         <v-icon start>mdi-arrow-right</v-icon>
                         More Details
@@ -690,6 +729,9 @@
                 style="cursor: pointer;"
                 @click="openEvent(event.id)"
                 @contextmenu.prevent="openEventContextMenu($event, event.id, event.title)"
+                  @touchstart.passive="handleLongPressStart($event, '/o_eventinfo', event.title || 'Event details', { id: event.id })"
+                  @touchend="handleLongPressEnd"
+                  @touchcancel="handleLongPressEnd"
               >
                 <div class="card-media-wrap">
                   <v-img :src="event.image" height="220" cover class="card-media">
@@ -768,6 +810,9 @@
                     style="cursor: pointer;"
                     @click="openEvent(event.id)"
                     @contextmenu.prevent="openEventContextMenu($event, event.id, event.title)"
+                  @touchstart.passive="handleLongPressStart($event, '/o_eventinfo', event.title || 'Event details', { id: event.id })"
+                  @touchend="handleLongPressEnd"
+                  @touchcancel="handleLongPressEnd"
                   >
                     <div class="card-media-wrap">
                       <v-img :src="event.image" height="220" cover class="card-media">
@@ -839,9 +884,9 @@
       absolute
       :close-on-content-click="true"
       transition="scale-transition"
-      class="context-menu-shell"
+      :class="[`context-menu-shell`, `theme-${currentTheme}`]"
     >
-      <v-list min-width="240" rounded="xl" class="context-menu-list">
+      <v-list min-width="240" rounded="xl" :class="['context-menu-list', `theme-${currentTheme}`]">
         <v-list-subheader>{{ linkContextMenu.label || "Open" }}</v-list-subheader>
 
         <v-list-item
@@ -893,41 +938,125 @@ const linkContextMenu = ref({
   label: "",
 })
 
-const prefersDarkMode = ref(false)
-let darkModeMediaQuery = null
+const THEME_STORAGE_KEY = "blassti-theme"
+const MOBILE_BREAKPOINT = 960
+const LONG_PRESS_DURATION = 520
 
-function applyBrowserThemePreference(isDark) {
-  prefersDarkMode.value = isDark
+const windowWidth = ref(typeof window !== "undefined" ? window.innerWidth : 1280)
+const isMobile = computed(() => windowWidth.value <= MOBILE_BREAKPOINT)
+const currentTheme = computed(() => {
+  return theme?.global?.name?.value === "light" ? "light" : "dark"
+})
+
+let longPressTimer = null
+
+function applyThemeChoice(themeName) {
+  const normalizedTheme = themeName === "light" ? "light" : "dark"
 
   if (theme?.global?.name) {
-    theme.global.name.value = isDark ? "dark" : "light"
+    theme.global.name.value = normalizedTheme
+  }
+
+  if (typeof document !== "undefined") {
+    document.documentElement.setAttribute("data-app-theme", normalizedTheme)
+    document.documentElement.style.colorScheme = normalizedTheme
   }
 }
 
-function handleBrowserThemeChange(event) {
-  applyBrowserThemePreference(event.matches)
+function loadSavedTheme() {
+  if (typeof window === "undefined") return
+  const savedTheme = window.localStorage.getItem(THEME_STORAGE_KEY)
+  applyThemeChoice(savedTheme === "light" ? "light" : "dark")
+}
+
+function syncThemeFromStorage() {
+  if (typeof window === "undefined") return
+  const savedTheme = window.localStorage.getItem(THEME_STORAGE_KEY)
+
+  if (savedTheme === "light" || savedTheme === "dark") {
+    applyThemeChoice(savedTheme)
+    return
+  }
+
+  applyThemeChoice("dark")
+}
+
+function handleWindowStorage(event) {
+  if (!event.key || event.key === THEME_STORAGE_KEY) {
+    syncThemeFromStorage()
+  }
+}
+
+function updateWindowWidth() {
+  if (typeof window === "undefined") return
+  windowWidth.value = window.innerWidth
+}
+
+function extractTouchPoint(event) {
+  const touch = event?.touches?.[0] || event?.changedTouches?.[0]
+
+  if (!touch) {
+    return {
+      clientX: 24,
+      clientY: 24,
+    }
+  }
+
+  return {
+    clientX: touch.clientX,
+    clientY: touch.clientY,
+  }
+}
+
+function clearLongPressTimer() {
+  if (longPressTimer) {
+    clearTimeout(longPressTimer)
+    longPressTimer = null
+  }
+}
+
+function handleLongPressStart(event, path, label, query = undefined) {
+  if (!isMobile.value) return
+
+  clearLongPressTimer()
+
+  const touchPoint = extractTouchPoint(event)
+
+  longPressTimer = window.setTimeout(() => {
+    openRouteContextMenu(
+      {
+        clientX: touchPoint.clientX,
+        clientY: touchPoint.clientY,
+      },
+      path,
+      label,
+      query
+    )
+  }, LONG_PRESS_DURATION)
+}
+
+function handleLongPressEnd() {
+  clearLongPressTimer()
 }
 
 onMounted(() => {
-  if (typeof window !== "undefined" && typeof window.matchMedia === "function") {
-    darkModeMediaQuery = window.matchMedia("(prefers-color-scheme: dark)")
-    applyBrowserThemePreference(darkModeMediaQuery.matches)
+  loadSavedTheme()
 
-    if (typeof darkModeMediaQuery.addEventListener === "function") {
-      darkModeMediaQuery.addEventListener("change", handleBrowserThemeChange)
-    } else if (typeof darkModeMediaQuery.addListener === "function") {
-      darkModeMediaQuery.addListener(handleBrowserThemeChange)
-    }
+  if (typeof window !== "undefined") {
+    updateWindowWidth()
+    window.addEventListener("storage", handleWindowStorage)
+    window.addEventListener("focus", syncThemeFromStorage)
+    window.addEventListener("resize", updateWindowWidth)
   }
 })
 
 onBeforeUnmount(() => {
-  if (!darkModeMediaQuery) return
+  clearLongPressTimer()
 
-  if (typeof darkModeMediaQuery.removeEventListener === "function") {
-    darkModeMediaQuery.removeEventListener("change", handleBrowserThemeChange)
-  } else if (typeof darkModeMediaQuery.removeListener === "function") {
-    darkModeMediaQuery.removeListener(handleBrowserThemeChange)
+  if (typeof window !== "undefined") {
+    window.removeEventListener("storage", handleWindowStorage)
+    window.removeEventListener("focus", syncThemeFromStorage)
+    window.removeEventListener("resize", updateWindowWidth)
   }
 })
 
@@ -1618,6 +1747,73 @@ function openVenue(venueId) {
   }
 }
 
+
+@media (max-width: 960px) {
+  .mainpage-container {
+    padding-inline: 18px !important;
+  }
+
+  .section-actions {
+    width: 100%;
+    justify-content: flex-start;
+  }
+
+  .section-toggle-btn {
+    min-height: 42px;
+  }
+
+  .card-action-btn,
+  .sold-out-btn,
+  .state-action-btn {
+    min-height: 46px;
+  }
+}
+
+@media (max-width: 600px) {
+  .mainpage-container {
+    padding-inline: 14px !important;
+  }
+
+  .hero-copy {
+    text-align: left;
+  }
+
+  .hero-title {
+    font-size: clamp(1.8rem, 8vw, 2.4rem);
+  }
+
+  .hero-subtitle {
+    font-size: 0.98rem;
+    line-height: 1.6;
+  }
+
+  .section-header {
+    gap: 12px;
+  }
+
+  .section-actions {
+    width: 100%;
+  }
+
+  .section-toggle-btn {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .meta-row {
+    font-size: 0.9rem;
+    align-items: flex-start;
+  }
+
+  .card-title {
+    font-size: 1rem;
+  }
+
+  .context-menu-list :deep(.v-list-item) {
+    min-height: 48px;
+  }
+}
+
 @media (max-width: 960px) {
   .section-header {
     align-items: flex-start;
@@ -1669,4 +1865,46 @@ function openVenue(venueId) {
     transform: scale(1.04);
   }
 }
+
+.mainpage-app {
+  min-height: 100vh;
+}
+
+.mainpage-app.theme-light .mainpage-root {
+  color: rgba(var(--v-theme-on-surface), 0.96);
+}
+
+.mainpage-app.theme-dark .mainpage-root {
+  color: rgba(var(--v-theme-on-surface), 0.98);
+}
+
+.context-menu-list.theme-light {
+  background: rgba(var(--v-theme-surface), 0.98);
+  border-color: rgba(var(--v-border-color), 0.14);
+}
+
+.context-menu-list.theme-dark {
+  background: rgba(var(--v-theme-surface), 0.98);
+  border-color: rgba(var(--v-border-color), 0.18);
+}
+
+.context-menu-list :deep(.v-list-subheader) {
+  font-weight: 700;
+  letter-spacing: 0.01em;
+}
+
+.context-menu-list :deep(.v-list-item) {
+  min-height: 44px;
+}
+
+@media (hover: none) and (pointer: coarse) {
+  .content-card .card-media-overlay {
+    opacity: 1;
+  }
+
+  .content-card .card-media-overlay-content {
+    transform: translateY(0);
+  }
+}
+
 </style>

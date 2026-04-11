@@ -1,8 +1,8 @@
 <template>
   <AppNavbar />
 
-  <div class="venue-browsing-shell" :class="browserThemeClass">
-    <v-container fluid class="py-8 px-4 px-md-6">
+  <div class="venue-browsing-shell" :class="themeClass">
+    <v-container fluid class="page-container py-6 py-md-8 px-3 px-sm-4 px-md-6">
       <v-row justify="center">
         <v-col cols="12" xl="11">
           <v-card rounded="xl" class="hero-surface hero-surface--blended pa-5 pa-md-7 mb-6" elevation="0">
@@ -88,7 +88,7 @@
         </v-col>
       </v-row>
 
-      <v-row justify="center" align="start">
+      <v-row justify="center" align="start" class="content-row">
         <!-- SIDE FILTERS -->
         <v-col cols="12" lg="3" xl="3">
           <v-card rounded="xl" class="filter-card pa-4">
@@ -243,7 +243,7 @@
               </v-btn>
 
               <div class="text-caption text-medium-emphasis filter-tip">
-                Tip: Right-click any venue card or venue button to open it in a new tab or a new window.
+                Tip: Right-click on desktop or long press on mobile to open any venue in a new tab or a new window.
               </div>
             </div>
           </v-card>
@@ -383,6 +383,10 @@
                 :class="{ 'venue-card--unavailable': !venue.availability }"
                 @click="openVenue(venue)"
                 @contextmenu.prevent="openVenueContextMenu($event, venue)"
+                @touchstart.passive="startVenueLongPress($event, venue)"
+                @touchend="cancelVenueLongPress"
+                @touchmove="cancelVenueLongPress"
+                @touchcancel="cancelVenueLongPress"
               >
                 <div class="venue-image-wrap">
                   <img
@@ -432,7 +436,7 @@
 
                   <div class="quick-action-hint">
                     <v-icon size="16" class="me-1">mdi-cursor-default-click-outline</v-icon>
-                    Click to open
+                    {{ isTouchDevice ? "Tap to open" : "Click to open" }}
                   </div>
                 </div>
 
@@ -499,6 +503,10 @@
                         class="venue-action-btn"
                         @click.stop="openVenue(venue)"
                         @contextmenu.prevent.stop="openVenueContextMenu($event, venue)"
+                        @touchstart.passive.stop="startVenueLongPress($event, venue)"
+                        @touchend.stop="cancelVenueLongPress"
+                        @touchmove.stop="cancelVenueLongPress"
+                        @touchcancel.stop="cancelVenueLongPress"
                       >
                         <v-icon start>mdi-arrow-top-right</v-icon>
                         View venue
@@ -512,10 +520,14 @@
                         class="venue-more-btn"
                         @click.stop="openVenue(venue)"
                         @contextmenu.prevent.stop="openVenueContextMenu($event, venue)"
+                        @touchstart.passive.stop="startVenueLongPress($event, venue)"
+                        @touchend.stop="cancelVenueLongPress"
+                        @touchmove.stop="cancelVenueLongPress"
+                        @touchcancel.stop="cancelVenueLongPress"
                       >
                         <v-icon>mdi-dots-horizontal</v-icon>
                         <v-tooltip activator="parent" location="top">
-                          Right-click for new tab / new window
+                          {{ isTouchDevice ? "Long press for new tab / new window" : "Right-click for new tab / new window" }}
                         </v-tooltip>
                       </v-btn>
                     </div>
@@ -560,7 +572,7 @@
     :close-on-content-click="true"
     transition="scale-transition"
   >
-    <v-list min-width="220" class="dropdown-list">
+    <v-list min-width="220" class="dropdown-list" :class="themeClass">
       <v-list-subheader>{{ linkContextMenu.label || "Open" }}</v-list-subheader>
 
       <v-list-item
@@ -582,10 +594,18 @@
 <script setup>
 import { computed, onBeforeUnmount, onMounted, ref, watch } from "vue"
 import { useRouter } from "vue-router"
+import { useDisplay, useTheme } from "vuetify"
 import AppNavbar from "@/components/AppNavbar.vue"
 import { get_All_Venues } from "@/dataModel/venue"
 
 const router = useRouter()
+const theme = useTheme()
+const display = useDisplay()
+
+const THEME_STORAGE_KEY = "blassti-theme"
+const LONG_PRESS_DELAY = 520
+
+const isTouchDevice = computed(() => display.smAndDown.value)
 
 const linkContextMenu = ref({
   show: false,
@@ -595,85 +615,81 @@ const linkContextMenu = ref({
   label: "",
 })
 
-function getRouteHref(path, query = undefined) {
-  return router.resolve({ path, query }).href
+let longPressTimer = null
+
+function getNormalizedTheme(themeName) {
+  return themeName === "light" ? "light" : "dark"
 }
 
-function openHrefInNewTab(href) {
-  if (!href) return
-  window.open(href, "_blank", "noopener,noreferrer")
+function applyThemeChoice(themeName) {
+  const normalizedTheme = getNormalizedTheme(themeName)
+  theme.global.name.value = normalizedTheme
+  localStorage.setItem(THEME_STORAGE_KEY, normalizedTheme)
+  document.documentElement.setAttribute("data-app-theme", normalizedTheme)
+  document.documentElement.style.colorScheme = normalizedTheme
 }
 
-function openHrefInNewWindow(href) {
-  if (!href) return
-  window.open(href, "_blank", "noopener,noreferrer,width=1280,height=850")
+function loadSavedTheme() {
+  const savedTheme = localStorage.getItem(THEME_STORAGE_KEY)
+  applyThemeChoice(savedTheme === "light" ? "light" : "dark")
 }
 
-function openRouteContextMenu(event, path, label, query = undefined) {
-  linkContextMenu.value = {
-    show: true,
-    x: event.clientX,
-    y: event.clientY,
-    href: getRouteHref(path, query),
-    label,
+function handleWindowStorage(event) {
+  if (!event.key || event.key === THEME_STORAGE_KEY) {
+    const savedTheme = localStorage.getItem(THEME_STORAGE_KEY)
+    if (savedTheme === "light" || savedTheme === "dark") {
+      theme.global.name.value = savedTheme
+      document.documentElement.setAttribute("data-app-theme", savedTheme)
+      document.documentElement.style.colorScheme = savedTheme
+    }
   }
 }
 
-function openVenueContextMenu(event, venue) {
-  openRouteContextMenu(event, "/O_venueinfo", venue?.title || "Venue details", { id: venue?.id })
+const currentTheme = computed(() => {
+  return theme.global.name.value === "light" ? "light" : "dark"
+})
+
+const themeClass = computed(() => {
+  return currentTheme.value === "dark" ? "theme-dark" : "theme-light"
+})
+
+function cancelVenueLongPress() {
+  if (longPressTimer) {
+    window.clearTimeout(longPressTimer)
+    longPressTimer = null
+  }
 }
 
-function openContextMenuTargetInNewTab() {
-  if (!linkContextMenu.value.href) return
-  openHrefInNewTab(linkContextMenu.value.href)
-  linkContextMenu.value.show = false
-}
+function startVenueLongPress(event, venue) {
+  if (!isTouchDevice.value || !venue) return
 
-function openContextMenuTargetInNewWindow() {
-  if (!linkContextMenu.value.href) return
-  openHrefInNewWindow(linkContextMenu.value.href)
-  linkContextMenu.value.show = false
-}
+  const touch = event.touches?.[0]
+  if (!touch) return
 
-const isBrowserDark = ref(false)
-let browserThemeMediaQuery = null
+  cancelVenueLongPress()
 
-function applyBrowserThemePreference() {
-  if (typeof window === "undefined" || typeof window.matchMedia !== "function") return
-  isBrowserDark.value = window.matchMedia("(prefers-color-scheme: dark)").matches
-}
-
-function handleBrowserThemeChange(event) {
-  isBrowserDark.value = event.matches
+  longPressTimer = window.setTimeout(() => {
+    openRouteContextMenu(
+      {
+        clientX: touch.clientX,
+        clientY: touch.clientY,
+      },
+      "/O_venueinfo",
+      venue?.title || "Venue details",
+      { id: venue?.id }
+    )
+    longPressTimer = null
+  }, LONG_PRESS_DELAY)
 }
 
 onMounted(() => {
-  if (typeof window === "undefined" || typeof window.matchMedia !== "function") return
-
-  browserThemeMediaQuery = window.matchMedia("(prefers-color-scheme: dark)")
-  isBrowserDark.value = browserThemeMediaQuery.matches
-
-  if (typeof browserThemeMediaQuery.addEventListener === "function") {
-    browserThemeMediaQuery.addEventListener("change", handleBrowserThemeChange)
-  } else if (typeof browserThemeMediaQuery.addListener === "function") {
-    browserThemeMediaQuery.addListener(handleBrowserThemeChange)
-  }
-
-  applyBrowserThemePreference()
+  loadSavedTheme()
+  window.addEventListener("storage", handleWindowStorage)
 })
 
 onBeforeUnmount(() => {
-  if (!browserThemeMediaQuery) return
-
-  if (typeof browserThemeMediaQuery.removeEventListener === "function") {
-    browserThemeMediaQuery.removeEventListener("change", handleBrowserThemeChange)
-  } else if (typeof browserThemeMediaQuery.removeListener === "function") {
-    browserThemeMediaQuery.removeListener(handleBrowserThemeChange)
-  }
-})
-
-const browserThemeClass = computed(() => {
-  return isBrowserDark.value ? "theme-dark" : "theme-light"
+  window.removeEventListener("storage", handleWindowStorage)
+  cancelVenueLongPress()
 })
 
 const search = ref("")
@@ -851,12 +867,203 @@ function openVenue(venue) {
 </script>
 
 <style scoped>
+
+.page-container {
+  position: relative;
+  z-index: 1;
+}
+
+.content-row {
+  row-gap: 8px;
+}
+
 .venue-browsing-shell {
   min-height: 100vh;
   transition:
     background 0.28s ease,
     color 0.28s ease;
 }
+
+.venue-browsing-shell {
+  position: relative;
+  overflow-x: hidden;
+}
+
+.venue-browsing-shell::before,
+.venue-browsing-shell::after {
+  content: "";
+  position: fixed;
+  inset: auto;
+  width: 26rem;
+  height: 26rem;
+  border-radius: 999px;
+  pointer-events: none;
+  filter: blur(80px);
+  opacity: 0.18;
+  z-index: 0;
+  animation: heroGlowFloat 12s ease-in-out infinite;
+}
+
+.venue-browsing-shell::before {
+  top: 88px;
+  left: -120px;
+  background: rgba(var(--v-theme-primary), 0.22);
+}
+
+.venue-browsing-shell::after {
+  right: -140px;
+  top: 240px;
+  background: rgba(var(--v-theme-primary), 0.14);
+  animation-delay: -4s;
+}
+
+.hero-surface,
+.filter-card,
+.results-toolbar,
+.venue-card,
+.empty-card {
+  animation: pageFadeLift 0.24s ease-out;
+  will-change: transform, opacity;
+}
+
+.quick-action-hint {
+  transition:
+    opacity 0.2s ease,
+    transform 0.2s ease,
+    background 0.2s ease;
+}
+
+.venue-card:active {
+  transform: translateY(-1px) scale(0.998);
+}
+
+.venue-action-btn,
+.venue-more-btn,
+.quick-filter-chip,
+.availability-filter-chip {
+  min-height: 44px;
+}
+
+.dropdown-list.theme-dark,
+.dropdown-list.theme-light {
+  transition:
+    background 0.22s ease,
+    color 0.22s ease,
+    border-color 0.22s ease,
+    box-shadow 0.22s ease;
+}
+
+@keyframes heroGlowFloat {
+  0%, 100% {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+  50% {
+    transform: translate3d(10px, -14px, 0) scale(1.04);
+  }
+}
+
+@keyframes pageFadeLift {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (max-width: 1279px) {
+  .content-row {
+    row-gap: 12px;
+  }
+}
+
+@media (max-width: 959px) {
+  .venue-browsing-shell::before,
+  .venue-browsing-shell::after {
+    width: 18rem;
+    height: 18rem;
+    opacity: 0.14;
+  }
+
+  .hero-surface {
+    padding: 22px !important;
+  }
+
+  .page-title {
+    font-size: clamp(2rem, 7vw, 2.8rem) !important;
+    line-height: 1.08;
+  }
+
+  .page-subtitle {
+    max-width: 100%;
+  }
+
+  .hero-tags,
+  .active-chips-wrap {
+    gap: 10px;
+  }
+
+  .results-toolbar :deep(.v-chip),
+  .hero-tags :deep(.v-chip) {
+    max-width: 100%;
+  }
+}
+
+@media (max-width: 600px) {
+  .page-container {
+    padding-top: 20px !important;
+    padding-bottom: 28px !important;
+  }
+
+  .hero-surface {
+    border-radius: 24px !important;
+  }
+
+  .hero-search-wrap :deep(.v-field),
+  .filter-card :deep(.v-field) {
+    min-height: 50px;
+  }
+
+  .filter-card,
+  .results-toolbar,
+  .empty-card {
+    border-radius: 22px !important;
+  }
+
+  .venue-card {
+    border-radius: 22px !important;
+  }
+
+  .venue-image-wrap {
+    min-height: 220px;
+  }
+
+  .venue-card .d-flex.ga-2 {
+    flex-wrap: wrap;
+  }
+
+  .venue-action-btn,
+  .venue-more-btn {
+    flex: 1 1 auto;
+  }
+
+  .venue-more-btn {
+    min-width: 52px;
+  }
+
+  .filter-tip {
+    line-height: 1.45;
+  }
+
+  .quick-action-hint {
+    opacity: 1;
+    transform: translateY(0);
+    background: rgba(10, 14, 24, 0.5);
+  }
+}
+
 
 /* -------------------- DARK THEME -------------------- */
 .venue-browsing-shell.theme-dark {
@@ -1483,6 +1690,7 @@ function openVenue(venue) {
 }
 
 .venue-browsing-shell.theme-dark .dropdown-list,
+.venue-browsing-shell.theme-light .dropdown-list,
 .dropdown-list {
   background: rgba(20, 20, 25, 0.96);
   border: 1px solid rgba(255, 255, 255, 0.08);

@@ -24,6 +24,11 @@ function normalizeArray(value) {
   return Array.isArray(value) ? value : []
 }
 
+function normalizeText(value, fallback = "") {
+  const text = String(value ?? "").trim()
+  return text || fallback
+}
+
 function normalizeBankAccountInfo(bankAccountInfo = {}) {
   return {
     account_holder_name: bankAccountInfo?.account_holder_name ?? "",
@@ -33,6 +38,148 @@ function normalizeBankAccountInfo(bankAccountInfo = {}) {
     iban: bankAccountInfo?.iban ?? "",
     swift: bankAccountInfo?.swift ?? "",
   }
+}
+
+function normalizeContactInfo(contactInfo = {}, exactAddress = "") {
+  return {
+    address: contactInfo?.address ?? exactAddress ?? "",
+    phone: contactInfo?.phone ?? "",
+    email: contactInfo?.email ?? "",
+    website: contactInfo?.website ?? "",
+    instagram: contactInfo?.instagram ?? "",
+  }
+}
+
+function normalizeSeatClassName(value) {
+  const seatClass = normalizeText(value, "Regular")
+  if (seatClass.toLowerCase() === "normal") return "Regular"
+  return seatClass
+}
+
+function normalizeDesignerSeat(rawSeat = {}, index = 0) {
+  const row = normalizeText(rawSeat?.row ?? rawSeat?.seat_row ?? "")
+  const explicitSeatNumber = normalizeText(rawSeat?.seat_number ?? rawSeat?.label ?? "")
+  const derivedNumber =
+    explicitSeatNumber && row && explicitSeatNumber.startsWith(row)
+      ? explicitSeatNumber.slice(row.length)
+      : explicitSeatNumber
+
+  const number = normalizeText(
+    rawSeat?.number ?? rawSeat?.seatNo ?? derivedNumber ?? `${index + 1}`,
+    `${index + 1}`
+  )
+
+  const seatNumber = normalizeText(
+    rawSeat?.seat_number ?? (row && number ? `${row}${number}` : ""),
+    row && number ? `${row}${number}` : `S${index + 1}`
+  )
+
+  return {
+    ...deepClone(rawSeat),
+    id: rawSeat?.id ?? crypto.randomUUID(),
+    kind: rawSeat?.kind ?? "seat",
+    x: normalizeNumber(rawSeat?.x, 0),
+    y: normalizeNumber(rawSeat?.y, 0),
+    width: normalizeNumber(rawSeat?.width, 1.2),
+    height: normalizeNumber(rawSeat?.height, 1.2),
+    rotation: normalizeNumber(rawSeat?.rotation, 0),
+    row,
+    number,
+    seat_number: seatNumber,
+    location_key: normalizeText(rawSeat?.location_key ?? `${row}-${number}`, `${row}-${number}`),
+    location: normalizeText(rawSeat?.location ?? seatNumber, seatNumber),
+    label: normalizeText(rawSeat?.label ?? seatNumber, seatNumber),
+    seat_class: normalizeSeatClassName(rawSeat?.seat_class ?? rawSeat?.class ?? rawSeat?.seatType),
+    price: normalizeNumber(rawSeat?.price, 0),
+  }
+}
+
+function normalizeDesignerBlock(rawItem = {}, index = 0, fallbackKind = "stage", fallbackTitle = "Stage") {
+  return {
+    ...deepClone(rawItem),
+    id: rawItem?.id ?? crypto.randomUUID(),
+    kind: rawItem?.kind ?? fallbackKind,
+    type: rawItem?.type ?? fallbackKind,
+    title: normalizeText(rawItem?.title ?? rawItem?.name, `${fallbackTitle} ${index + 1}`),
+    name: normalizeText(rawItem?.name ?? rawItem?.title, `${fallbackTitle} ${index + 1}`),
+    location: normalizeText(rawItem?.location ?? rawItem?.title ?? rawItem?.name, `${fallbackTitle} ${index + 1}`),
+    x: normalizeNumber(rawItem?.x, 0),
+    y: normalizeNumber(rawItem?.y, 0),
+    width: normalizeNumber(rawItem?.width, fallbackKind === "audio" ? 24 : 140),
+    height: normalizeNumber(rawItem?.height, fallbackKind === "audio" ? 24 : 50),
+    rotation: normalizeNumber(rawItem?.rotation, 0),
+  }
+}
+
+function buildNormalizedDesignFromSources({
+  design = null,
+  layout = null,
+  venueData = null,
+}) {
+  const sourceDesign = design && typeof design === "object" ? design : null
+  const sourceLayout = layout && typeof layout === "object" ? layout : null
+  const venueSeatLayout = venueData?.seat_layout && typeof venueData.seat_layout === "object"
+    ? venueData.seat_layout
+    : null
+
+  const seatsSource =
+    normalizeArray(sourceDesign?.seats).length
+      ? sourceDesign.seats
+      : normalizeArray(sourceLayout?.seats).length
+        ? sourceLayout.seats
+        : normalizeArray(venueSeatLayout?.seats)
+
+  const stagesSource =
+    normalizeArray(sourceDesign?.stages).length
+      ? sourceDesign.stages
+      : normalizeArray(sourceLayout?.stages).length
+        ? sourceLayout.stages
+        : normalizeArray(venueSeatLayout?.stages)
+
+  const screensSource =
+    normalizeArray(sourceDesign?.screens).length
+      ? sourceDesign.screens
+      : normalizeArray(sourceLayout?.screens).length
+        ? sourceLayout.screens
+        : normalizeArray(venueSeatLayout?.screens)
+
+  const audioSourcesSource =
+    normalizeArray(sourceDesign?.audio_sources).length
+      ? sourceDesign.audio_sources
+      : normalizeArray(sourceLayout?.audio_sources).length
+        ? sourceLayout.audio_sources
+        : normalizeArray(venueSeatLayout?.audio_sources)
+
+  const elementsSource =
+    normalizeArray(sourceDesign?.elements).length
+      ? sourceDesign.elements
+      : normalizeArray(sourceLayout?.elements)
+
+  const shapesSource =
+    normalizeArray(sourceDesign?.shapes).length
+      ? sourceDesign.shapes
+      : normalizeArray(sourceLayout?.shapes)
+
+  return {
+    seats: seatsSource.map((seat, index) => normalizeDesignerSeat(seat, index)),
+    stages: stagesSource.map((item, index) => normalizeDesignerBlock(item, index, "stage", "Stage")),
+    screens: screensSource.map((item, index) => normalizeDesignerBlock(item, index, "screen", "Screen")),
+    audio_sources: audioSourcesSource.map((item, index) => normalizeDesignerBlock(item, index, "audio", "Audio Source")),
+    elements: normalizeArray(elementsSource).map(item => deepClone(item)),
+    shapes: normalizeArray(shapesSource).map(item => deepClone(item)),
+    notes: sourceDesign?.notes ?? sourceLayout?.notes ?? "",
+  }
+}
+
+function deriveSeatClassesFromDesign(design = {}) {
+  const classes = []
+  normalizeArray(design?.seats).forEach(seat => {
+    const seatClass = normalizeSeatClassName(seat?.seat_class)
+    if (seatClass && !classes.includes(seatClass)) {
+      classes.push(seatClass)
+    }
+  })
+  return classes.length ? classes : ["Regular"]
 }
 
 function schedule_Venue_Request_Auto_Delete(requestId) {
@@ -69,8 +216,10 @@ export class VenueRequest {
   constructor({
     id,
     owner_user_id,
+    created_by_user_id,
     status,
     submitted_at,
+    created_at,
     reviewed_at,
     reviewed_by_user_id,
     denial_reason,
@@ -82,12 +231,14 @@ export class VenueRequest {
     price_per_hour,
     price_per_day,
     capacity,
+    seat_count,
     status_label,
     category,
     type,
     review_rating,
     description,
     image,
+    cover_image,
     extra_images,
     contact_info,
     bank_account_info,
@@ -98,59 +249,155 @@ export class VenueRequest {
     use_designer,
 
     design,
+    layout,
+    venue_data,
+    seat_classes,
   }) {
+    const normalizedVenueData = venue_data && typeof venue_data === "object" ? deepClone(venue_data) : {}
+    const normalizedLayout = layout && typeof layout === "object" ? deepClone(layout) : {}
+    const normalizedDesign = buildNormalizedDesignFromSources({
+      design,
+      layout: normalizedLayout,
+      venueData: normalizedVenueData,
+    })
+
+    const resolvedUseDesigner =
+      typeof use_designer === "boolean"
+        ? use_designer
+        : typeof normalizedLayout?.use_designer === "boolean"
+          ? normalizedLayout.use_designer
+          : normalizedDesign.seats.length > 0
+
+    const resolvedManualSeatCount =
+      normalizeNumber(manual_seat_count, 0) ||
+      normalizeNumber(normalizedLayout?.manual_seat_count, 0) ||
+      normalizeNumber(seat_count, 0) ||
+      normalizeNumber(capacity, 0)
+
+    const resolvedSeatClasses = Array.from(
+      new Set([
+        ...normalizeArray(seat_classes).map(item => normalizeSeatClassName(item)).filter(Boolean),
+        ...deriveSeatClassesFromDesign(normalizedDesign),
+      ])
+    )
+
     this.id = id ?? crypto.randomUUID()
-    this.owner_user_id = owner_user_id ?? null
+    this.owner_user_id = owner_user_id ?? created_by_user_id ?? normalizedVenueData?.owner_user_id ?? null
+    this.created_by_user_id = created_by_user_id ?? owner_user_id ?? normalizedVenueData?.owner_user_id ?? null
     this.status = status ?? "Pending"
-    this.submitted_at = submitted_at ?? new Date().toISOString()
+    this.submitted_at = submitted_at ?? created_at ?? new Date().toISOString()
+    this.created_at = created_at ?? this.submitted_at
     this.reviewed_at = reviewed_at ?? null
     this.reviewed_by_user_id = reviewed_by_user_id ?? null
     this.denial_reason = denial_reason ?? ""
 
-    this.title = title ?? ""
-    this.location = location ?? ""
-    this.exact_address = exact_address ?? ""
-    this.availability = availability ?? true
-    this.price_per_hour = normalizeNumber(price_per_hour, 0)
-    this.price_per_day = normalizeNumber(price_per_day, 0)
-    this.capacity = normalizeNumber(capacity, 0)
-    this.status_label = status_label ?? "Pending Review"
-    this.category = category ?? ""
-    this.type = type ?? ""
-    this.review_rating = normalizeNumber(review_rating, 0)
-    this.description = description ?? ""
-    this.image = image ?? ""
-    this.extra_images = normalizeArray(extra_images)
+    this.title = title ?? normalizedVenueData?.title ?? ""
+    this.location = location ?? normalizedVenueData?.location ?? ""
+    this.exact_address = exact_address ?? normalizedVenueData?.exact_address ?? ""
+    this.availability = availability ?? normalizedVenueData?.availability ?? true
+    this.price_per_hour = normalizeNumber(price_per_hour ?? normalizedVenueData?.price_per_hour, 0)
+    this.price_per_day = normalizeNumber(price_per_day ?? normalizedVenueData?.price_per_day, 0)
+    this.capacity = normalizeNumber(capacity ?? normalizedVenueData?.capacity, 0)
+    this.status_label = status_label ?? normalizedVenueData?.status ?? "Pending Review"
+    this.category = category ?? normalizedVenueData?.category ?? ""
+    this.type = type ?? normalizedVenueData?.type ?? ""
+    this.review_rating = normalizeNumber(review_rating ?? normalizedVenueData?.review_rating, 0)
+    this.description = description ?? normalizedVenueData?.description ?? ""
+    this.image = image ?? cover_image ?? normalizedVenueData?.image ?? ""
+    this.extra_images = normalizeArray(extra_images).length
+      ? normalizeArray(extra_images)
+      : normalizeArray(normalizedVenueData?.extra_images)
 
-    this.contact_info = {
-      address: contact_info?.address ?? "",
-      phone: contact_info?.phone ?? "",
-      email: contact_info?.email ?? "",
-      website: contact_info?.website ?? "",
-      instagram: contact_info?.instagram ?? "",
-    }
+    this.contact_info = normalizeContactInfo(
+      contact_info ?? normalizedVenueData?.contact_info,
+      this.exact_address
+    )
 
-    this.bank_account_info = normalizeBankAccountInfo(bank_account_info)
+    this.bank_account_info = normalizeBankAccountInfo(
+      bank_account_info ?? normalizedVenueData?.bank_account_info
+    )
 
-    this.featured = featured ?? false
+    this.featured = featured ?? normalizedVenueData?.featured ?? false
 
     this.dimensions = {
-      width_m: normalizeNumber(dimensions?.width_m, 20),
-      height_m: normalizeNumber(dimensions?.height_m, 12),
-      shape: dimensions?.shape ?? "rectangle",
+      width_m: normalizeNumber(
+        dimensions?.width_m ??
+          dimensions?.width ??
+          normalizedLayout?.width ??
+          normalizedVenueData?.seat_layout?.width,
+        20
+      ),
+      height_m: normalizeNumber(
+        dimensions?.height_m ??
+          dimensions?.height ??
+          normalizedLayout?.height ??
+          normalizedVenueData?.seat_layout?.height,
+        12
+      ),
+      shape: dimensions?.shape ?? normalizedLayout?.shape ?? "rectangle",
     }
 
-    this.manual_seat_count = normalizeNumber(manual_seat_count, 0)
-    this.use_designer = Boolean(use_designer)
+    this.manual_seat_count = resolvedManualSeatCount
+    this.use_designer = Boolean(resolvedUseDesigner)
+    this.seat_classes = resolvedSeatClasses.length ? resolvedSeatClasses : ["Regular"]
 
-    this.design = {
-      seats: normalizeArray(design?.seats),
-      stages: normalizeArray(design?.stages),
-      screens: normalizeArray(design?.screens),
-      audio_sources: normalizeArray(design?.audio_sources),
-      elements: normalizeArray(design?.elements),
-      shapes: normalizeArray(design?.shapes),
-      notes: design?.notes ?? "",
+    this.design = normalizedDesign
+
+    this.layout = {
+      mode: normalizedLayout?.mode ?? (this.use_designer ? "designer" : "manual"),
+      manual_seat_count: this.manual_seat_count,
+      manual_seat_counts: {
+        regular: normalizeNumber(normalizedLayout?.manual_seat_counts?.regular, 0),
+        special: normalizeNumber(normalizedLayout?.manual_seat_counts?.special, 0),
+        vip: normalizeNumber(normalizedLayout?.manual_seat_counts?.vip, 0),
+      },
+      seats: deepClone(this.design.seats),
+      stages: deepClone(this.design.stages),
+      screens: deepClone(this.design.screens),
+      audio_sources: deepClone(this.design.audio_sources),
+      elements: deepClone(this.design.elements),
+      shapes: deepClone(this.design.shapes),
+      notes: this.design.notes,
+      use_designer: this.use_designer,
+      width: this.dimensions.width_m,
+      height: this.dimensions.height_m,
+      shape: this.dimensions.shape,
+    }
+
+    this.venue_data = {
+      ...normalizedVenueData,
+      title: this.title,
+      location: this.location,
+      exact_address: this.exact_address,
+      availability: this.availability,
+      price_per_hour: this.price_per_hour,
+      price_per_day: this.price_per_day,
+      capacity: this.seat_count || this.capacity || this.manual_seat_count,
+      status: normalizedVenueData?.status ?? "Pending Approval",
+      category: this.category,
+      type: this.type,
+      review_rating: this.review_rating,
+      description: this.description,
+      image: this.image,
+      extra_images: deepClone(this.extra_images),
+      contact_info: deepClone(this.contact_info),
+      bank_account_info: deepClone(this.bank_account_info),
+      featured: this.featured,
+      owner_user_id: this.owner_user_id,
+      seat_classes: deepClone(this.seat_classes),
+      seat_layout: {
+        width: this.dimensions.width_m,
+        height: this.dimensions.height_m,
+        seats: deepClone(this.design.seats),
+        stages: deepClone(this.design.stages),
+        screens: deepClone(this.design.screens),
+        audio_sources: deepClone(this.design.audio_sources),
+        elements: deepClone(this.design.elements),
+        metadata: {
+          notes: this.design.notes,
+          shape: this.dimensions.shape,
+        },
+      },
     }
   }
 
@@ -260,111 +507,106 @@ export function clear_All_Venue_Requests() {
 function build_Seat_Layout_From_Request(request) {
   if (!request) return null
 
-  if (request.use_designer) {
-    const seats = Array.isArray(request.design?.seats)
-      ? request.design.seats.map((seat, index) => ({
-          id: seat?.id ?? crypto.randomUUID(),
-          x: normalizeNumber(seat?.x, 0),
-          y: normalizeNumber(seat?.y, 0),
-          width: normalizeNumber(seat?.width, 24),
-          height: normalizeNumber(seat?.height, 24),
-          rotation: normalizeNumber(seat?.rotation, 0),
-          row: String(seat?.row ?? "").trim(),
-          number: String(seat?.number ?? index + 1).trim(),
-          seat_number:
-            String(seat?.seat_number ?? seat?.label ?? `S${index + 1}`).trim() || `S${index + 1}`,
-          location_key:
-            String(seat?.location_key ?? seat?.label ?? `seat-${index + 1}`).trim() || `seat-${index + 1}`,
-          label: String(seat?.label ?? `Seat ${index + 1}`).trim() || `Seat ${index + 1}`,
-          seat_class: seat?.seat_class ?? "Regular",
-          price: normalizeNumber(seat?.price, 0),
-        }))
-      : []
+  const normalizedRequest = request instanceof VenueRequest ? request : new VenueRequest(request)
+  const seats = normalizeArray(normalizedRequest.design?.seats)
+  const stages = normalizeArray(normalizedRequest.design?.stages)
+  const screens = normalizeArray(normalizedRequest.design?.screens)
+  const audio_sources = normalizeArray(normalizedRequest.design?.audio_sources)
 
-    const stages = Array.isArray(request.design?.stages)
-      ? request.design.stages.map((item, index) => ({
-          id: item?.id ?? `stage-${index + 1}`,
-          name: item?.title ?? `Stage ${index + 1}`,
-          x: normalizeNumber(item?.x, 0),
-          y: normalizeNumber(item?.y, 0),
-          width: normalizeNumber(item?.width, 140),
-          height: normalizeNumber(item?.height, 50),
-          rotation: normalizeNumber(item?.rotation, 0),
-        }))
-      : []
-
-    const screens = Array.isArray(request.design?.screens)
-      ? request.design.screens.map((item, index) => ({
-          id: item?.id ?? `screen-${index + 1}`,
-          name: item?.title ?? `Screen ${index + 1}`,
-          x: normalizeNumber(item?.x, 0),
-          y: normalizeNumber(item?.y, 0),
-          width: normalizeNumber(item?.width, 140),
-          height: normalizeNumber(item?.height, 50),
-          rotation: normalizeNumber(item?.rotation, 0),
-        }))
-      : []
-
-    const audio_sources = Array.isArray(request.design?.audio_sources)
-      ? request.design.audio_sources.map((item, index) => ({
-          id: item?.id ?? `audio-${index + 1}`,
-          name: item?.title ?? `Audio Source ${index + 1}`,
-          x: normalizeNumber(item?.x, 0),
-          y: normalizeNumber(item?.y, 0),
-          width: normalizeNumber(item?.width, 24),
-          height: normalizeNumber(item?.height, 24),
-          rotation: normalizeNumber(item?.rotation, 0),
-        }))
-      : []
-
-    return {
-      width: normalizeNumber(request.dimensions?.width_m, 20),
-      height: normalizeNumber(request.dimensions?.height_m, 12),
-      seats,
-      stages,
-      screens,
-      audio_sources,
-    }
+  if (!seats.length && !stages.length && !screens.length && !audio_sources.length) {
+    return null
   }
 
-  return null
+  return {
+    width: normalizeNumber(normalizedRequest.dimensions?.width_m, 20),
+    height: normalizeNumber(normalizedRequest.dimensions?.height_m, 12),
+    seats: seats.map((seat, index) => ({
+      id: seat?.id ?? crypto.randomUUID(),
+      x: normalizeNumber(seat?.x, 0),
+      y: normalizeNumber(seat?.y, 0),
+      width: normalizeNumber(seat?.width, 1.2),
+      height: normalizeNumber(seat?.height, 1.2),
+      rotation: normalizeNumber(seat?.rotation, 0),
+      row: normalizeText(seat?.row, ""),
+      number: normalizeText(seat?.number, `${index + 1}`),
+      seat_number: normalizeText(seat?.seat_number ?? seat?.label, `S${index + 1}`),
+      location_key: normalizeText(seat?.location_key ?? seat?.location, `seat-${index + 1}`),
+      label: normalizeText(seat?.label ?? seat?.seat_number, `Seat ${index + 1}`),
+      seat_class: normalizeSeatClassName(seat?.seat_class),
+      price: normalizeNumber(seat?.price, 0),
+    })),
+    stages: stages.map((item, index) => ({
+      id: item?.id ?? `stage-${index + 1}`,
+      name: normalizeText(item?.name ?? item?.title, `Stage ${index + 1}`),
+      x: normalizeNumber(item?.x, 0),
+      y: normalizeNumber(item?.y, 0),
+      width: normalizeNumber(item?.width, 140),
+      height: normalizeNumber(item?.height, 50),
+      rotation: normalizeNumber(item?.rotation, 0),
+    })),
+    screens: screens.map((item, index) => ({
+      id: item?.id ?? `screen-${index + 1}`,
+      name: normalizeText(item?.name ?? item?.title, `Screen ${index + 1}`),
+      x: normalizeNumber(item?.x, 0),
+      y: normalizeNumber(item?.y, 0),
+      width: normalizeNumber(item?.width, 140),
+      height: normalizeNumber(item?.height, 50),
+      rotation: normalizeNumber(item?.rotation, 0),
+    })),
+    audio_sources: audio_sources.map((item, index) => ({
+      id: item?.id ?? `audio-${index + 1}`,
+      name: normalizeText(item?.name ?? item?.title, `Audio Source ${index + 1}`),
+      x: normalizeNumber(item?.x, 0),
+      y: normalizeNumber(item?.y, 0),
+      width: normalizeNumber(item?.width, 24),
+      height: normalizeNumber(item?.height, 24),
+      rotation: normalizeNumber(item?.rotation, 0),
+    })),
+    elements: deepClone(normalizedRequest.design?.elements ?? []),
+    metadata: {
+      notes: normalizedRequest.design?.notes ?? "",
+      shape: normalizedRequest.dimensions?.shape ?? "rectangle",
+    },
+  }
 }
 
 export function venue_Request_To_Venue(request) {
-  const seatLayout = build_Seat_Layout_From_Request(request)
+  const normalizedRequest = request instanceof VenueRequest ? request : new VenueRequest(request)
+  const seatLayout = build_Seat_Layout_From_Request(normalizedRequest)
   const seatClasses = Array.from(
-    new Set(
-      (seatLayout?.seats ?? []).map(seat => seat?.seat_class).filter(Boolean)
-    )
+    new Set([
+      ...normalizeArray(normalizedRequest.seat_classes).map(item => normalizeSeatClassName(item)).filter(Boolean),
+      ...(seatLayout?.seats ?? []).map(seat => normalizeSeatClassName(seat?.seat_class)).filter(Boolean),
+    ])
   )
 
   return new Venue({
-    title: request.title,
-    location: request.location,
-    exact_address: request.exact_address,
-    availability: request.availability,
-    price_per_hour: request.price_per_hour,
-    price_per_day: request.price_per_day,
-    capacity: request.seat_count || request.capacity,
+    title: normalizedRequest.title,
+    location: normalizedRequest.location,
+    exact_address: normalizedRequest.exact_address,
+    availability: normalizedRequest.availability,
+    price_per_hour: normalizedRequest.price_per_hour,
+    price_per_day: normalizedRequest.price_per_day,
+    capacity: normalizedRequest.seat_count || normalizedRequest.capacity,
     status: "Active",
-    category: request.category,
-    type: request.type,
-    review_rating: request.review_rating || 0,
-    description: request.description,
-    image: request.image,
-    extra_images: request.extra_images ?? [],
+    category: normalizedRequest.category,
+    type: normalizedRequest.type,
+    review_rating: normalizedRequest.review_rating || 0,
+    description: normalizedRequest.description,
+    image: normalizedRequest.image,
+    extra_images: normalizedRequest.extra_images ?? [],
     contact_info: {
-      address: request.contact_info?.address || request.exact_address || "",
-      phone: request.contact_info?.phone || "",
-      email: request.contact_info?.email || "",
-      website: request.contact_info?.website || "",
-      instagram: request.contact_info?.instagram || "",
+      address: normalizedRequest.contact_info?.address || normalizedRequest.exact_address || "",
+      phone: normalizedRequest.contact_info?.phone || "",
+      email: normalizedRequest.contact_info?.email || "",
+      website: normalizedRequest.contact_info?.website || "",
+      instagram: normalizedRequest.contact_info?.instagram || "",
     },
     bank_account_info: {
-      ...normalizeBankAccountInfo(request.bank_account_info),
+      ...normalizeBankAccountInfo(normalizedRequest.bank_account_info),
     },
     featured: false,
-    owner_user_id: request.owner_user_id ?? null,
+    owner_user_id: normalizedRequest.owner_user_id ?? null,
     seat_classes: seatClasses.length ? seatClasses : ["Regular"],
     accessible_seats: false,
     administration_blocks: [],
@@ -397,6 +639,14 @@ export function approve_Venue_Request(requestId, reviewerUserId = null) {
     reviewed_at: new Date().toISOString(),
     reviewed_by_user_id: reviewerUserId,
     denial_reason: "",
+    venue_data: {
+      ...(request.venue_data ?? {}),
+      id: createdVenue.id,
+      seat_layout: deepClone(createdVenue.seat_layout),
+      seat_classes: deepClone(createdVenue.seat_classes),
+      capacity: createdVenue.capacity,
+      status: createdVenue.status,
+    },
   })
 
   schedule_Venue_Request_Auto_Delete(requestId)
@@ -532,7 +782,7 @@ export function get_Seat_Color_By_Class(seatClass) {
 export function count_Seats_By_Class(seats = []) {
   return seats.reduce(
     (acc, seat) => {
-      const seatClass = seat?.seat_class ?? "Regular"
+      const seatClass = normalizeSeatClassName(seat?.seat_class ?? "Regular")
 
       if (!acc[seatClass]) acc[seatClass] = 0
       acc[seatClass] += 1

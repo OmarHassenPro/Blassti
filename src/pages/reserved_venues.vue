@@ -1,11 +1,11 @@
 <template>
   <AppNavbar />
 
-  <v-container fluid class="py-8 reserved-venues-page" :class="browserThemeClass">
+  <v-container fluid class="py-8 reserved-venues-page" :class="pageThemeClass">
     <v-row justify="center">
       <v-col cols="12" xl="11">
-        <v-card rounded="xl" class="pa-4 pa-md-6 reserved-main-card">
-          <div class="page-hero mb-6">
+        <v-card rounded="xl" class="pa-4 pa-md-6 reserved-main-card page-enter">
+          <div class="page-hero mb-6 hero-surface">
             <div class="d-flex flex-column flex-lg-row align-lg-center justify-space-between ga-4">
               <div class="hero-copy">
                 <div class="hero-badge mb-3">
@@ -54,10 +54,19 @@
                   v-for="reservation in reservedVenueCards"
                   :key="reservation.id"
                   cols="12"
-                  md="6"
+                  sm="6"
                   xl="4"
                 >
-                  <v-card rounded="xl" variant="outlined" class="h-100 card-shell venue-card">
+                  <v-card
+                    rounded="xl"
+                    variant="outlined"
+                    class="h-100 card-shell venue-card touch-card"
+                    @contextmenu.prevent="openNavigationMenu($event, `/O_venueinfo?id=${reservation.venue.id}`)"
+                    @touchstart.passive="startLongPress($event, `/O_venueinfo?id=${reservation.venue.id}`)"
+                    @touchend="cancelLongPress"
+                    @touchmove="cancelLongPress"
+                    @touchcancel="cancelLongPress"
+                  >
                     <div class="image-wrap">
                       <v-img :src="reservation.venue.image || fallbackImage" height="220" cover />
                       <div class="image-overlay" />
@@ -146,9 +155,13 @@
                         color="primary"
                         rounded="lg"
                         prepend-icon="mdi-open-in-new"
-                        class="nav-btn"
+                        class="nav-btn touch-action-btn"
                         @click="goToVenue(reservation.venue.id)"
                         @contextmenu.prevent="openNavigationMenu($event, `/O_venueinfo?id=${reservation.venue.id}`)"
+                        @touchstart.passive="startLongPress($event, `/O_venueinfo?id=${reservation.venue.id}`)"
+                        @touchend="cancelLongPress"
+                        @touchmove="cancelLongPress"
+                        @touchcancel="cancelLongPress"
                       >
                         View venue
                       </v-btn>
@@ -169,8 +182,17 @@
 
             <v-window-item value="owned">
               <v-row>
-                <v-col v-for="venue in ownedVenues" :key="venue.id" cols="12" md="6" xl="4">
-                  <v-card rounded="xl" variant="outlined" class="h-100 card-shell venue-card">
+                <v-col v-for="venue in ownedVenues" :key="venue.id" cols="12" sm="6" xl="4">
+                  <v-card
+                    rounded="xl"
+                    variant="outlined"
+                    class="h-100 card-shell venue-card touch-card"
+                    @contextmenu.prevent="openNavigationMenu($event, `/O_venueinfo?id=${venue.id}`)"
+                    @touchstart.passive="startLongPress($event, `/O_venueinfo?id=${venue.id}`)"
+                    @touchend="cancelLongPress"
+                    @touchmove="cancelLongPress"
+                    @touchcancel="cancelLongPress"
+                  >
                     <div class="image-wrap">
                       <v-img :src="venue.image || fallbackImage" height="220" cover />
                       <div class="image-overlay" />
@@ -259,9 +281,13 @@
                         color="primary"
                         rounded="lg"
                         prepend-icon="mdi-open-in-new"
-                        class="nav-btn"
+                        class="nav-btn touch-action-btn"
                         @click="goToVenue(venue.id)"
                         @contextmenu.prevent="openNavigationMenu($event, `/O_venueinfo?id=${venue.id}`)"
+                        @touchstart.passive="startLongPress($event, `/O_venueinfo?id=${venue.id}`)"
+                        @touchend="cancelLongPress"
+                        @touchmove="cancelLongPress"
+                        @touchcancel="cancelLongPress"
                       >
                         View venue
                       </v-btn>
@@ -271,7 +297,7 @@
                         variant="tonal"
                         prepend-icon="mdi-delete-outline"
                         rounded="lg"
-                        class="delete-btn"
+                        class="delete-btn touch-action-btn"
                         @click="openDeleteDialog(venue)"
                       >
                         Delete venue
@@ -303,7 +329,7 @@
       offset="10"
       scrim="false"
     >
-      <v-list rounded="xl" class="context-menu-list py-2">
+      <v-list rounded="xl" class="context-menu-list py-2" :class="pageThemeClass">
         <v-list-subheader class="context-menu-subheader">Navigation options</v-list-subheader>
 
         <v-list-item
@@ -327,7 +353,7 @@
     </v-menu>
 
     <v-dialog v-model="deleteDialog" max-width="560">
-      <v-card rounded="xl" class="dialog-card">
+      <v-card rounded="xl" class="dialog-card" :class="pageThemeClass">
         <v-card-title class="text-h6 font-weight-bold d-flex align-center ga-2">
           <v-icon color="error">mdi-alert-circle-outline</v-icon>
           Delete venue?
@@ -352,7 +378,7 @@
     </v-dialog>
 
     <v-dialog v-model="resultDialog.show" max-width="520">
-      <v-card rounded="xl" class="dialog-card">
+      <v-card rounded="xl" class="dialog-card" :class="pageThemeClass">
         <v-card-title class="text-h6 font-weight-bold d-flex align-center ga-2">
           <v-icon color="primary">mdi-check-decagram-outline</v-icon>
           {{ resultDialog.title }}
@@ -370,6 +396,7 @@
 
 <script setup>
 import { computed, onBeforeUnmount, onMounted, reactive, ref } from "vue"
+import { useDisplay, useTheme } from "vuetify"
 import { useRouter } from "vue-router"
 import AppNavbar from "@/components/AppNavbar.vue"
 import { get_Current_User } from "@/dataModel/user"
@@ -386,6 +413,8 @@ import {
 } from "@/dataModel/venue_reservation"
 
 const router = useRouter()
+const theme = useTheme()
+const display = useDisplay()
 const currentUser = ref(get_Current_User())
 const tab = ref("reserved")
 const deleteDialog = ref(false)
@@ -399,7 +428,8 @@ const resultDialog = reactive({
   text: "",
 })
 
-const browserPrefersDark = ref(false)
+const THEME_STORAGE_KEY = "blassti-theme"
+const longPressTimer = ref(null)
 
 const navigationMenu = reactive({
   show: false,
@@ -408,7 +438,6 @@ const navigationMenu = reactive({
   path: "",
 })
 
-let mediaQuery = null
 
 const allVenues = computed(() => get_All_Venues())
 const myReservations = computed(() => get_Reservations_By_User_Id(currentUser.value?.id))
@@ -426,8 +455,16 @@ const ownedVenues = computed(() =>
   allVenues.value.filter(venue => venue.owner_user_id === currentUser.value?.id)
 )
 
-const browserThemeClass = computed(() =>
-  browserPrefersDark.value ? "browser-theme-dark" : "browser-theme-light"
+const isMobile = computed(() => display.smAndDown.value)
+
+const currentTheme = computed(() => {
+  return theme.global.name.value === "light" ? "light" : "dark"
+})
+
+const isDarkTheme = computed(() => currentTheme.value === "dark")
+
+const pageThemeClass = computed(() =>
+  isDarkTheme.value ? "app-theme-dark theme-dark" : "app-theme-light theme-light"
 )
 
 function ownerReservationCount(venueId) {
@@ -480,30 +517,76 @@ function openPathInNewWindow(path) {
   window.open(path, "_blank", "noopener,noreferrer,width=1280,height=860")
 }
 
-function handleThemeChange(event) {
-  browserPrefersDark.value = !!event.matches
+function applyThemeChoice(themeName) {
+  const normalizedTheme = themeName === "light" ? "light" : "dark"
+  theme.global.name.value = normalizedTheme
+
+  if (typeof window !== "undefined") {
+    localStorage.setItem(THEME_STORAGE_KEY, normalizedTheme)
+  }
+
+  document.documentElement.setAttribute("data-app-theme", normalizedTheme)
+  document.documentElement.style.colorScheme = normalizedTheme
 }
 
-function setupBrowserThemeListener() {
-  if (typeof window === "undefined" || typeof window.matchMedia !== "function") return
+function loadSavedTheme() {
+  if (typeof window === "undefined") {
+    applyThemeChoice("dark")
+    return
+  }
 
-  mediaQuery = window.matchMedia("(prefers-color-scheme: dark)")
-  browserPrefersDark.value = mediaQuery.matches
+  const savedTheme = localStorage.getItem(THEME_STORAGE_KEY)
+  applyThemeChoice(savedTheme === "light" ? "light" : "dark")
+}
 
-  if (typeof mediaQuery.addEventListener === "function") {
-    mediaQuery.addEventListener("change", handleThemeChange)
-  } else if (typeof mediaQuery.addListener === "function") {
-    mediaQuery.addListener(handleThemeChange)
+function handleStorageThemeSync(event) {
+  if (event.key && event.key !== THEME_STORAGE_KEY) return
+  loadSavedTheme()
+}
+
+function getEventPoint(event) {
+  if (event?.touches?.length) {
+    return {
+      clientX: event.touches[0].clientX,
+      clientY: event.touches[0].clientY,
+    }
+  }
+
+  if (event?.changedTouches?.length) {
+    return {
+      clientX: event.changedTouches[0].clientX,
+      clientY: event.changedTouches[0].clientY,
+    }
+  }
+
+  return {
+    clientX: event?.clientX ?? window.innerWidth / 2,
+    clientY: event?.clientY ?? window.innerHeight / 2,
   }
 }
 
-function removeBrowserThemeListener() {
-  if (!mediaQuery) return
+function startLongPress(event, path) {
+  if (!isMobile.value || !path) return
 
-  if (typeof mediaQuery.removeEventListener === "function") {
-    mediaQuery.removeEventListener("change", handleThemeChange)
-  } else if (typeof mediaQuery.removeListener === "function") {
-    mediaQuery.removeListener(handleThemeChange)
+  cancelLongPress()
+
+  const point = getEventPoint(event)
+
+  longPressTimer.value = window.setTimeout(() => {
+    openNavigationMenu(
+      {
+        clientX: point.clientX,
+        clientY: point.clientY,
+      },
+      path
+    )
+  }, 520)
+}
+
+function cancelLongPress() {
+  if (longPressTimer.value) {
+    window.clearTimeout(longPressTimer.value)
+    longPressTimer.value = null
   }
 }
 
@@ -558,11 +641,23 @@ function confirmDeleteVenue() {
 }
 
 onMounted(() => {
-  setupBrowserThemeListener()
+  loadSavedTheme()
+
+  if (typeof window !== "undefined") {
+    window.addEventListener("storage", handleStorageThemeSync)
+    window.addEventListener("focus", loadSavedTheme)
+    document.addEventListener("visibilitychange", loadSavedTheme)
+  }
 })
 
 onBeforeUnmount(() => {
-  removeBrowserThemeListener()
+  cancelLongPress()
+
+  if (typeof window !== "undefined") {
+    window.removeEventListener("storage", handleStorageThemeSync)
+    window.removeEventListener("focus", loadSavedTheme)
+    document.removeEventListener("visibilitychange", loadSavedTheme)
+  }
 })
 </script>
 
@@ -574,14 +669,14 @@ onBeforeUnmount(() => {
     color 0.35s ease;
 }
 
-.browser-theme-dark.reserved-venues-page {
+.app-theme-dark.reserved-venues-page {
   background:
     radial-gradient(circle at top right, rgba(66, 133, 244, 0.12), transparent 30%),
     radial-gradient(circle at top left, rgba(25, 118, 210, 0.12), transparent 28%),
     linear-gradient(180deg, #0d1118 0%, #0a0d14 100%);
 }
 
-.browser-theme-light.reserved-venues-page {
+.app-theme-light.reserved-venues-page {
   background:
     radial-gradient(circle at top right, rgba(25, 118, 210, 0.08), transparent 28%),
     radial-gradient(circle at top left, rgba(76, 175, 80, 0.07), transparent 26%),
@@ -599,12 +694,12 @@ onBeforeUnmount(() => {
     box-shadow 0.35s ease;
 }
 
-.browser-theme-dark .reserved-main-card {
+.app-theme-dark .reserved-main-card {
   background: linear-gradient(180deg, rgba(18, 20, 29, 0.98), rgba(14, 16, 24, 0.98)) !important;
   border-color: rgba(255, 255, 255, 0.06);
 }
 
-.browser-theme-light .reserved-main-card {
+.app-theme-light .reserved-main-card {
   background: linear-gradient(180deg, rgba(255, 255, 255, 0.96), rgba(246, 249, 255, 0.98)) !important;
   border-color: rgba(25, 118, 210, 0.12);
   box-shadow: 0 20px 45px rgba(38, 57, 77, 0.12);
@@ -633,13 +728,13 @@ onBeforeUnmount(() => {
     border-color 0.35s ease;
 }
 
-.browser-theme-dark .hero-badge {
+.app-theme-dark .hero-badge {
   background: rgba(255, 255, 255, 0.06);
   color: rgba(255, 255, 255, 0.88);
   border: 1px solid rgba(255, 255, 255, 0.07);
 }
 
-.browser-theme-light .hero-badge {
+.app-theme-light .hero-badge {
   background: rgba(25, 118, 210, 0.08);
   color: #0d47a1;
   border: 1px solid rgba(25, 118, 210, 0.14);
@@ -671,12 +766,12 @@ onBeforeUnmount(() => {
     border-color 0.35s ease;
 }
 
-.browser-theme-dark .tabs-shell {
+.app-theme-dark .tabs-shell {
   background: rgba(255, 255, 255, 0.03);
   border: 1px solid rgba(255, 255, 255, 0.05);
 }
 
-.browser-theme-light .tabs-shell {
+.app-theme-light .tabs-shell {
   background: rgba(25, 118, 210, 0.04);
   border: 1px solid rgba(25, 118, 210, 0.08);
 }
@@ -702,12 +797,12 @@ onBeforeUnmount(() => {
     background 0.35s ease;
 }
 
-.browser-theme-dark .card-shell {
+.app-theme-dark .card-shell {
   background: rgba(255, 255, 255, 0.02) !important;
   border-color: rgba(255, 255, 255, 0.06) !important;
 }
 
-.browser-theme-light .card-shell {
+.app-theme-light .card-shell {
   background: rgba(255, 255, 255, 0.8) !important;
   border-color: rgba(25, 118, 210, 0.1) !important;
 }
@@ -716,12 +811,12 @@ onBeforeUnmount(() => {
   transform: translateY(-6px);
 }
 
-.browser-theme-dark .venue-card:hover {
+.app-theme-dark .venue-card:hover {
   box-shadow: 0 18px 40px rgba(0, 0, 0, 0.28);
   border-color: rgba(100, 181, 246, 0.22) !important;
 }
 
-.browser-theme-light .venue-card:hover {
+.app-theme-light .venue-card:hover {
   box-shadow: 0 18px 35px rgba(38, 57, 77, 0.12);
   border-color: rgba(25, 118, 210, 0.18) !important;
 }
@@ -772,12 +867,12 @@ onBeforeUnmount(() => {
     border-color 0.35s ease;
 }
 
-.browser-theme-dark .details-panel {
+.app-theme-dark .details-panel {
   background: rgba(255, 255, 255, 0.025);
   border: 1px solid rgba(255, 255, 255, 0.05);
 }
 
-.browser-theme-light .details-panel {
+.app-theme-light .details-panel {
   background: rgba(25, 118, 210, 0.035);
   border: 1px solid rgba(25, 118, 210, 0.08);
 }
@@ -835,12 +930,12 @@ onBeforeUnmount(() => {
   overflow: hidden;
 }
 
-.browser-theme-dark :deep(.context-menu-list) {
+.app-theme-dark :deep(.context-menu-list) {
   background: rgba(18, 20, 29, 0.98);
   backdrop-filter: blur(12px);
 }
 
-.browser-theme-light :deep(.context-menu-list) {
+.app-theme-light :deep(.context-menu-list) {
   background: rgba(255, 255, 255, 0.98);
   backdrop-filter: blur(12px);
   border-color: rgba(25, 118, 210, 0.1);
@@ -857,23 +952,179 @@ onBeforeUnmount(() => {
     border-color 0.35s ease;
 }
 
-.browser-theme-dark .dialog-card {
+.app-theme-dark .dialog-card {
   background: linear-gradient(180deg, rgba(18, 20, 29, 1), rgba(14, 16, 24, 1)) !important;
   border: 1px solid rgba(255, 255, 255, 0.06);
 }
 
-.browser-theme-light .dialog-card {
+.app-theme-light .dialog-card {
   background: linear-gradient(180deg, rgba(255, 255, 255, 1), rgba(248, 251, 255, 1)) !important;
   border: 1px solid rgba(25, 118, 210, 0.1);
 }
 
+
+.hero-surface {
+  border-radius: 24px;
+  padding: 10px 8px 8px;
+  position: relative;
+  overflow: hidden;
+}
+
+.hero-surface::before,
+.hero-surface::after {
+  content: "";
+  position: absolute;
+  border-radius: 999px;
+  pointer-events: none;
+  filter: blur(32px);
+  opacity: 0.7;
+  animation: heroFloat 9s ease-in-out infinite;
+}
+
+.hero-surface::before {
+  width: 220px;
+  height: 220px;
+  top: -80px;
+  right: -40px;
+}
+
+.hero-surface::after {
+  width: 180px;
+  height: 180px;
+  left: -40px;
+  bottom: -70px;
+  animation-delay: -3s;
+}
+
+.app-theme-dark .hero-surface::before {
+  background: rgba(66, 133, 244, 0.16);
+}
+
+.app-theme-dark .hero-surface::after {
+  background: rgba(25, 118, 210, 0.12);
+}
+
+.app-theme-light .hero-surface::before {
+  background: rgba(25, 118, 210, 0.12);
+}
+
+.app-theme-light .hero-surface::after {
+  background: rgba(76, 175, 80, 0.08);
+}
+
+.page-enter {
+  animation: pageEnter 0.34s ease-out;
+}
+
+.touch-card {
+  cursor: pointer;
+}
+
+.touch-action-btn {
+  min-height: 42px;
+}
+
+.app-theme-dark .tab-pill {
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.app-theme-light .tab-pill {
+  color: rgba(18, 38, 63, 0.92);
+}
+
+.app-theme-dark :deep(.custom-tabs .v-tab--selected) {
+  background: rgba(100, 181, 246, 0.14);
+}
+
+.app-theme-light :deep(.custom-tabs .v-tab--selected) {
+  background: rgba(25, 118, 210, 0.1);
+}
+
+.app-theme-dark :deep(.context-menu-list .v-list-item:hover) {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.app-theme-light :deep(.context-menu-list .v-list-item:hover) {
+  background: rgba(25, 118, 210, 0.06);
+}
+
+@keyframes pageEnter {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes heroFloat {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+
+  50% {
+    transform: translate3d(0, 10px, 0) scale(1.05);
+  }
+}
+
 @media (max-width: 959px) {
+  .reserved-venues-page {
+    padding-top: 20px !important;
+    padding-bottom: 28px !important;
+  }
+
+  .reserved-main-card {
+    padding: 18px !important;
+    border-radius: 24px !important;
+  }
+
+  .page-hero {
+    padding: 0;
+  }
+
+  .hero-surface {
+    padding: 8px 2px 4px;
+  }
+
   .hero-title {
     font-size: 1.8rem !important;
+    line-height: 1.2;
+  }
+
+  .hero-subtitle {
+    max-width: 100%;
+  }
+
+  .hero-chip-group {
+    width: 100%;
+    justify-content: flex-start;
+  }
+
+  .tabs-shell {
+    border-radius: 20px;
+  }
+
+  .tab-pill {
+    min-height: 46px;
+    font-size: 0.95rem;
+  }
+
+  .card-subtitle {
+    min-height: unset;
   }
 
   .card-actions {
     padding-top: 4px;
+    flex-direction: column;
+    align-items: stretch !important;
+  }
+
+  .card-actions .v-btn {
+    width: 100%;
   }
 
   .info-row {
@@ -881,8 +1132,53 @@ onBeforeUnmount(() => {
     gap: 4px;
   }
 
+  .info-label,
   .info-value {
+    min-width: 0;
     text-align: left;
+  }
+
+  .image-chip-row {
+    top: 12px;
+    left: 12px;
+    right: 12px;
+  }
+}
+
+@media (max-width: 600px) {
+  .reserved-main-card {
+    padding: 14px !important;
+  }
+
+  .hero-title {
+    font-size: 1.55rem !important;
+  }
+
+  .hero-badge {
+    width: 100%;
+    justify-content: center;
+    text-align: center;
+  }
+
+  .hero-chip-group {
+    gap: 10px !important;
+  }
+
+  .hero-chip {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .tab-pill {
+    padding-inline: 10px;
+  }
+
+  .touch-action-btn {
+    min-height: 46px;
+  }
+
+  .details-panel {
+    padding: 12px;
   }
 }
 </style>

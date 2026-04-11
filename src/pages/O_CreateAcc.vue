@@ -1,8 +1,14 @@
 <template>
-  <v-container fluid class="create-account-page py-6 py-md-10" :class="browserThemeClass">
+  <v-container
+    fluid
+    class="create-account-page py-4 py-sm-6 py-md-10"
+    :class="[themeClass, { 'is-mobile': isMobile, 'is-tablet': isTablet }]"
+  >
     <div class="create-account-background"></div>
+    <div class="create-account-orb orb-1"></div>
+    <div class="create-account-orb orb-2"></div>
 
-    <v-row justify="center">
+    <v-row justify="center" class="fill-height account-row">
       <v-col cols="12" sm="11" md="8" lg="6" xl="5">
         <div class="page-shell">
           <v-fade-transition appear>
@@ -11,7 +17,7 @@
               rounded="xl"
               class="pa-3 pa-sm-4 pa-md-6 create-account-card"
             >
-              <div class="page-hero mb-6 mb-md-8 text-center">
+              <div class="page-hero mb-5 mb-sm-6 mb-md-8 text-center">
                 <div class="hero-logo-wrap mb-4">
                   <img
                     :src="BlasstiLogo"
@@ -81,6 +87,7 @@
                 :close-on-content-click="false"
                 transition="scale-transition"
                 offset-y
+                :location="isMobile ? 'bottom center' : 'bottom start'"
               >
                 <template #activator="{ props }">
                   <v-text-field
@@ -100,8 +107,8 @@
                 </template>
 
                 <v-card rounded="xl" class="date-picker-card">
-                  <v-date-picker v-model="dobDate" color="primary" />
-                  <v-card-actions class="justify-end px-4 pb-4">
+                  <v-date-picker v-model="dobDate" color="primary" :max="todayIso" />
+                  <v-card-actions class="justify-end px-4 pb-4 flex-wrap ga-2">
                     <v-btn variant="text" rounded="lg" @click="dobMenu = false">
                       Cancel
                     </v-btn>
@@ -253,7 +260,11 @@
       </v-col>
     </v-row>
 
-    <v-dialog v-model="dialog" max-width="460" transition="dialog-bottom-transition">
+    <v-dialog
+      v-model="dialog"
+      :max-width="isMobile ? 360 : 460"
+      transition="dialog-bottom-transition"
+    >
       <v-card rounded="xl" class="dialog-card">
         <v-card-title class="text-h6 font-weight-bold d-flex align-center ga-2">
           <v-icon color="primary">mdi-bell-badge-outline</v-icon>
@@ -277,12 +288,15 @@
 <script setup>
 import { reactive, computed, watch, ref, onMounted, onBeforeUnmount } from "vue"
 import { useRouter } from "vue-router"
-import { useTheme } from "vuetify"
+import { useDisplay, useTheme } from "vuetify"
 import { add_User, get_User_By_Email, set_Current_User } from "@/dataModel/user"
 import BlasstiLogo from "@/assets/blassti-logo.png"
 
 const router = useRouter()
 const theme = useTheme()
+const display = useDisplay()
+
+const THEME_STORAGE_KEY = "blassti-theme"
 
 const dobMenu = ref(false)
 const dobDate = ref(null)
@@ -295,38 +309,49 @@ const redirectAfterClose = ref(false)
 const showPassword = ref(false)
 const showPassword2 = ref(false)
 
-const browserThemeClass = ref("theme-light")
-let mediaQuery = null
+const isMobile = computed(() => display.xs.value)
+const isTablet = computed(() => display.sm.value || display.md.value)
+const currentThemeName = ref("dark")
+
+const todayIso = new Date().toISOString().slice(0, 10)
+
+const themeClass = computed(() => `theme-${currentThemeName.value}`)
 
 const fieldBg = computed(() =>
-  browserThemeClass.value === "theme-dark" ? "rgba(255,255,255,0.03)" : "rgba(255,255,255,0.7)"
+  currentThemeName.value === "dark" ? "rgba(255,255,255,0.03)" : "rgba(255,255,255,0.78)"
 )
 
-function applyBrowserTheme(event) {
-  const prefersDark = event?.matches ?? window.matchMedia("(prefers-color-scheme: dark)").matches
-  browserThemeClass.value = prefersDark ? "theme-dark" : "theme-light"
-  theme.global.name.value = prefersDark ? "dark" : "light"
+function applyThemeChoice(themeName) {
+  const normalizedTheme = themeName === "light" ? "light" : "dark"
+  currentThemeName.value = normalizedTheme
+  theme.global.name.value = normalizedTheme
+  document.documentElement.setAttribute("data-app-theme", normalizedTheme)
+  document.documentElement.style.colorScheme = normalizedTheme
+}
+
+function loadSavedTheme() {
+  const savedTheme = localStorage.getItem(THEME_STORAGE_KEY)
+  applyThemeChoice(savedTheme === "light" ? "light" : "dark")
+}
+
+function handleWindowStorage(event) {
+  if (!event.key || event.key === THEME_STORAGE_KEY) {
+    const savedTheme = localStorage.getItem(THEME_STORAGE_KEY)
+    if (savedTheme === "light" || savedTheme === "dark") {
+      applyThemeChoice(savedTheme)
+    }
+  }
 }
 
 onMounted(() => {
-  mediaQuery = window.matchMedia("(prefers-color-scheme: dark)")
-  applyBrowserTheme(mediaQuery)
-
-  if (typeof mediaQuery.addEventListener === "function") {
-    mediaQuery.addEventListener("change", applyBrowserTheme)
-  } else if (typeof mediaQuery.addListener === "function") {
-    mediaQuery.addListener(applyBrowserTheme)
-  }
+  loadSavedTheme()
+  window.addEventListener("storage", handleWindowStorage)
+  window.addEventListener("focus", loadSavedTheme)
 })
 
 onBeforeUnmount(() => {
-  if (!mediaQuery) return
-
-  if (typeof mediaQuery.removeEventListener === "function") {
-    mediaQuery.removeEventListener("change", applyBrowserTheme)
-  } else if (typeof mediaQuery.removeListener === "function") {
-    mediaQuery.removeListener(applyBrowserTheme)
-  }
+  window.removeEventListener("storage", handleWindowStorage)
+  window.removeEventListener("focus", loadSavedTheme)
 })
 
 function showPopup(title, message, shouldRedirect = false) {
@@ -480,8 +505,13 @@ function createAccount() {
 .create-account-page {
   position: relative;
   min-height: 100vh;
-  overflow: hidden;
+  overflow-x: hidden;
+  overflow-y: auto;
   transition: background 0.35s ease, color 0.35s ease;
+}
+
+.account-row {
+  min-height: calc(100vh - 32px);
 }
 
 .create-account-background {
@@ -492,9 +522,40 @@ function createAccount() {
   transition: opacity 0.35s ease, background 0.35s ease;
 }
 
+.create-account-orb {
+  position: absolute;
+  border-radius: 999px;
+  pointer-events: none;
+  filter: blur(60px);
+  opacity: 0.24;
+  z-index: 0;
+  animation: floatOrb 10s ease-in-out infinite;
+}
+
+.orb-1 {
+  width: 240px;
+  height: 240px;
+  top: 4%;
+  left: -50px;
+  background: rgba(var(--v-theme-primary), 0.28);
+}
+
+.orb-2 {
+  width: 220px;
+  height: 220px;
+  right: -60px;
+  bottom: 8%;
+  background: rgba(var(--v-theme-primary), 0.22);
+  animation-delay: -4s;
+}
+
 .page-shell {
   position: relative;
   z-index: 1;
+}
+
+.page-hero {
+  position: relative;
 }
 
 .create-account-card {
@@ -510,6 +571,7 @@ function createAccount() {
     box-shadow 0.25s ease,
     background-color 0.35s ease,
     border-color 0.35s ease;
+  animation: cardEnter 0.34s ease;
 }
 
 .create-account-card::before {
@@ -562,6 +624,10 @@ function createAccount() {
   margin-inline: auto;
 }
 
+.field-input :deep(.v-input__control) {
+  min-height: 52px;
+}
+
 .field-input :deep(.v-field) {
   border-radius: 18px;
   transition:
@@ -579,6 +645,11 @@ function createAccount() {
   box-shadow: 0 0 0 4px rgba(var(--v-theme-primary), 0.09);
 }
 
+.field-input :deep(.v-field__input) {
+  padding-top: 14px;
+  padding-bottom: 14px;
+}
+
 .preferences-title {
   letter-spacing: 0.01em;
 }
@@ -591,6 +662,7 @@ function createAccount() {
 
 .custom-checkbox :deep(.v-selection-control) {
   align-items: start;
+  min-height: 42px;
 }
 
 .create-account-btn {
@@ -624,6 +696,7 @@ function createAccount() {
 .date-picker-card {
   overflow: hidden;
   border: 1px solid rgba(var(--v-theme-primary), 0.12);
+  max-width: min(100vw - 32px, 360px);
 }
 
 .theme-light.create-account-page {
@@ -640,7 +713,9 @@ function createAccount() {
     radial-gradient(circle at 85% 80%, rgba(25, 118, 210, 0.08), transparent 20%);
 }
 
-.theme-light .create-account-card {
+.theme-light .create-account-card,
+.theme-light .dialog-card,
+.theme-light .date-picker-card {
   background: rgba(255, 255, 255, 0.88);
 }
 
@@ -658,13 +733,51 @@ function createAccount() {
     radial-gradient(circle at 85% 85%, rgba(33, 150, 243, 0.08), transparent 16%);
 }
 
-.theme-dark .create-account-card {
+.theme-dark .create-account-card,
+.theme-dark .dialog-card,
+.theme-dark .date-picker-card {
   background: rgba(15, 23, 42, 0.82);
+}
+
+@keyframes floatOrb {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+  50% {
+    transform: translate3d(0, -10px, 0) scale(1.04);
+  }
+}
+
+@keyframes cardEnter {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (max-width: 960px) {
+  .create-account-page {
+    padding-inline: 6px;
+  }
+
+  .account-row {
+    min-height: auto;
+  }
+
+  .hero-subtitle {
+    max-width: 100%;
+  }
 }
 
 @media (max-width: 600px) {
   .create-account-card {
     padding: 18px !important;
+    border-radius: 22px !important;
   }
 
   .hero-title {
@@ -673,6 +786,28 @@ function createAccount() {
 
   .hero-logo {
     width: 112px;
+  }
+
+  .bottom-caption {
+    line-height: 1.6;
+    font-size: 0.92rem;
+  }
+
+  .date-picker-card {
+    width: calc(100vw - 32px);
+  }
+
+  .orb-1 {
+    width: 180px;
+    height: 180px;
+    left: -55px;
+  }
+
+  .orb-2 {
+    width: 170px;
+    height: 170px;
+    right: -55px;
+    bottom: 4%;
   }
 }
 </style>

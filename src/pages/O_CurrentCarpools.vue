@@ -1,5 +1,5 @@
 <template>
-  <v-app>
+  <v-app :theme="currentTheme">
     <AppNavbar />
 
     <v-main
@@ -8,23 +8,23 @@
     >
       <div class="page-backdrop" />
 
-      <v-container class="py-6 py-md-8 page-container">
+      <v-container class="py-5 py-sm-6 py-md-8 page-container">
         <v-card
           rounded="xl"
-          class="hero-card mb-6 mb-md-8"
+          class="hero-card mb-5 mb-sm-6 mb-md-8"
           :class="browserThemeClass"
         >
           <div class="hero-glow hero-glow-1" />
           <div class="hero-glow hero-glow-2" />
 
-          <div class="d-flex justify-space-between align-center flex-wrap ga-4 hero-content">
+          <div class="d-flex justify-space-between align-center flex-wrap ga-4 ga-sm-5 hero-content">
             <div class="hero-copy">
               <div class="d-inline-flex align-center ga-2 hero-badge mb-3">
                 <v-icon size="18">mdi-car-multiple</v-icon>
                 <span>Your ride coordination hub</span>
               </div>
 
-              <div class="text-h4 text-md-h4 font-weight-bold hero-title">
+              <div class="text-h5 text-sm-h4 text-md-h4 font-weight-bold hero-title">
                 My Carpools
               </div>
 
@@ -33,7 +33,7 @@
               </div>
             </div>
 
-            <div class="d-flex flex-wrap justify-end ga-2 hero-actions">
+            <div class="d-flex flex-wrap justify-start justify-sm-end ga-2 hero-actions">
               <v-chip
                 v-if="currentUser"
                 color="primary"
@@ -72,7 +72,7 @@
 
         <v-row v-if="!currentUser" justify="center">
           <v-col cols="12" md="10" lg="8">
-            <v-card rounded="xl" class="empty-state-card pa-6 pa-md-8">
+            <v-card rounded="xl" class="empty-state-card pa-5 pa-sm-6 pa-md-8" :class="browserThemeClass">
               <div class="empty-orb mb-4">
                 <v-icon size="34">mdi-account-lock-outline</v-icon>
               </div>
@@ -126,7 +126,7 @@
               >
                 <v-card
                   rounded="xl"
-                  class="pa-5 pa-md-6 h-100 glass-card current-carpool-card"
+                  class="pa-4 pa-sm-5 pa-md-6 h-100 glass-card current-carpool-card"
                   :class="browserThemeClass"
                 >
                   <div class="card-top-strip" />
@@ -182,7 +182,7 @@
                         variant="flat"
                         rounded="pill"
                         size="small"
-                        class="delete-top-btn"
+                        class="delete-top-btn touch-target-btn"
                         prepend-icon="mdi-delete-outline"
                         @click="openDeleteDialog(carpool)"
                       >
@@ -318,7 +318,7 @@
                         variant="outlined"
                         rounded="pill"
                         prepend-icon="mdi-open-in-new"
-                        class="action-btn"
+                        class="action-btn touch-target-btn"
                       >
                         Open Event
                       </v-btn>
@@ -327,7 +327,7 @@
                         variant="outlined"
                         rounded="pill"
                         prepend-icon="mdi-card-account-details-outline"
-                        class="action-btn"
+                        class="action-btn touch-target-btn"
                         @click="openDetails(carpool)"
                       >
                         View Details
@@ -339,7 +339,7 @@
                         variant="outlined"
                         rounded="pill"
                         prepend-icon="mdi-close-circle-outline"
-                        class="action-btn"
+                        class="action-btn touch-target-btn"
                         @click="openCancelDialog(carpool)"
                       >
                         Cancel Join
@@ -367,7 +367,7 @@
 
             <v-row v-else>
               <v-col cols="12">
-                <v-card rounded="xl" class="empty-state-card pa-6 pa-md-8">
+                <v-card rounded="xl" class="empty-state-card pa-5 pa-sm-6 pa-md-8" :class="browserThemeClass">
                   <div class="empty-orb mb-4">
                     <v-icon size="34">mdi-car-off</v-icon>
                   </div>
@@ -421,7 +421,7 @@
               >
                 <v-card
                   rounded="xl"
-                  class="pa-5 pa-md-6 h-100 d-flex flex-column glass-card past-carpool-card"
+                  class="pa-4 pa-sm-5 pa-md-6 h-100 d-flex flex-column glass-card past-carpool-card"
                   :class="browserThemeClass"
                 >
                   <div class="d-flex justify-space-between align-start ga-3">
@@ -525,7 +525,7 @@
                       variant="text"
                       rounded="pill"
                       prepend-icon="mdi-open-in-new"
-                      class="past-action-btn"
+                      class="past-action-btn touch-target-btn"
                     >
                       Open Event
                     </v-btn>
@@ -534,7 +534,7 @@
                       variant="text"
                       rounded="pill"
                       prepend-icon="mdi-card-account-details-outline"
-                      class="past-action-btn"
+                      class="past-action-btn touch-target-btn"
                       @click="openDetails(carpool)"
                     >
                       View Details
@@ -546,7 +546,7 @@
 
             <v-row v-else>
               <v-col cols="12">
-                <v-card rounded="xl" class="empty-state-card pa-6 pa-md-8">
+                <v-card rounded="xl" class="empty-state-card pa-5 pa-sm-6 pa-md-8" :class="browserThemeClass">
                   <div class="empty-orb mb-4">
                     <v-icon size="34">mdi-archive-off-outline</v-icon>
                   </div>
@@ -565,11 +565,11 @@
         </template>
 
         <!-- DETAILS DIALOG -->
-        <v-dialog v-model="detailsDialog" max-width="880" transition="dialog-bottom-transition">
+        <v-dialog v-model="detailsDialog" :max-width="isMobile ? '96vw' : 880" transition="dialog-bottom-transition">
           <v-card
             v-if="selectedCarpool"
             rounded="xl"
-            class="details-dialog-card"
+            class="details-dialog-card" :class="browserThemeClass"
           >
             <div class="dialog-top-accent" />
 
@@ -598,7 +598,7 @@
 
             <v-divider />
 
-            <v-card-text class="pa-6">
+            <v-card-text class="pa-4 pa-sm-5 pa-md-6">
               <v-row class="mb-1">
                 <v-col cols="12" md="6">
                   <v-card variant="outlined" rounded="xl" class="pa-4 dialog-info-card h-100">
@@ -796,11 +796,11 @@
 
             <v-divider />
 
-            <v-card-actions class="pa-4 d-flex justify-end">
+            <v-card-actions class="pa-4 d-flex justify-end flex-wrap ga-2">
               <v-btn
                 variant="flat"
                 rounded="pill"
-                class="dialog-close-btn"
+                class="dialog-close-btn touch-target-btn"
                 @click="detailsDialog = false"
               >
                 Close
@@ -810,8 +810,8 @@
         </v-dialog>
 
         <!-- CANCEL JOIN DIALOG -->
-        <v-dialog v-model="cancelDialog" max-width="640" transition="dialog-bottom-transition">
-          <v-card rounded="xl" v-if="cancelTarget" class="action-dialog-card">
+        <v-dialog v-model="cancelDialog" :max-width="isMobile ? '96vw' : 640" transition="dialog-bottom-transition">
+          <v-card rounded="xl" v-if="cancelTarget" class="action-dialog-card" :class="browserThemeClass">
             <div class="dialog-top-accent warning-accent" />
 
             <v-card-title class="d-flex justify-space-between align-center pa-6">
@@ -839,7 +839,7 @@
 
             <v-divider />
 
-            <v-card-text class="pa-6">
+            <v-card-text class="pa-4 pa-sm-5 pa-md-6">
               <div class="mb-4 text-body-1">
                 Are you sure you want to leave this carpool?
               </div>
@@ -885,7 +885,7 @@
 
             <v-divider />
 
-            <v-card-actions class="pa-4 d-flex justify-end ga-2">
+            <v-card-actions class="pa-4 d-flex justify-end flex-wrap ga-2">
               <v-btn
                 variant="text"
                 rounded="pill"
@@ -908,8 +908,8 @@
         </v-dialog>
 
         <!-- DELETE CARPOOL DIALOG -->
-        <v-dialog v-model="deleteDialog" max-width="560" transition="dialog-bottom-transition">
-          <v-card rounded="xl" v-if="deleteTarget" class="action-dialog-card">
+        <v-dialog v-model="deleteDialog" :max-width="isMobile ? '96vw' : 560" transition="dialog-bottom-transition">
+          <v-card rounded="xl" v-if="deleteTarget" class="action-dialog-card" :class="browserThemeClass">
             <div class="dialog-top-accent danger-accent" />
 
             <v-card-title class="d-flex justify-space-between align-center pa-6">
@@ -937,7 +937,7 @@
 
             <v-divider />
 
-            <v-card-text class="pa-6">
+            <v-card-text class="pa-4 pa-sm-5 pa-md-6">
               <div class="mb-4 text-body-1">
                 Are you sure you want to delete this carpool?
               </div>
@@ -956,7 +956,7 @@
 
             <v-divider />
 
-            <v-card-actions class="pa-4 d-flex justify-end ga-2">
+            <v-card-actions class="pa-4 d-flex justify-end flex-wrap ga-2">
               <v-btn
                 variant="text"
                 rounded="pill"
@@ -1001,7 +1001,7 @@
 <script setup>
 import { computed, onBeforeUnmount, onMounted, reactive, ref } from "vue"
 import { RouterLink } from "vue-router"
-import { useTheme } from "vuetify"
+import { useDisplay, useTheme } from "vuetify"
 import AppNavbar from "@/components/AppNavbar.vue"
 
 import { get_Current_User } from "@/dataModel/user"
@@ -1037,7 +1037,7 @@ const cancelReasonItems = [
   "Other",
 ]
 
-const currentUser = computed(() => get_Current_User())
+const currentUser = ref(get_Current_User() || null)
 
 const currentCarpools = computed(() => {
   if (!currentUser.value) return []
@@ -1050,45 +1050,74 @@ const pastCarpools = computed(() => {
 })
 
 const theme = useTheme()
-const prefersDark = ref(false)
-let themeMediaQuery = null
+const display = useDisplay()
+const THEME_STORAGE_KEY = "blassti-theme"
 
+const isMobile = computed(() => display.smAndDown.value)
+const currentTheme = computed(() => {
+  return theme.global.name.value === "light" ? "light" : "dark"
+})
+const isDarkTheme = computed(() => currentTheme.value === "dark")
 const browserThemeClass = computed(() =>
-  prefersDark.value ? "browser-dark" : "browser-light"
+  isDarkTheme.value ? "browser-dark" : "browser-light"
 )
 
-function applyBrowserThemePreference() {
+function applyThemeChoice(themeName) {
+  const normalizedTheme = themeName === "light" ? "light" : "dark"
+  theme.global.name.value = normalizedTheme
+
+  if (typeof window !== "undefined") {
+    window.localStorage.setItem(THEME_STORAGE_KEY, normalizedTheme)
+  }
+
+  if (typeof document !== "undefined") {
+    document.documentElement.setAttribute("data-app-theme", normalizedTheme)
+    document.documentElement.style.colorScheme = normalizedTheme
+  }
+}
+
+function loadSavedTheme() {
   if (typeof window === "undefined") return
 
-  const isDark = window.matchMedia("(prefers-color-scheme: dark)").matches
-  prefersDark.value = isDark
+  const savedTheme = window.localStorage.getItem(THEME_STORAGE_KEY)
+  applyThemeChoice(savedTheme === "light" ? "light" : "dark")
+}
 
-  if (theme?.global?.name) {
-    theme.global.name.value = isDark ? "dark" : "light"
+function syncCurrentUser() {
+  currentUser.value = get_Current_User() || null
+}
+
+
+function handleWindowStorage(event) {
+  if (!event.key || event.key === THEME_STORAGE_KEY) {
+    const savedTheme = window.localStorage.getItem(THEME_STORAGE_KEY)
+    applyThemeChoice(savedTheme === "light" ? "light" : "dark")
   }
+
+  if (!event.key || event.key === "currentUser") {
+    syncCurrentUser()
+  }
+}
+
+function handleWindowFocus() {
+  loadSavedTheme()
+  syncCurrentUser()
 }
 
 onMounted(() => {
   if (typeof window === "undefined") return
 
-  themeMediaQuery = window.matchMedia("(prefers-color-scheme: dark)")
-  applyBrowserThemePreference()
-
-  if (themeMediaQuery.addEventListener) {
-    themeMediaQuery.addEventListener("change", applyBrowserThemePreference)
-  } else if (themeMediaQuery.addListener) {
-    themeMediaQuery.addListener(applyBrowserThemePreference)
-  }
+  loadSavedTheme()
+  syncCurrentUser()
+  window.addEventListener("storage", handleWindowStorage)
+  window.addEventListener("focus", handleWindowFocus)
 })
 
 onBeforeUnmount(() => {
-  if (!themeMediaQuery) return
+  if (typeof window === "undefined") return
 
-  if (themeMediaQuery.removeEventListener) {
-    themeMediaQuery.removeEventListener("change", applyBrowserThemePreference)
-  } else if (themeMediaQuery.removeListener) {
-    themeMediaQuery.removeListener(applyBrowserThemePreference)
-  }
+  window.removeEventListener("storage", handleWindowStorage)
+  window.removeEventListener("focus", handleWindowFocus)
 })
 
 function showSnackbar(text, color = "success") {

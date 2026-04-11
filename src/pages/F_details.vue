@@ -1,19 +1,19 @@
 <template>
-  <v-app :theme="currentThemeName" class="profile-page-app">
+  <v-app :theme="currentThemeName" class="profile-page-app" :class="[`theme-${currentThemeName}`, { 'is-mobile': isMobile }]">
     <AppNavbar />
 
     <v-main>
-      <v-container class="py-6 py-md-10">
+      <v-container class="profile-page-shell">
         <v-fade-transition appear>
           <div>
             <!-- HEADER -->
             <v-sheet
-              class="profile-hero pa-4 pa-md-6 mb-6"
+              class="profile-hero profile-hero-spacing"
               rounded="xl"
               elevation="0"
             >
-              <v-row align="center" class="ga-0">
-                <v-col cols="12" md="2" class="d-flex justify-center justify-md-start">
+              <v-row align="center" class="ga-0 profile-hero-row">
+                <v-col cols="12" md="2" class="d-flex justify-center justify-md-start mb-4 mb-md-0 profile-avatar-column">
                   <div class="avatar-shell">
                     <v-avatar size="128" color="grey-lighten-3" class="profile-avatar">
                       <v-img
@@ -26,7 +26,7 @@
                   </div>
                 </v-col>
 
-                <v-col cols="12" md="7">
+                <v-col cols="12" md="7" class="profile-main-column">
                   <div class="d-flex flex-wrap align-center ga-2 mb-2">
                     <div class="text-h5 text-md-h4 font-weight-bold profile-name">
                       {{ displayedFullName }}
@@ -108,14 +108,14 @@
                 <v-col
                   cols="12"
                   md="3"
-                  class="d-flex justify-end align-center flex-wrap action-column mt-4 mt-md-0"
+                  class="d-flex justify-end align-center flex-wrap action-column mt-4 mt-md-0 action-column-shell"
                 >
                   <template v-if="isOwnProfile">
                     <v-btn
                       color="primary"
                       variant="flat"
                       rounded="lg"
-                      class="mr-2 mb-2 text-none action-btn"
+                      class="mr-2 mb-2 text-none action-btn touch-btn"
                       prepend-icon="mdi-cog-outline"
                       @click="goToSettings"
                     >
@@ -129,7 +129,7 @@
                       color="primary"
                       variant="outlined"
                       rounded="lg"
-                      class="mr-2 mb-2 text-none action-btn"
+                      class="mr-2 mb-2 text-none action-btn touch-btn"
                       prepend-icon="mdi-bell-plus-outline"
                       @click="subscribe"
                     >
@@ -141,7 +141,7 @@
                         variant="flat"
                         color="success"
                         rounded="lg"
-                        class="mr-2 mb-2 text-none action-btn"
+                        class="mr-2 mb-2 text-none action-btn touch-btn"
                         prepend-icon="mdi-check-circle-outline"
                         @click="subscribedNoticeDialog = true"
                       >
@@ -151,7 +151,7 @@
                       <v-btn
                         variant="text"
                         color="error"
-                        class="mr-2 mb-2 text-none action-btn"
+                        class="mr-2 mb-2 text-none action-btn touch-btn"
                         prepend-icon="mdi-bell-remove-outline"
                         @click="unsubscribeDialog = true"
                       >
@@ -166,7 +166,7 @@
                     color="error"
                     variant="outlined"
                     rounded="lg"
-                    class="mr-2 mb-2 text-none action-btn"
+                    class="mr-2 mb-2 text-none action-btn touch-btn"
                     prepend-icon="mdi-delete-outline"
                     @click="deleteAccountDialog = true"
                   >
@@ -179,7 +179,7 @@
                     color="indigo"
                     variant="outlined"
                     rounded="lg"
-                    class="mr-2 mb-2 text-none action-btn"
+                    class="mr-2 mb-2 text-none action-btn touch-btn"
                     :prepend-icon="viewedUser?.is_moderator ? 'mdi-shield-off-outline' : 'mdi-shield-account-outline'"
                     @click="moderatorToggleDialog = true"
                   >
@@ -192,7 +192,7 @@
                     color="warning"
                     variant="outlined"
                     rounded="lg"
-                    class="mr-2 mb-2 text-none action-btn"
+                    class="mr-2 mb-2 text-none action-btn touch-btn"
                     prepend-icon="mdi-account-cancel-outline"
                     @click="suspendDialog = true"
                   >
@@ -204,19 +204,19 @@
                     color="success"
                     variant="outlined"
                     rounded="lg"
-                    class="mr-2 mb-2 text-none action-btn"
+                    class="mr-2 mb-2 text-none action-btn touch-btn"
                     prepend-icon="mdi-account-check-outline"
                     @click="unsuspendViewedUser"
                   >
                     Remove Suspension
                   </v-btn>
 
-                  <v-menu location="bottom end" transition="scale-transition">
+                  <v-menu :location="isMobile ? 'bottom' : 'bottom end'" transition="scale-transition">
                     <template #activator="{ props }">
                       <v-btn
                         icon
                         v-bind="props"
-                        class="mb-2 dots-btn"
+                        class="mb-2 dots-btn touch-icon-btn"
                         variant="tonal"
                       >
                         <v-icon>mdi-dots-horizontal</v-icon>
@@ -247,13 +247,15 @@
         <!-- TABS -->
         <v-row align="center" justify="center">
           <v-col cols="12" md="8" class="d-flex justify-center">
-            <v-sheet rounded="pill" class="tabs-shell pa-1">
+            <v-sheet rounded="pill" class="tabs-shell pa-1 w-100">
               <v-tabs
                 v-model="tab"
                 color="primary"
                 align-tabs="center"
                 class="profile-tabs"
                 slider-color="primary"
+                :direction="isMobile ? 'horizontal' : 'horizontal'"
+                show-arrows
               >
                 <v-tab value="upcoming" class="text-none">
                   <v-icon start size="18">mdi-calendar-clock-outline</v-icon>
@@ -405,7 +407,7 @@
                 <v-card
                   v-for="event in filteredEvents"
                   :key="event.id"
-                  class="mb-4 event-card"
+                  class="mb-4 event-card interactive-card"
                   rounded="xl"
                   elevation="0"
                   variant="outlined"
@@ -422,7 +424,7 @@
                       />
                     </v-col>
 
-                    <v-col cols="12" sm="8" md="9" class="pa-4 pa-md-5">
+                    <v-col cols="12" sm="8" md="9" class="event-content-column">
                       <div class="d-flex justify-space-between align-start ga-3 flex-wrap">
                         <div>
                           <div class="text-h6 font-weight-bold event-title">
@@ -524,13 +526,13 @@
                     Quick Actions
                   </div>
 
-                  <div class="d-flex flex-wrap align-center ga-3">
+                  <div class="d-flex flex-wrap align-center ga-3 quick-actions-wrap">
                     <v-btn
                       color="primary"
                       variant="tonal"
                       rounded="lg"
                       prepend-icon="mdi-share-variant-outline"
-                      class="text-none side-action-btn"
+                      class="text-none side-action-btn touch-btn"
                       @click="shareProfileDialog = true"
                     >
                       Share
@@ -541,7 +543,7 @@
                       variant="tonal"
                       rounded="lg"
                       prepend-icon="mdi-flag-outline"
-                      class="text-none side-action-btn"
+                      class="text-none side-action-btn touch-btn"
                       @click="openReportDialog"
                     >
                       Report
@@ -560,7 +562,7 @@
                     variant="outlined"
                     rounded="xl"
                     height="320"
-                    class="d-flex align-center justify-center profile-preview"
+                    class="d-flex align-center justify-center profile-preview interactive-card"
                   >
                     <v-img
                       v-if="viewedUser?.profile_picture"
@@ -876,7 +878,7 @@
 import AppNavbar from "@/components/AppNavbar.vue"
 import { ref, computed, watch, onMounted, onBeforeUnmount } from "vue"
 import { useRoute, useRouter } from "vue-router"
-import { useTheme } from "vuetify"
+import { useDisplay, useTheme } from "vuetify"
 import { get_All_Events } from "@/dataModel/event"
 import {
   delete_User,
@@ -896,6 +898,9 @@ import { add_User_Report } from "@/dataModel/report"
 const route = useRoute()
 const router = useRouter()
 const theme = useTheme()
+const display = useDisplay()
+
+const THEME_STORAGE_KEY = "blassti-theme"
 
 const tab = ref("details")
 const events = get_All_Events()
@@ -921,7 +926,21 @@ const suspensionDays = ref(7)
 const reportReason = ref("Spam")
 const reportOtherReason = ref("")
 
-const currentThemeName = ref(theme.global.name.value || "light")
+const isMobile = computed(() => display.mdAndDown.value)
+
+function getStoredThemeChoice() {
+  if (typeof window === "undefined") return "dark"
+  const savedTheme = window.localStorage.getItem(THEME_STORAGE_KEY)
+  return savedTheme === "light" ? "light" : "dark"
+}
+
+if (theme?.global?.name) {
+  theme.global.name.value = getStoredThemeChoice()
+}
+
+const currentThemeName = computed(() => {
+  return theme?.global?.name?.value === "light" ? "light" : "dark"
+})
 
 const reportReasons = [
   "Spam",
@@ -975,23 +994,51 @@ function resolveViewedUser() {
   viewedUser.value = fallbackCurrent || null
 }
 
-function applyBrowserThemePreference() {
-  if (typeof window === "undefined" || !window.matchMedia) return
-
-  const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches
-  const nextTheme = prefersDark ? "dark" : "light"
+function applyThemeChoice(themeName) {
+  const normalizedTheme = themeName === "light" ? "light" : "dark"
 
   if (theme?.global?.name) {
-    theme.global.name.value = nextTheme
+    theme.global.name.value = normalizedTheme
   }
 
-  currentThemeName.value = nextTheme
+  if (typeof window !== "undefined") {
+    window.localStorage.setItem(THEME_STORAGE_KEY, normalizedTheme)
+  }
+
+  if (typeof document !== "undefined") {
+    document.documentElement.setAttribute("data-app-theme", normalizedTheme)
+    document.documentElement.style.colorScheme = normalizedTheme
+  }
 }
 
-let colorSchemeMediaQuery = null
+function loadSavedTheme() {
+  applyThemeChoice(getStoredThemeChoice())
+}
 
-function handleThemeChange() {
-  applyBrowserThemePreference()
+function handleWindowStorage(event) {
+  if (!event.key || event.key === THEME_STORAGE_KEY) {
+    const savedTheme = getStoredThemeChoice()
+
+    if (theme?.global?.name) {
+      theme.global.name.value = savedTheme
+    }
+
+    if (typeof document !== "undefined") {
+      document.documentElement.setAttribute("data-app-theme", savedTheme)
+      document.documentElement.style.colorScheme = savedTheme
+    }
+  }
+
+  if (!event.key || event.key === "currentUser") {
+    syncCurrentUser()
+    resolveViewedUser()
+  }
+}
+
+function handleWindowFocus() {
+  loadSavedTheme()
+  syncCurrentUser()
+  resolveViewedUser()
 }
 
 watch(
@@ -1004,26 +1051,18 @@ watch(
 )
 
 onMounted(() => {
-  applyBrowserThemePreference()
+  loadSavedTheme()
 
-  if (typeof window !== "undefined" && window.matchMedia) {
-    colorSchemeMediaQuery = window.matchMedia("(prefers-color-scheme: dark)")
-
-    if (typeof colorSchemeMediaQuery.addEventListener === "function") {
-      colorSchemeMediaQuery.addEventListener("change", handleThemeChange)
-    } else if (typeof colorSchemeMediaQuery.addListener === "function") {
-      colorSchemeMediaQuery.addListener(handleThemeChange)
-    }
+  if (typeof window !== "undefined") {
+    window.addEventListener("storage", handleWindowStorage)
+    window.addEventListener("focus", handleWindowFocus)
   }
 })
 
 onBeforeUnmount(() => {
-  if (!colorSchemeMediaQuery) return
-
-  if (typeof colorSchemeMediaQuery.removeEventListener === "function") {
-    colorSchemeMediaQuery.removeEventListener("change", handleThemeChange)
-  } else if (typeof colorSchemeMediaQuery.removeListener === "function") {
-    colorSchemeMediaQuery.removeListener(handleThemeChange)
+  if (typeof window !== "undefined") {
+    window.removeEventListener("storage", handleWindowStorage)
+    window.removeEventListener("focus", handleWindowFocus)
   }
 })
 
@@ -1375,6 +1414,46 @@ function unsuspendViewedUser() {
     radial-gradient(circle at top right, rgba(var(--v-theme-secondary), 0.05), transparent 26%);
 }
 
+.profile-page-app.theme-light {
+  background:
+    radial-gradient(circle at top left, rgba(var(--v-theme-primary), 0.08), transparent 30%),
+    radial-gradient(circle at top right, rgba(var(--v-theme-secondary), 0.06), transparent 28%),
+    linear-gradient(180deg, rgba(var(--v-theme-surface), 1), rgba(var(--v-theme-surface), 0.98));
+}
+
+.profile-page-app.theme-dark {
+  background:
+    radial-gradient(circle at top left, rgba(var(--v-theme-primary), 0.1), transparent 30%),
+    radial-gradient(circle at top right, rgba(var(--v-theme-secondary), 0.08), transparent 28%),
+    linear-gradient(180deg, rgba(var(--v-theme-background), 1), rgba(var(--v-theme-surface), 0.98));
+}
+
+.profile-page-shell {
+  max-width: 1320px;
+  padding: 20px 16px 28px;
+}
+
+.profile-hero-spacing {
+  padding: 20px;
+  margin-bottom: 20px;
+}
+
+.profile-main-column {
+  text-align: center;
+}
+
+.action-column-shell {
+  width: 100%;
+}
+
+.event-content-column {
+  padding: 16px;
+}
+
+.profile-hero-row {
+  row-gap: 12px;
+}
+
 .profile-hero,
 .content-card,
 .tabs-shell,
@@ -1435,6 +1514,15 @@ function unsuspendViewedUser() {
   transition: transform 0.22s ease, box-shadow 0.22s ease, background-color 0.22s ease;
 }
 
+.touch-btn {
+  min-height: 44px;
+}
+
+.touch-icon-btn {
+  min-width: 44px;
+  min-height: 44px;
+}
+
 .action-btn:hover {
   transform: translateY(-2px);
 }
@@ -1451,8 +1539,16 @@ function unsuspendViewedUser() {
   min-width: 180px;
 }
 
+.interactive-card {
+  transition: transform 0.24s ease, box-shadow 0.24s ease, border-color 0.24s ease;
+}
+
 .section-divider {
   opacity: 0.65;
+}
+
+.profile-tabs {
+  width: 100%;
 }
 
 .tabs-shell {
@@ -1462,10 +1558,11 @@ function unsuspendViewedUser() {
 }
 
 .profile-tabs :deep(.v-tab) {
-  min-height: 44px;
+  min-height: 46px;
   font-weight: 600;
   border-radius: 999px;
   transition: background-color 0.22s ease, transform 0.22s ease;
+  padding-inline: 16px;
 }
 
 .profile-tabs :deep(.v-tab:hover) {
@@ -1532,8 +1629,16 @@ function unsuspendViewedUser() {
   border-color: rgba(var(--v-theme-primary), 0.18) !important;
 }
 
+.event-card:hover :deep(.v-img__img) {
+  transform: scale(1.04);
+}
+
 .event-image {
   height: 100%;
+}
+
+.event-card :deep(.v-img__img) {
+  transition: transform 0.5s ease;
 }
 
 .event-title {
@@ -1598,32 +1703,140 @@ function unsuspendViewedUser() {
   box-shadow: 0 16px 34px rgba(0, 0, 0, 0.16);
 }
 
+@media (min-width: 960px) {
+  .profile-page-shell {
+    padding: 24px 24px 40px;
+  }
+
+  .profile-hero-spacing {
+    padding: 24px;
+    margin-bottom: 24px;
+  }
+
+  .profile-main-column {
+    text-align: left;
+  }
+
+  .action-column-shell {
+    width: auto;
+  }
+
+  .event-content-column {
+    padding: 20px;
+  }
+}
+
 @media (max-width: 959px) {
   .sticky-side {
     position: static;
     top: auto;
   }
 
+  .profile-page-shell {
+    max-width: 100%;
+  }
+
   .action-column {
     justify-content: flex-start !important;
+  }
+
+  .action-column .touch-btn {
+    flex: 1 1 calc(50% - 8px);
+    min-width: 170px;
+    margin-right: 0 !important;
   }
 
   .mini-stat {
     min-width: 145px;
   }
+
+  .quick-actions-wrap .touch-btn {
+    flex: 1 1 180px;
+  }
+
+  .profile-preview {
+    min-height: 260px;
+  }
 }
 
 @media (max-width: 600px) {
   .profile-hero {
-    padding: 20px !important;
+    padding: 18px !important;
+    border-radius: 24px !important;
+  }
+
+  .profile-main-column {
+    text-align: center;
+  }
+
+  .profile-quick-stats {
+    justify-content: center;
+  }
+
+  .mini-stat {
+    min-width: 100%;
   }
 
   .profile-name {
     font-size: 1.75rem !important;
   }
 
+  .tabs-shell {
+    border-radius: 24px !important;
+  }
+
+  .profile-tabs :deep(.v-slide-group__content) {
+    gap: 6px;
+    justify-content: flex-start;
+  }
+
+  .profile-tabs :deep(.v-tab) {
+    min-width: max-content;
+    padding-inline: 14px;
+  }
+
+  .event-card {
+    border-radius: 24px !important;
+  }
+
+  .event-image {
+    min-height: 190px;
+  }
+
   .side-action-btn {
     flex: 1 1 auto;
+  }
+
+  .action-column .touch-btn,
+  .quick-actions-wrap .touch-btn {
+    flex: 1 1 100%;
+    width: 100%;
+  }
+
+  .dots-btn {
+    margin-left: auto;
+  }
+}
+
+@media (hover: none) {
+  .action-btn:hover,
+  .dots-btn:hover,
+  .profile-tabs :deep(.v-tab:hover),
+  .contact-item:hover,
+  .event-card:hover,
+  .profile-preview:hover .profile-preview-img {
+    transform: none;
+  }
+
+  .contact-item:hover,
+  .event-card:hover {
+    background: inherit;
+    box-shadow: inherit;
+  }
+
+  .profile-preview:hover .profile-preview-img,
+  .event-card:hover :deep(.v-img__img) {
+    transform: none;
   }
 }
 </style>

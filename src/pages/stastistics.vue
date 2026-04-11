@@ -15,7 +15,7 @@
       <div class="statistics-content-wrap">
         <v-row justify="center" align="start" class="ma-0 statistics-root-row">
         <v-col cols="12" xxl="11" class="pa-0 statistics-root-col">
-          <v-card class="page-shell pa-4 pa-md-6" rounded="xl">
+          <v-card class="page-shell pa-4 pa-md-6" :class="{ 'page-shell-mobile': isMobile }" rounded="xl">
             <div class="page-shell-glow"></div>
 
             <div class="page-topbar mb-4">
@@ -400,6 +400,7 @@
       v-model="detailDialog"
       max-width="1320"
       scrollable
+      :fullscreen="isMobile"
       :theme="browserThemeName"
       transition="dialog-bottom-transition"
       content-class="analytics-dialog-content"
@@ -624,6 +625,7 @@
 
 <script setup>
 import { computed, defineComponent, h, nextTick, onBeforeUnmount, onMounted, ref } from "vue"
+import { useDisplay, useTheme } from "vuetify"
 import AppNavbar from "@/components/AppNavbar.vue"
 import { get_Current_User } from "@/dataModel/user"
 import { get_Site_Statistics } from "@/dataModel/statistics"
@@ -639,17 +641,21 @@ const donutPalette = [
   "#84cc16",
 ]
 
+const theme = useTheme()
+const display = useDisplay()
+const THEME_STORAGE_KEY = "blassti-theme"
+
 const stats = ref(get_Site_Statistics())
 const detailDialog = ref(false)
 const activeDetailKey = ref("users")
-const prefersDark = ref(false)
 const themeReady = ref(false)
 
 const currentUser = computed(() => get_Current_User())
 const isAdmin = computed(() => Boolean(currentUser.value?.is_admin))
+const isMobile = computed(() => display.mdAndDown.value)
 
-const browserThemeName = computed(() => (prefersDark.value ? "dark" : "light"))
-const browserThemeClass = computed(() => (prefersDark.value ? "browser-dark" : "browser-light"))
+const browserThemeName = computed(() => (theme.global.name.value === "light" ? "light" : "dark"))
+const browserThemeClass = computed(() => (browserThemeName.value === "dark" ? "browser-dark" : "browser-light"))
 
 const nowLabel = computed(() => {
   return new Date().toLocaleString("en-US", {
@@ -703,26 +709,36 @@ const detailMetaMap = {
 const detailTitle = computed(() => detailTitleMap[activeDetailKey.value] || "Details")
 const activeDetail = computed(() => stats.value.details?.[activeDetailKey.value] ?? null)
 
-let mediaQuery = null
-let mediaQueryListener = null
+function applyThemeChoice(themeName) {
+  const normalizedTheme = themeName === "light" ? "light" : "dark"
+  theme.global.name.value = normalizedTheme
+
+  if (typeof document !== "undefined") {
+    document.documentElement.setAttribute("data-app-theme", normalizedTheme)
+    document.documentElement.style.colorScheme = normalizedTheme
+  }
+}
+
+function syncThemeFromStorage() {
+  if (typeof window === "undefined") return
+
+  const savedTheme = window.localStorage.getItem(THEME_STORAGE_KEY)
+  applyThemeChoice(savedTheme === "light" ? "light" : "dark")
+}
+
+function handleWindowStorage(event) {
+  if (!event.key || event.key === THEME_STORAGE_KEY) {
+    syncThemeFromStorage()
+  }
+}
 
 onMounted(() => {
-  if (typeof window !== "undefined" && typeof window.matchMedia === "function") {
-    mediaQuery = window.matchMedia("(prefers-color-scheme: dark)")
-    prefersDark.value = Boolean(mediaQuery.matches)
-
-    mediaQueryListener = event => {
-      prefersDark.value = Boolean(event.matches)
-    }
-
-    if (typeof mediaQuery.addEventListener === "function") {
-      mediaQuery.addEventListener("change", mediaQueryListener)
-    } else if (typeof mediaQuery.addListener === "function") {
-      mediaQuery.addListener(mediaQueryListener)
-    }
-  }
+  syncThemeFromStorage()
 
   if (typeof window !== "undefined") {
+    window.addEventListener("storage", handleWindowStorage)
+    window.addEventListener("focus", syncThemeFromStorage)
+
     nextTick(() => {
       window.scrollTo({ top: 0, left: 0, behavior: "auto" })
     })
@@ -732,12 +748,9 @@ onMounted(() => {
 })
 
 onBeforeUnmount(() => {
-  if (!mediaQuery || !mediaQueryListener) return
-
-  if (typeof mediaQuery.removeEventListener === "function") {
-    mediaQuery.removeEventListener("change", mediaQueryListener)
-  } else if (typeof mediaQuery.removeListener === "function") {
-    mediaQuery.removeListener(mediaQueryListener)
+  if (typeof window !== "undefined") {
+    window.removeEventListener("storage", handleWindowStorage)
+    window.removeEventListener("focus", syncThemeFromStorage)
   }
 })
 

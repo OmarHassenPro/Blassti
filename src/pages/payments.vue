@@ -1,16 +1,16 @@
 <template>
   <AppNavbar />
 
-  <div class="payments-page-shell" :class="browserThemeClass">
-    <v-container fluid class="py-8 payments-page">
+  <div class="payments-page-shell" :class="[browserThemeClass, `theme-${currentTheme}`, { 'payments-mobile': isMobile, 'payments-tablet': isTablet }]">
+    <v-container fluid class="py-8 payments-page" :class="{ 'payments-page-mobile': isMobile }">
       <v-row justify="center">
         <v-col cols="12" xxl="11">
           <v-card rounded="xl" class="page-hero-card mb-6 overflow-hidden">
             <div class="hero-glow hero-glow--one" />
             <div class="hero-glow hero-glow--two" />
 
-            <div class="d-flex flex-column flex-lg-row align-start align-lg-center justify-space-between ga-4 hero-content">
-              <div class="hero-copy">
+            <div class="d-flex flex-column flex-lg-row align-start align-lg-center justify-space-between ga-4 hero-content" :class="{ 'hero-content-mobile': isMobile }">
+              <div class="hero-copy" :class="{ 'hero-copy-mobile': isMobile }">
                 <div class="hero-badge mb-3">
                   <v-icon size="18" class="me-2">mdi-cash-multiple</v-icon>
                   Payment management
@@ -25,18 +25,18 @@
                 </div>
               </div>
 
-              <div class="d-flex ga-2 flex-wrap hero-chip-group">
-                <v-chip color="primary" variant="tonal" size="large" class="hero-chip">
+              <div class="d-flex ga-2 flex-wrap hero-chip-group" :class="{ 'hero-chip-group-mobile': isMobile }">
+                <v-chip color="primary" variant="tonal" :size="isMobile ? 'default' : 'large'" class="hero-chip">
                   <v-icon start size="18">mdi-wallet-outline</v-icon>
                   Total: {{ formatMoney(totalIncome) }}
                 </v-chip>
 
-                <v-chip color="success" variant="tonal" size="large" class="hero-chip">
+                <v-chip color="success" variant="tonal" :size="isMobile ? 'default' : 'large'" class="hero-chip">
                   <v-icon start size="18">mdi-ticket-confirmation-outline</v-icon>
                   Event: {{ formatMoney(eventIncomeTotal) }}
                 </v-chip>
 
-                <v-chip color="info" variant="tonal" size="large" class="hero-chip">
+                <v-chip color="info" variant="tonal" :size="isMobile ? 'default' : 'large'" class="hero-chip">
                   <v-icon start size="18">mdi-office-building-outline</v-icon>
                   Venue: {{ formatMoney(venueIncomeTotal) }}
                 </v-chip>
@@ -160,7 +160,7 @@
                   </div>
                 </div>
 
-                <div class="d-flex ga-2 flex-wrap summary-pill-group">
+                <div class="d-flex ga-2 flex-wrap summary-pill-group" :class="{ 'summary-pill-group-mobile': isMobile }">
                   <v-chip variant="outlined" rounded="lg" class="summary-chip">
                     <v-icon start size="16">mdi-format-list-bulleted-square</v-icon>
                     {{ eventGroups.length + venueGroups.length }} groups
@@ -208,7 +208,7 @@
                       density="comfortable"
                       variant="outlined"
                       hide-details
-                      max-width="340"
+                      :max-width="isMobile ? undefined : 340"
                       rounded="xl"
                       class="search-field"
                       clearable
@@ -305,7 +305,7 @@
                       density="comfortable"
                       variant="outlined"
                       hide-details
-                      max-width="340"
+                      :max-width="isMobile ? undefined : 340"
                       rounded="xl"
                       class="search-field"
                       clearable
@@ -391,8 +391,8 @@
         </v-col>
       </v-row>
 
-      <v-dialog v-model="historyDialog.show" max-width="860" transition="dialog-bottom-transition">
-        <v-card rounded="xl" class="history-dialog-card">
+      <v-dialog v-model="historyDialog.show" :max-width="isMobile ? '100%' : 860" :fullscreen="isMobile" transition="dialog-bottom-transition" scrollable>
+        <v-card :rounded="isMobile ? '0' : 'xl'" class="history-dialog-card" :class="{ 'history-dialog-card-mobile': isMobile }">
           <v-card-title class="d-flex align-center justify-space-between ga-3 dialog-header">
             <div class="min-w-0">
               <div class="text-h6 font-weight-bold text-truncate">
@@ -411,7 +411,7 @@
 
           <v-divider />
 
-          <v-card-text class="pa-4 pa-md-6">
+          <v-card-text class="pa-4 pa-md-6" :class="{ 'history-dialog-text-mobile': isMobile }">
             <div v-if="historyDialog.transactions.length" class="history-list">
               <v-card
                 v-for="item in historyDialog.transactions"
@@ -477,7 +477,7 @@
 <script setup>
 import { computed, onBeforeUnmount, onMounted, ref, watch } from "vue"
 import { useRouter } from "vue-router"
-import { useTheme } from "vuetify"
+import { useDisplay, useTheme } from "vuetify"
 import AppNavbar from "@/components/AppNavbar.vue"
 import { get_Current_User, is_Moderator } from "@/dataModel/user"
 import { get_All_Reservations } from "@/dataModel/reservation"
@@ -487,12 +487,16 @@ import { get_All_Venues, get_Venue_By_Id } from "@/dataModel/venue"
 
 const router = useRouter()
 const theme = useTheme()
+const display = useDisplay()
 
 const tab = ref("events")
 const eventSearch = ref("")
 const venueSearch = ref("")
 const currentUser = ref(get_Current_User())
 const prefersDark = ref(false)
+const currentTheme = ref("light")
+const isMobile = computed(() => display.smAndDown.value)
+const isTablet = computed(() => display.mdAndDown.value && !display.smAndDown.value)
 
 const historyDialog = ref({
   show: false,
@@ -501,39 +505,51 @@ const historyDialog = ref({
   transactions: [],
 })
 
-let mediaQuery = null
+let storageThemeInterval = null
 
-function applyBrowserThemePreference() {
-  if (typeof window === "undefined" || !window.matchMedia) return
-  prefersDark.value = window.matchMedia("(prefers-color-scheme: dark)").matches
-  theme.global.name.value = prefersDark.value ? "dark" : "light"
+function readStoredTheme() {
+  if (typeof window === "undefined") return "light"
+
+  const savedTheme = window.localStorage.getItem("blassti-theme")
+  return savedTheme === "dark" ? "dark" : "light"
 }
 
-function handleThemePreferenceChange(event) {
-  prefersDark.value = event.matches
-  theme.global.name.value = event.matches ? "dark" : "light"
+function applyStoredTheme() {
+  const savedTheme = readStoredTheme()
+  currentTheme.value = savedTheme
+  prefersDark.value = savedTheme === "dark"
+  theme.global.name.value = savedTheme
+}
+
+function handleStorageThemeChange(event) {
+  if (event.key === "blassti-theme") {
+    applyStoredTheme()
+  }
 }
 
 onMounted(() => {
-  if (typeof window !== "undefined" && window.matchMedia) {
-    mediaQuery = window.matchMedia("(prefers-color-scheme: dark)")
-    applyBrowserThemePreference()
+  applyStoredTheme()
 
-    if (mediaQuery.addEventListener) {
-      mediaQuery.addEventListener("change", handleThemePreferenceChange)
-    } else if (mediaQuery.addListener) {
-      mediaQuery.addListener(handleThemePreferenceChange)
-    }
+  if (typeof window !== "undefined") {
+    window.addEventListener("storage", handleStorageThemeChange)
+
+    storageThemeInterval = window.setInterval(() => {
+      const savedTheme = readStoredTheme()
+
+      if (savedTheme !== currentTheme.value) {
+        applyStoredTheme()
+      }
+    }, 250)
   }
 })
 
 onBeforeUnmount(() => {
-  if (!mediaQuery) return
+  if (typeof window !== "undefined") {
+    window.removeEventListener("storage", handleStorageThemeChange)
+  }
 
-  if (mediaQuery.removeEventListener) {
-    mediaQuery.removeEventListener("change", handleThemePreferenceChange)
-  } else if (mediaQuery.removeListener) {
-    mediaQuery.removeListener(handleThemePreferenceChange)
+  if (storageThemeInterval) {
+    window.clearInterval(storageThemeInterval)
   }
 })
 
@@ -1110,6 +1126,52 @@ function openTransactionHistory(type, group) {
   min-width: 0;
 }
 
+.payments-mobile .page-hero-card,
+.payments-mobile .content-main-card,
+.payments-mobile .login-required-card {
+  border-radius: 22px !important;
+}
+
+.payments-page-mobile {
+  padding-top: 20px !important;
+  padding-left: 12px !important;
+  padding-right: 12px !important;
+  padding-bottom: 24px !important;
+}
+
+.hero-content-mobile {
+  padding: 18px;
+}
+
+.hero-copy-mobile {
+  max-width: 100%;
+}
+
+.hero-chip-group-mobile {
+  width: 100%;
+}
+
+.hero-chip-group-mobile .hero-chip {
+  max-width: 100%;
+}
+
+.summary-pill-group-mobile {
+  width: 100%;
+}
+
+.summary-pill-group-mobile .summary-chip {
+  flex: 1 1 calc(50% - 8px);
+  justify-content: center;
+}
+
+.history-dialog-card-mobile {
+  min-height: 100vh;
+}
+
+.history-dialog-text-mobile {
+  padding-bottom: 24px !important;
+}
+
 .browser-theme-light .page-hero-card,
 .browser-theme-light .login-required-card,
 .browser-theme-light .content-main-card,
@@ -1166,12 +1228,27 @@ function openTransactionHistory(type, group) {
     padding: 22px;
   }
 
+  .hero-chip-group {
+    width: 100%;
+  }
+
+  .search-field {
+    width: 100%;
+  }
+
   .stat-value {
     font-size: 1.8rem !important;
   }
 }
 
 @media (max-width: 600px) {
+  .payments-page {
+    padding-top: 18px !important;
+    padding-left: 10px !important;
+    padding-right: 10px !important;
+    padding-bottom: 22px !important;
+  }
+
   .hero-content {
     padding: 18px;
   }
@@ -1180,12 +1257,52 @@ function openTransactionHistory(type, group) {
     font-size: 1.8rem !important;
   }
 
+  .hero-subtitle {
+    font-size: 0.98rem;
+  }
+
+  .hero-chip {
+    width: 100%;
+    justify-content: flex-start;
+  }
+
+  .summary-chip {
+    width: 100%;
+  }
+
+  .payments-tabs {
+    padding: 4px;
+    border-radius: 16px;
+  }
+
+  .tab-pill {
+    min-height: 44px;
+    font-size: 0.92rem;
+  }
+
   .dialog-header {
     padding: 16px;
   }
 
+  .history-dialog-card {
+    border-radius: 0 !important;
+  }
+
+  .history-item-card {
+    padding: 14px !important;
+  }
+
   .amount-side {
     min-width: 0;
+  }
+
+  .group-stat-row {
+    align-items: flex-start;
+  }
+
+  .group-stat-row strong {
+    max-width: 52%;
+    word-break: break-word;
   }
 }
 </style>
