@@ -122,7 +122,6 @@
         <template #activator="{ props }">
           <v-btn
             v-bind="props"
-            variant="text"
             class="nav-btn"
             :class="{ 'nav-active': isActiveGroup(['/', '/n_mainpage', '/N_Event_Browsing', '/K_mybookings']) }"
           >
@@ -154,7 +153,6 @@
         <template #activator="{ props }">
           <v-btn
             v-bind="props"
-            variant="text"
             class="nav-btn"
             :class="{ 'nav-active': isActiveGroup(['/venueBrowsing', '/O_venueinfo', '/reservations', '/reserved_venues']) }"
           >
@@ -186,7 +184,6 @@
         <template #activator="{ props }">
           <v-btn
             v-bind="props"
-            variant="text"
             class="nav-btn"
             :class="{ 'nav-active': isActiveGroup(['/O_CurrentCarpools', '/F_CarpoolCreate']) }"
           >
@@ -218,7 +215,6 @@
         <template #activator="{ props }">
           <v-btn
             v-bind="props"
-            variant="text"
             class="nav-btn"
             :class="{ 'nav-active': isActiveGroup(['/o_CreateVenue', '/CreateEvent', '/venueRequest', '/stastistics', '/manageVenue', '/payments']) || route.path === '/CreateEvent' || reportsDialog }"
           >
@@ -315,7 +311,6 @@
       <template #activator="{ props }">
         <v-btn
           icon
-          variant="text"
           class="notif-btn mr-1"
           :class="{ 'notif-has-items': unreadCount > 0 }"
           v-bind="props"
@@ -414,7 +409,7 @@
     <template v-if="currentUser">
       <v-menu transition="slide-y-transition" offset="12">
         <template #activator="{ props }">
-          <v-btn v-bind="props" icon variant="text" class="profile-btn">
+          <v-btn v-bind="props" icon class="profile-btn">
             <v-avatar size="40" class="profile-avatar-ring">
               <v-img :src="profileMenuAvatar" cover />
             </v-avatar>
