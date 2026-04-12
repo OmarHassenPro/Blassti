@@ -641,7 +641,7 @@ function defaultUsers() {
       artist_type: "",
       profile_picture: createAvatar("Zeineb Kassentini"),
       description:
-        "Yes, I’m dramatic. Yes, I smile a lot. And yes, I probably overreact — but at least I’m never fake. Kill Count: 5",
+        "Soft heart, big(maybe a little too dramatic) reactions, good vibes. I may be a little dramatic, but that’s part of the charm...Shoutout to LALOU Kill Count: 5",
       contacts: {
         instagram: "@zeineb.kassentini",
         facebook: "zeineb.kassentini",
