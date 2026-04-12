@@ -672,7 +672,7 @@ function defaultUsers() {
       artist_type: "",
       profile_picture: createAvatar("Naim Droulon"),
       description:
-        "I joke around a lot, but don’t let that fool you. I see everything, and I’m more serious than I look. Naim+Kamil Foorever(don't tell Emna) Kill Count: 11",
+        "I joke around a lot, but don’t let that fool you. I see everything, and I’m more serious than I look. Naim+Kamil For life..but Naim+Omar for eternity(don't tell Emna) Kill Count: 11",
       contacts: {
         instagram: "@naim.droulon",
       },
