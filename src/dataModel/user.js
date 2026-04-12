@@ -16,8 +16,7 @@ import {
 const USERS_STORAGE_KEY = "users"
 const CURRENT_USER_STORAGE_KEY = "currentUser"
 const USERS_VERSION_KEY = "users_seed_version"
-const USERS_SEED_VERSION = "v14_real_people_first_person_bios_killcount_family_classmates_extended_amine_added"
-
+const USERS_SEED_VERSION = "v15_real_people_first_person_bios_killcount_family_classmates_extended_amine_nader_update"
 export function createAvatar(seed) {
   return `https://api.dicebear.com/7.x/thumbs/svg?seed=${encodeURIComponent(seed)}`
 }
@@ -490,7 +489,7 @@ function defaultUsers() {
       artist_type: "",
       profile_picture: createAvatar("Nader Dakhlia"),
       description:
-        "I like my space, I don’t force conversations, and I don’t pretend to be social when I’m not. I’d rather be real than likable. Kill Count: UNKNOWN",
+        "I’d rather stay quiet, work hard, and let results speak for themselves. Not everything needs noise to have value. Kill Count: UNKNOWN",
       contacts: {
         linkedin: "nader-dakhlia",
       },
