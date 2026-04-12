@@ -16,7 +16,7 @@ import {
 const USERS_STORAGE_KEY = "users"
 const CURRENT_USER_STORAGE_KEY = "currentUser"
 const USERS_VERSION_KEY = "users_seed_version"
-const USERS_SEED_VERSION = "v13_real_people_first_person_bios_killcount_family_classmates_extended"
+const USERS_SEED_VERSION = "v14_real_people_first_person_bios_killcount_family_classmates_extended_amine_added"
 
 export function createAvatar(seed) {
   return `https://api.dicebear.com/7.x/thumbs/svg?seed=${encodeURIComponent(seed)}`
@@ -211,7 +211,7 @@ function defaultUsers() {
       artist_type: "",
       profile_picture: createAvatar("Omar Hassen"),
       description:
-        "Built on ambition, loyalty, and a mind that never slows down. Kill Count: UNKNOWN",
+        "Built on ambition, loyalty, and a mind that never slows down. Always chasing more, always planning ahead, and for legal reasons, the “Naim + Omar for eternity” statement is fake and should not reach Louka. Kill Count: CLASSIFIED",
       contacts: {
         phone: "+216 52 110 245",
         instagram: "@omar.hassen",
@@ -626,9 +626,9 @@ function defaultUsers() {
     new User({
       id: "user-14",
       account_created_at: "2026-03-09T11:20:00.000Z",
-      first_name: "Zeineb",
+      first_name: "Zayneb",
       last_name: "Kassentini",
-      email: "zeineb.kassentini@blassti.tn",
+      email: "zayneb.kassentini@blassti.tn",
       password: "123",
       gender: "Female",
       date_of_birth: "2004-06-02",
@@ -639,12 +639,12 @@ function defaultUsers() {
       subscribers_count: 0,
       is_artist: false,
       artist_type: "",
-      profile_picture: createAvatar("Zeineb Kassentini"),
+      profile_picture: createAvatar("Zayneb Kassentini"),
       description:
         "Soft heart, big(maybe a little too dramatic) reactions, good vibes. I may be a little dramatic, but that’s part of the charm...Shoutout to LALOU Kill Count: 5",
       contacts: {
-        instagram: "@zeineb.kassentini",
-        facebook: "zeineb.kassentini",
+        instagram: "@zayneb.kassentini",
+        facebook: "zayneb.kassentini",
       },
       subscribed_artist_ids: [],
       joined_event_ids: [],
@@ -979,6 +979,36 @@ function defaultUsers() {
         "I’ve got the ponytail, the props, the laser pointers, the fake tactical gear, and the kind of inventory that makes people ask zero follow-up questions. I’m actually chill though... probably. Kill Count: Classified",
       contacts: {
         instagram: "@youssef.benamara",
+      },
+      subscribed_artist_ids: [],
+      joined_event_ids: [],
+      created_event_ids: [],
+      is_admin: false,
+      is_moderator: false,
+      suspension: null,
+    }),
+
+    new User({
+      id: "user-28",
+      account_created_at: "2026-03-18T09:00:00.000Z",
+      first_name: "Amine",
+      last_name: "Ben Hassouna",
+      email: "amine.benhassouna@medtech.tn",
+      password: "123",
+      gender: "Male",
+      date_of_birth: "1985-01-01",
+      state: "Tunis",
+      city: "Tunis",
+      agree_terms: true,
+      receive_promos: false,
+      subscribers_count: 0,
+      is_artist: false,
+      artist_type: "",
+      profile_picture: createAvatar("Amine Ben Hassouna"),
+      description:
+        "Best ISS professor. Loves Blassti and thinks it deserves to win this year’s ISS. Kill Count: 1",
+      contacts: {
+        email: "amine.benhassouna@medtech.tn",
       },
       subscribed_artist_ids: [],
       joined_event_ids: [],
