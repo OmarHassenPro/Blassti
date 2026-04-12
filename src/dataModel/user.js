@@ -16,7 +16,7 @@ import {
 const USERS_STORAGE_KEY = "users"
 const CURRENT_USER_STORAGE_KEY = "currentUser"
 const USERS_VERSION_KEY = "users_seed_version"
-const USERS_SEED_VERSION = "v15_real_people_first_person_bios_killcount_family_classmates_extended_amine_nader_update"
+const USERS_SEED_VERSION = "v15_real_people_first_person_bios_killcount_update"
 export function createAvatar(seed) {
   return `https://api.dicebear.com/7.x/thumbs/svg?seed=${encodeURIComponent(seed)}`
 }
