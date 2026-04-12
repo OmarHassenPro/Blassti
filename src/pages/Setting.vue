@@ -7,7 +7,7 @@
         <div class="settings-shell__glow settings-shell__glow--one" />
         <div class="settings-shell__glow settings-shell__glow--two" />
 
-        <v-container class="py-8 settings-container" style="max-width: 1100px;">
+        <v-container class="py-5 py-sm-6 py-md-8 px-3 px-sm-4 settings-container" style="max-width: 1100px;">
           <div class="d-flex flex-column ga-6">
             <v-card
               rounded="xl"
@@ -72,7 +72,7 @@
                     variant="tonal"
                     rounded="lg"
                     prepend-icon="mdi-home-outline"
-                    class="action-btn"
+                    class="action-btn hero-action-btn"
                     @click="smartNavigate('/')"
                     @contextmenu="openRouteMenu($event, 'Home', '/')"
                     @touchstart.passive="startLongPress($event, 'Home', '/')"
@@ -87,7 +87,7 @@
                     variant="outlined"
                     rounded="lg"
                     prepend-icon="mdi-lock-reset"
-                    class="action-btn"
+                    class="action-btn hero-action-btn"
                     @click="passwordDialog = true"
                   >
                     Change Password
@@ -98,7 +98,7 @@
                     variant="outlined"
                     rounded="lg"
                     prepend-icon="mdi-delete-outline"
-                    class="action-btn"
+                    class="action-btn hero-action-btn hero-action-btn--danger"
                     @click="deleteAccountDialog = true"
                   >
                     Delete Account
@@ -119,8 +119,64 @@
             </v-alert>
 
             <template v-else>
-              <v-row class="settings-grid">
-                <v-col cols="12" md="4">
+              <div v-if="isCompactView" class="compact-profile-glance mb-6">
+                <v-card rounded="xl" variant="outlined" class="pa-4 pa-sm-5 section-card compact-profile-card">
+                  <div class="d-flex align-center justify-space-between flex-wrap compact-profile-card__top" style="gap: 12px;">
+                    <div class="d-flex align-center compact-profile-card__identity" style="gap: 14px;">
+                      <v-avatar size="68" color="grey-lighten-3" class="profile-avatar compact-profile-avatar">
+                        <v-img
+                          v-if="form.profile_picture"
+                          :src="form.profile_picture"
+                          cover
+                        />
+                        <v-icon v-else size="30">mdi-account</v-icon>
+                      </v-avatar>
+
+                      <div class="min-w-0">
+                        <div class="text-subtitle-1 font-weight-bold text-truncate">
+                          {{ form.first_name || "User" }} {{ form.last_name || "" }}
+                        </div>
+                        <div class="text-body-2 text-medium-emphasis">
+                          {{ computedIsArtist ? "Artist profile" : "Standard profile" }}
+                        </div>
+                      </div>
+                    </div>
+
+                    <v-chip
+                      rounded="pill"
+                      :color="isDirty ? 'warning' : 'success'"
+                      variant="tonal"
+                      :prepend-icon="isDirty ? 'mdi-content-save-alert-outline' : 'mdi-check-circle-outline'"
+                      class="compact-state-chip"
+                    >
+                      {{ isDirty ? "Unsaved" : "Saved" }}
+                    </v-chip>
+                  </div>
+
+                  <div class="d-flex flex-wrap compact-profile-chip-row mt-4" style="gap: 10px;">
+                    <v-chip
+                      rounded="pill"
+                      variant="tonal"
+                      color="primary"
+                      prepend-icon="mdi-email-outline"
+                    >
+                      {{ form.email }}
+                    </v-chip>
+
+                    <v-chip
+                      rounded="pill"
+                      variant="tonal"
+                      :color="computedIsArtist ? 'success' : 'info'"
+                      :prepend-icon="computedIsArtist ? 'mdi-music-circle-outline' : 'mdi-account-outline'"
+                    >
+                      {{ computedIsArtist ? "Artist account" : "Standard account" }}
+                    </v-chip>
+                  </div>
+                </v-card>
+              </div>
+
+              <v-row class="settings-grid" :class="{ 'settings-grid--compact': isCompactView, 'settings-grid--tablet': isTabletView }">
+                <v-col cols="12" md="4" class="settings-sidebar-col">
                   <div class="d-flex flex-column ga-6">
                     <v-card rounded="xl" variant="outlined" class="pa-5 section-card profile-picture-card">
                       <div class="d-flex align-center justify-space-between mb-4 flex-wrap" style="gap: 10px;">
@@ -169,7 +225,7 @@
                         </div>
                       </div>
 
-                      <v-row dense class="mb-3">
+                      <v-row dense class="mb-3 avatar-grid-row">
                         <v-col
                           v-for="avatar in PROFILE_AVATAR_OPTIONS"
                           :key="avatar.label"
@@ -286,7 +342,7 @@
                   </div>
                 </v-col>
 
-                <v-col cols="12" md="8">
+                <v-col cols="12" md="8" class="settings-main-col">
                   <div class="d-flex flex-column ga-6">
                     <v-card rounded="xl" variant="outlined" class="pa-5 section-card">
                       <div class="d-flex align-center justify-space-between mb-4 flex-wrap" style="gap: 10px;">
@@ -564,7 +620,7 @@
                       </v-row>
                     </v-card>
 
-                    <v-card rounded="xl" variant="outlined" class="pa-4 pa-md-5 sticky-action-card">
+                    <v-card rounded="xl" variant="outlined" class="pa-4 pa-md-5 sticky-action-card" :class="{ 'sticky-action-card--compact': isCompactView }">
                       <div class="d-flex align-center justify-space-between flex-wrap" style="gap: 14px;">
                         <div class="d-flex align-center flex-wrap" style="gap: 10px;">
                           <v-chip
@@ -603,7 +659,7 @@
                       </div>
                     </v-card>
 
-                    <div class="d-flex justify-end" style="gap: 12px;">
+                    <div v-if="!isCompactView" class="d-flex justify-end desktop-action-row" style="gap: 12px;">
                       <v-btn
                         variant="text"
                         class="action-btn"
@@ -631,7 +687,45 @@
       </div>
     </v-main>
 
-    <v-dialog v-model="passwordDialog" max-width="520">
+    <transition name="context-fade">
+      <div
+        v-if="currentUser && isCompactView"
+        class="mobile-save-bar"
+        :class="[`theme-${currentTheme}`, { 'mobile-save-bar--dirty': isDirty }]"
+      >
+        <div class="mobile-save-bar__meta">
+          <div class="text-body-2 font-weight-bold">
+            {{ isDirty ? "Unsaved profile changes" : "Profile is up to date" }}
+          </div>
+          <div class="text-caption text-medium-emphasis">
+            {{ isDirty ? "Save or reset before leaving this page." : "Everything has already been saved." }}
+          </div>
+        </div>
+
+        <div class="mobile-save-bar__actions">
+          <v-btn
+            variant="text"
+            density="comfortable"
+            class="action-btn"
+            @click="resetForm"
+          >
+            Reset
+          </v-btn>
+
+          <v-btn
+            color="primary"
+            rounded="lg"
+            class="action-btn mobile-save-bar__save save-btn"
+            @click="saveChanges"
+          >
+            Save
+          </v-btn>
+        </div>
+      </div>
+    </transition>
+
+
+    <v-dialog v-model="passwordDialog" :max-width="isMobileView ? 460 : 520">
       <v-card rounded="xl" :class="['dialog-card', `theme-${currentTheme}`]">
         <v-card-title class="text-h6 font-weight-bold d-flex align-center">
           <v-icon class="me-2" size="20">mdi-lock-reset</v-icon>
@@ -712,7 +806,7 @@
       </v-card>
     </v-dialog>
 
-    <v-dialog v-model="messageDialog.show" max-width="430">
+    <v-dialog v-model="messageDialog.show" :max-width="isMobileView ? 400 : 430">
       <v-card rounded="xl" :class="['dialog-card', `theme-${currentTheme}`]">
         <v-card-title class="text-h6 font-weight-bold d-flex align-center">
           <v-icon class="me-2" size="20">mdi-information-outline</v-icon>
@@ -731,7 +825,7 @@
       </v-card>
     </v-dialog>
 
-    <v-dialog v-model="deleteAccountDialog" max-width="460">
+    <v-dialog v-model="deleteAccountDialog" :max-width="isMobileView ? 420 : 460">
       <v-card rounded="xl" :class="['dialog-card', `theme-${currentTheme}`]">
         <v-card-title class="text-h6 font-weight-bold d-flex align-center">
           <v-icon class="me-2" size="20">mdi-delete-alert-outline</v-icon>
@@ -753,7 +847,7 @@
       </v-card>
     </v-dialog>
 
-    <v-dialog v-model="deleteReasonDialog" max-width="560">
+    <v-dialog v-model="deleteReasonDialog" :max-width="isMobileView ? 480 : 560">
       <v-card rounded="xl" :class="['dialog-card', `theme-${currentTheme}`]">
         <v-card-title class="text-h6 font-weight-bold d-flex align-center">
           <v-icon class="me-2" size="20">mdi-help-circle-outline</v-icon>
@@ -792,7 +886,7 @@
       </v-card>
     </v-dialog>
 
-    <v-dialog v-model="deleteFinalDialog" max-width="480">
+    <v-dialog v-model="deleteFinalDialog" :max-width="isMobileView ? 420 : 480">
       <v-card rounded="xl" :class="['dialog-card', `theme-${currentTheme}`]">
         <v-card-title class="text-h6 font-weight-bold d-flex align-center">
           <v-icon class="me-2" size="20">mdi-alert-outline</v-icon>
@@ -814,7 +908,7 @@
       </v-card>
     </v-dialog>
 
-    <v-dialog v-model="imageEditorDialog" max-width="760">
+    <v-dialog v-model="imageEditorDialog" :max-width="isMobileView ? 520 : 760">
       <v-card rounded="xl" :class="['dialog-card', `theme-${currentTheme}`]">
         <v-card-title class="text-h6 font-weight-bold d-flex align-center">
           <v-icon class="me-2" size="20">mdi-crop</v-icon>
@@ -929,7 +1023,7 @@
 <script setup>
 import { computed, nextTick, onBeforeUnmount, onMounted, reactive, ref } from "vue"
 import { onBeforeRouteLeave, useRouter } from "vue-router"
-import { useTheme } from "vuetify"
+import { useDisplay, useTheme } from "vuetify"
 import AppNavbar from "@/components/AppNavbar.vue"
 import {
   PROFILE_AVATAR_OPTIONS,
@@ -950,6 +1044,7 @@ import {
 
 const router = useRouter()
 const vuetifyTheme = useTheme()
+const display = useDisplay()
 const MAX_IMAGE_SIZE_BYTES = 2 * 1024 * 1024
 const THEME_STORAGE_KEY = "blassti-theme"
 const LONG_PRESS_DURATION = 550
@@ -1019,6 +1114,10 @@ const currentTheme = computed(() => {
 const pageThemeClass = computed(() => {
   return currentTheme.value === "dark" ? "theme-dark" : "theme-light"
 })
+
+const isMobileView = computed(() => display.smAndDown.value)
+const isTabletView = computed(() => display.md.value)
+const isCompactView = computed(() => display.mdAndDown.value)
 
 const computedIsArtist = computed(() => {
   return Boolean(get_User_By_Id(currentUser.value?.id)?.is_artist)
@@ -1549,6 +1648,126 @@ function saveAndLeave() {
   z-index: 2;
 }
 
+.settings-grid {
+  align-items: start;
+}
+
+.settings-sidebar-col,
+.settings-main-col {
+  display: flex;
+  flex-direction: column;
+}
+
+.hero-header {
+  gap: 18px;
+}
+
+.hero-copy {
+  flex: 1 1 420px;
+  min-width: 0;
+}
+
+.hero-actions {
+  flex: 0 1 360px;
+  justify-content: flex-end;
+}
+
+.hero-action-btn {
+  min-height: 44px;
+}
+
+.compact-profile-glance {
+  position: relative;
+  z-index: 2;
+}
+
+.compact-profile-card {
+  overflow: hidden;
+}
+
+.compact-profile-card__top {
+  align-items: center;
+}
+
+.compact-profile-card__identity {
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
+.compact-profile-avatar {
+  flex-shrink: 0;
+}
+
+.compact-profile-chip-row {
+  overflow-x: auto;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+  padding-bottom: 2px;
+}
+
+.compact-profile-chip-row::-webkit-scrollbar {
+  display: none;
+}
+
+.compact-profile-chip-row :deep(.v-chip) {
+  flex: 0 0 auto;
+  max-width: 100%;
+}
+
+.avatar-grid-row {
+  row-gap: 12px;
+}
+
+.desktop-action-row {
+  margin-top: -6px;
+}
+
+.mobile-save-bar {
+  position: fixed;
+  left: 12px;
+  right: 12px;
+  bottom: max(12px, env(safe-area-inset-bottom));
+  z-index: 40;
+  display: none;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 14px 14px calc(14px + env(safe-area-inset-bottom));
+  border-radius: 24px;
+  border: 1px solid rgba(var(--v-border-color), var(--v-border-opacity));
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+  box-shadow: 0 18px 40px rgba(0, 0, 0, 0.18);
+}
+
+.mobile-save-bar.theme-light {
+  background: rgba(255, 255, 255, 0.88);
+}
+
+.mobile-save-bar.theme-dark {
+  background: rgba(12, 16, 24, 0.9);
+}
+
+.mobile-save-bar--dirty {
+  border-color: rgba(var(--v-theme-primary), 0.22);
+}
+
+.mobile-save-bar__meta {
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
+.mobile-save-bar__actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 0 0 auto;
+}
+
+.mobile-save-bar__save {
+  min-width: 108px;
+}
+
 .settings-shell__glow {
   position: absolute;
   border-radius: 999px;
@@ -1825,20 +2044,161 @@ function saveAndLeave() {
   box-shadow: 0 16px 28px rgba(0, 0, 0, 0.18);
 }
 
+@media (max-width: 1264px) {
+  .hero-actions {
+    flex: 1 1 100%;
+    justify-content: flex-start;
+  }
+}
+
 @media (max-width: 960px) {
+  .settings-grid--compact {
+    row-gap: 20px;
+  }
+
+  .settings-sidebar-col {
+    order: 1;
+  }
+
+  .settings-main-col {
+    order: 2;
+  }
+
   .sticky-action-card {
     position: static;
+  }
+
+  .sticky-action-card--compact {
+    margin-bottom: 96px;
+  }
+
+  .mobile-save-bar {
+    display: flex;
+  }
+}
+
+@media (max-width: 760px) {
+  .settings-shell__glow--one {
+    width: 240px;
+    height: 240px;
+    top: 12px;
+    right: -90px;
+  }
+
+  .settings-shell__glow--two {
+    width: 220px;
+    height: 220px;
+    bottom: 90px;
+    left: -110px;
+  }
+
+  .hero-card {
+    border-radius: 26px !important;
+  }
+
+  .hero-title {
+    font-size: clamp(1.8rem, 6vw, 2.25rem) !important;
+    line-height: 1.05;
+  }
+
+  .hero-subtitle {
+    font-size: 0.98rem;
+  }
+
+  .hero-chip-row {
+    display: grid !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    width: 100%;
+  }
+
+  .hero-chip-row :deep(.v-chip) {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .hero-actions {
+    display: grid !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    width: 100%;
+  }
+
+  .hero-action-btn {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .avatar-grid-row {
+    display: flex;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    margin: 0 -4px 12px;
+    padding: 2px 4px 6px;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+
+  .avatar-grid-row::-webkit-scrollbar {
+    display: none;
+  }
+
+  .avatar-grid-row > [class*="v-col"] {
+    flex: 0 0 96px;
+    max-width: 96px;
+    width: 96px;
+    padding-top: 0;
+    padding-bottom: 0;
+  }
+
+  .promo-box {
+    min-height: 60px;
+  }
+
+  .desktop-action-row {
+    display: none !important;
   }
 }
 
 @media (max-width: 600px) {
+  .settings-container {
+    padding-bottom: 110px !important;
+  }
+
   .hero-header,
   .hero-actions {
     width: 100%;
   }
 
-  .action-btn {
+  .hero-chip-row,
+  .hero-actions {
+    grid-template-columns: 1fr;
+  }
+
+  .section-card,
+  .sticky-action-card,
+  .dialog-card {
+    border-radius: 22px !important;
+  }
+
+  .profile-picture-card .avatar-stage {
+    padding: 8px;
+    border-radius: 24px;
+  }
+
+  .mobile-save-bar {
+    left: 10px;
+    right: 10px;
+    bottom: max(10px, env(safe-area-inset-bottom));
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .mobile-save-bar__actions {
     width: 100%;
+    justify-content: stretch;
+  }
+
+  .mobile-save-bar__actions .v-btn {
+    flex: 1 1 0;
   }
 
   .route-context-menu {

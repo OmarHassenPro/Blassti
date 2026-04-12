@@ -288,13 +288,38 @@
             class="workspace-main-col"
           >
             <v-card v-if="workingVenue" rounded="xl" class="pa-4 pa-md-6 surface-card main-editor-card">
-              <div class="d-flex flex-column flex-xl-row justify-space-between align-start ga-4 mb-6">
+              <div v-if="isMobile" class="mobile-workspace-toolbar mb-4">
+                <div class="mobile-workspace-toolbar__header">
+                  <div class="mobile-workspace-toolbar__eyebrow">Workspace</div>
+                  <div class="mobile-workspace-toolbar__title">Quick venue switching</div>
+                </div>
+
+                <div class="mobile-venue-strip">
+                  <v-chip
+                    v-for="venue in filteredManagedVenues"
+                    :key="`mobile-venue-${venue.id}`"
+                    class="mobile-venue-chip"
+                    rounded="xl"
+                    size="large"
+                    :variant="selectedVenueId === venue.id ? 'flat' : 'tonal'"
+                    :color="selectedVenueId === venue.id ? 'primary' : undefined"
+                    @click="selectVenue(venue.id)"
+                  >
+                    <v-avatar start size="26" rounded="lg">
+                      <v-img :src="venue.image" cover />
+                    </v-avatar>
+                    {{ venue.title }}
+                  </v-chip>
+                </div>
+              </div>
+
+              <div class="d-flex flex-column flex-xl-row justify-space-between align-start ga-4 mb-6 workspace-header">
                 <div class="d-flex align-start ga-3">
                   <v-btn
                     icon
                     variant="tonal"
                     color="primary"
-                    class="workspace-sidebar-reveal d-none d-md-inline-flex"
+                    class="workspace-sidebar-reveal"
                     @click="openVenueBrowser"
                   >
                     <v-icon size="20">mdi-menu-open</v-icon>
@@ -343,12 +368,41 @@
                 </div>
               </div>
 
-              <v-tabs v-model="tab" color="primary" class="mb-6 polished-tabs" grow>
-                <v-tab value="pricing"><v-icon start size="18">mdi-cash-multiple</v-icon>Pricing</v-tab>
-                <v-tab value="timeline"><v-icon start size="18">mdi-calendar-clock-outline</v-icon>Timetable</v-tab>
-                <v-tab value="images"><v-icon start size="18">mdi-image-multiple-outline</v-icon>Pictures</v-tab>
-                <v-tab value="info"><v-icon start size="18">mdi-information-outline</v-icon>Info</v-tab>
-              </v-tabs>
+              <div class="mb-6">
+                <v-slide-group
+                  v-if="isMobile"
+                  v-model="tab"
+                  class="mobile-tab-strip"
+                  selected-class="mobile-tab-chip--selected"
+                  show-arrows
+                >
+                  <v-slide-group-item
+                    v-for="tabItem in tabItems"
+                    :key="tabItem.value"
+                    :value="tabItem.value"
+                    v-slot="{ toggle, isSelected }"
+                  >
+                    <v-chip
+                      class="mobile-tab-chip me-2"
+                      rounded="xl"
+                      size="large"
+                      :color="isSelected ? 'primary' : undefined"
+                      :variant="isSelected ? 'flat' : 'tonal'"
+                      @click="toggle"
+                    >
+                      <v-icon start size="18">{{ tabItem.icon }}</v-icon>
+                      {{ tabItem.label }}
+                    </v-chip>
+                  </v-slide-group-item>
+                </v-slide-group>
+
+                <v-tabs v-else v-model="tab" color="primary" class="polished-tabs" :grow="!isTablet">
+                  <v-tab value="pricing"><v-icon start size="18">mdi-cash-multiple</v-icon>Pricing</v-tab>
+                  <v-tab value="timeline"><v-icon start size="18">mdi-calendar-clock-outline</v-icon>Timetable</v-tab>
+                  <v-tab value="images"><v-icon start size="18">mdi-image-multiple-outline</v-icon>Pictures</v-tab>
+                  <v-tab value="info"><v-icon start size="18">mdi-information-outline</v-icon>Info</v-tab>
+                </v-tabs>
+              </div>
 
               <v-window v-model="tab">
               <!-- PRICING -->
@@ -414,7 +468,7 @@
                 <v-row>
                   <v-col cols="12" lg="9">
                     <v-card rounded="xl" variant="outlined" class="pa-4 pa-md-5 clean-section-card mb-4">
-                      <div class="d-flex flex-wrap justify-space-between align-center ga-3 mb-4">
+                      <div class="d-flex flex-wrap justify-space-between align-center ga-3 mb-4 timeline-topbar">
                         <div>
                           <div class="text-h6 font-weight-bold">Availability timeline</div>
                           <div class="text-body-2 text-medium-emphasis">
@@ -422,7 +476,7 @@
                           </div>
                         </div>
 
-                        <div class="d-flex ga-2 flex-wrap">
+                        <div class="d-flex ga-2 flex-wrap timeline-nav-actions">
                           <v-btn variant="outlined" rounded="lg" prepend-icon="mdi-arrow-left" @click="scrollTimeline(-1200)">
                             Previous days
                           </v-btn>
@@ -430,6 +484,21 @@
                             Next days
                           </v-btn>
                         </div>
+                      </div>
+
+                      <div v-if="isMobile" class="timeline-mobile-hints mb-4">
+                        <v-chip size="small" color="info" variant="tonal">
+                          <v-icon start size="14">mdi-hand-back-right-outline</v-icon>
+                          Tap to select
+                        </v-chip>
+                        <v-chip size="small" color="secondary" variant="tonal">
+                          <v-icon start size="14">mdi-gesture-tap-hold</v-icon>
+                          Hold for actions
+                        </v-chip>
+                        <v-chip size="small" color="primary" variant="tonal">
+                          <v-icon start size="14">mdi-swap-horizontal</v-icon>
+                          Swipe timeline
+                        </v-chip>
                       </div>
 
                       <v-row class="mb-4">
@@ -505,7 +574,7 @@
                   </v-col>
 
                   <v-col cols="12" lg="3">
-                    <v-card rounded="xl" variant="outlined" class="pa-4 pa-md-5 clean-section-card sticky-panel mb-4">
+                    <v-card rounded="xl" variant="outlined" class="pa-4 pa-md-5 clean-section-card sticky-panel mb-4 timeline-side-panel">
                       <div class="text-h6 font-weight-bold mb-4">Add administration slot</div>
 
                       <v-select
@@ -963,6 +1032,8 @@ const display = useDisplay()
 
 const THEME_STORAGE_KEY = "blassti-theme"
 const isMobile = computed(() => display.mdAndDown.value)
+const isTablet = computed(() => display.smAndDown.value)
+const isPhone = computed(() => display.xs.value)
 const currentTheme = computed(() => (theme.global.name.value === "light" ? "light" : "dark"))
 
 const themeCssVars = computed(() => {
@@ -1051,6 +1122,19 @@ const slotTypes = [
 ]
 
 const slotForm = ref(defaultSlotForm())
+
+const tabItems = [
+  { value: "pricing", label: "Pricing", icon: "mdi-cash-multiple" },
+  { value: "timeline", label: "Timetable", icon: "mdi-calendar-clock-outline" },
+  { value: "images", label: "Pictures", icon: "mdi-image-multiple-outline" },
+  { value: "info", label: "Info", icon: "mdi-information-outline" },
+]
+
+const dayColumnWidth = computed(() => {
+  if (isPhone.value) return 138
+  if (isTablet.value) return 164
+  return sidebarCollapsed.value ? 246 : 210
+})
 
 function defaultSlotForm() {
   const today = formatDateInput(new Date())
@@ -1420,7 +1504,7 @@ const timeSlots = computed(() => {
 })
 
 const timelineGridStyle = computed(() => ({
-  gridTemplateColumns: `110px repeat(${days.value.length}, ${sidebarCollapsed.value ? 246 : 210}px)`,
+  gridTemplateColumns: `110px repeat(${days.value.length}, ${dayColumnWidth.value}px)`,
 }))
 
 const venueReservations = computed(() => {
@@ -1591,7 +1675,7 @@ function scrollToExactDate() {
     return
   }
 
-  const leftOffset = 110 + dayIndex * 210
+  const leftOffset = 110 + dayIndex * dayColumnWidth.value
   timelineScroller.value.scrollTo({
     left: Math.max(0, leftOffset - 220),
     behavior: "smooth",
@@ -2190,6 +2274,14 @@ watch(workingVenue, value => {
     toggleVenueSidebar(false)
   }
 })
+
+watch(isMobile, value => {
+  if (!workingVenue.value) return
+
+  if (value) {
+    sidebarCollapsed.value = true
+  }
+})
 </script>
 
 <style scoped>
@@ -2723,6 +2815,91 @@ watch(workingVenue, value => {
   }
 }
 
+
+.workspace-header {
+  position: relative;
+}
+
+.mobile-workspace-toolbar {
+  border: 1px solid var(--surface-border);
+  background: linear-gradient(180deg, var(--surface-secondary), rgba(255,255,255,0.01));
+  border-radius: 22px;
+  padding: 14px;
+}
+
+.mobile-workspace-toolbar__header {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-bottom: 12px;
+}
+
+.mobile-workspace-toolbar__eyebrow {
+  font-size: 0.74rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  font-weight: 800;
+  color: var(--hero-badge-color);
+}
+
+.mobile-workspace-toolbar__title {
+  font-size: 1rem;
+  font-weight: 800;
+  color: var(--text-strong);
+}
+
+.mobile-venue-strip {
+  display: flex;
+  gap: 10px;
+  overflow-x: auto;
+  padding-bottom: 2px;
+  scrollbar-width: none;
+}
+
+.mobile-venue-strip::-webkit-scrollbar {
+  display: none;
+}
+
+.mobile-venue-chip {
+  flex: 0 0 auto;
+  min-height: 46px;
+  font-weight: 700;
+}
+
+.mobile-tab-strip {
+  width: 100%;
+}
+
+.mobile-tab-chip {
+  min-height: 46px;
+  font-weight: 700;
+}
+
+.timeline-topbar {
+  align-items: flex-start;
+}
+
+.timeline-nav-actions {
+  justify-content: flex-end;
+}
+
+.timeline-mobile-hints {
+  display: flex;
+  gap: 8px;
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  padding-bottom: 2px;
+  scrollbar-width: none;
+}
+
+.timeline-mobile-hints::-webkit-scrollbar {
+  display: none;
+}
+
+.timeline-side-panel {
+  overflow: hidden;
+}
+
 @media (max-width: 1279px) {
   .sticky-panel {
     position: static;
@@ -2746,6 +2923,31 @@ watch(workingVenue, value => {
   .manage-page {
     padding-left: 4px;
     padding-right: 4px;
+  }
+
+  .workspace-header {
+    gap: 18px;
+  }
+
+  .workspace-sidebar-col {
+    order: 2;
+  }
+
+  .workspace-main-col {
+    order: 1;
+  }
+
+  .timeline-nav-actions {
+    width: 100%;
+    justify-content: stretch;
+  }
+
+  .timeline-nav-actions > * {
+    flex: 1 1 0;
+  }
+
+  .timeline-side-panel {
+    border-radius: 22px;
   }
 
   .hero-copy,
@@ -2790,6 +2992,38 @@ watch(workingVenue, value => {
     line-height: 1.18;
   }
 
+  .main-editor-card {
+    padding: 16px !important;
+    border-radius: 22px !important;
+  }
+
+  .workspace-sidebar-reveal {
+    width: 42px;
+    height: 42px;
+  }
+
+  .timeline-scroller {
+    border-radius: 18px;
+  }
+
+  .timeline-grid {
+    font-size: 0.86rem;
+  }
+
+  .slot-cell {
+    min-height: 58px;
+    font-size: 0.74rem;
+  }
+
+  .day-header {
+    padding: 10px 8px;
+    font-size: 0.8rem;
+  }
+
+  .time-label {
+    font-size: 0.76rem;
+  }
+
   .hero-subtitle {
     font-size: 0.95rem;
   }
@@ -2811,10 +3045,6 @@ watch(workingVenue, value => {
 @media (max-width: 959px) {
   .collapsed-sidebar-rail {
     display: none;
-  }
-
-  .workspace-sidebar-reveal {
-    display: inline-flex !important;
   }
 
   .hero-title {

@@ -24,638 +24,1639 @@
         >
           <v-card-text class="pa-5 pa-md-7">
             <v-row align="center" class="ga-0">
-              <v-col cols="12" md="8">
-                <div class="d-flex align-start align-md-center flex-column flex-md-row ga-4">
-                  <div class="hero-icon-wrap">
-                    <v-icon size="34">mdi-car-multiple</v-icon>
+              <v-col cols="12" lg="8">
+                <div class="hero-shell">
+                  <div class="d-flex align-start align-md-center flex-column flex-md-row ga-4 hero-main-row">
+                    <div class="hero-icon-wrap">
+                      <v-icon size="34">mdi-car-multiple</v-icon>
+                    </div>
+
+                    <div class="hero-copy">
+                      <div class="hero-kicker mb-2">
+                        Rides made simple
+                      </div>
+
+                      <div class="text-h4 text-md-h3 font-weight-black hero-title mb-1">
+                        Carpools
+                      </div>
+
+                      <div class="text-subtitle-1 hero-subtitle mb-4">
+                        Find or create a carpool for upcoming events
+                      </div>
+
+                      <div class="d-flex flex-column flex-sm-row flex-wrap ga-2 carpool-actions">
+                        <v-chip
+                          size="small"
+                          variant="flat"
+                          class="hero-chip"
+                        >
+                          <v-icon start size="16">mdi-road-variant</v-icon>
+                          Shared rides
+                        </v-chip>
+
+                        <v-chip
+                          size="small"
+                          variant="flat"
+                          class="hero-chip"
+                        >
+                          <v-icon start size="16">mdi-ticket-confirmation-outline</v-icon>
+                          Event-linked
+                        </v-chip>
+
+                        <v-chip
+                          size="small"
+                          variant="flat"
+                          class="hero-chip"
+                        >
+                          <v-icon start size="16">mdi-account-group-outline</v-icon>
+                          Easy joining
+                        </v-chip>
+
+                        <v-chip
+                          size="small"
+                          variant="flat"
+                          class="hero-chip"
+                        >
+                          <v-icon start size="16">mdi-theme-light-dark</v-icon>
+                          Theme synced
+                        </v-chip>
+                      </div>
+                    </div>
                   </div>
 
-                  <div>
-                    <div class="text-h4 text-md-h3 font-weight-black hero-title mb-1">
-                      Carpools
-                    </div>
+                  <div
+                    v-if="!isDesktop"
+                    class="hero-compact-actions mt-5"
+                  >
+                    <v-btn
+                      color="primary"
+                      variant="flat"
+                      rounded="lg"
+                      class="text-none"
+                      prepend-icon="mdi-magnify"
+                      @click="switchToBrowse"
+                    >
+                      Browse rides
+                    </v-btn>
 
-                    <div class="text-subtitle-1 hero-subtitle mb-4">
-                      Find or create a carpool for upcoming events
-                    </div>
-
-                    <div class="d-flex flex-column flex-sm-row flex-wrap ga-2 carpool-actions">
-                      <v-chip
-                        size="small"
-                        variant="flat"
-                        class="hero-chip"
-                      >
-                        <v-icon start size="16">mdi-road-variant</v-icon>
-                        Shared rides
-                      </v-chip>
-
-                      <v-chip
-                        size="small"
-                        variant="flat"
-                        class="hero-chip"
-                      >
-                        <v-icon start size="16">mdi-ticket-confirmation-outline</v-icon>
-                        Event-linked
-                      </v-chip>
-
-                      <v-chip
-                        size="small"
-                        variant="flat"
-                        class="hero-chip"
-                      >
-                        <v-icon start size="16">mdi-account-group-outline</v-icon>
-                        Easy joining
-                      </v-chip>
-
-                      <v-chip
-                        size="small"
-                        variant="flat"
-                        class="hero-chip"
-                      >
-                        <v-icon start size="16">mdi-theme-light-dark</v-icon>
-                        Theme synced
-                      </v-chip>
-                    </div>
+                    <v-btn
+                      variant="tonal"
+                      rounded="lg"
+                      class="text-none"
+                      prepend-icon="mdi-plus"
+                      @click="switchToCreate"
+                    >
+                      Create one
+                    </v-btn>
                   </div>
                 </div>
               </v-col>
 
-              <v-col cols="12" md="4">
-                <v-row class="mt-4 mt-md-0" dense>
-                  <v-col cols="6">
-                    <v-card class="stat-card" rounded="xl" variant="tonal">
-                      <v-card-text class="pa-4">
-                        <div class="stat-label">Available</div>
-                        <div class="stat-value">{{ availableCarpoolsCount }}</div>
-                      </v-card-text>
-                    </v-card>
-                  </v-col>
+              <v-col cols="12" lg="4">
+                <template v-if="isDesktop">
+                  <v-row class="mt-4 mt-lg-0" dense>
+                    <v-col cols="6">
+                      <v-card class="stat-card" rounded="xl" variant="tonal">
+                        <v-card-text class="pa-4">
+                          <div class="stat-label">Available</div>
+                          <div class="stat-value">{{ availableCarpoolsCount }}</div>
+                        </v-card-text>
+                      </v-card>
+                    </v-col>
 
-                  <v-col cols="6">
-                    <v-card class="stat-card" rounded="xl" variant="tonal">
-                      <v-card-text class="pa-4">
-                        <div class="stat-label">All carpools</div>
-                        <div class="stat-value">{{ searchableCarpools.length }}</div>
-                      </v-card-text>
-                    </v-card>
-                  </v-col>
+                    <v-col cols="6">
+                      <v-card class="stat-card" rounded="xl" variant="tonal">
+                        <v-card-text class="pa-4">
+                          <div class="stat-label">All carpools</div>
+                          <div class="stat-value">{{ searchableCarpools.length }}</div>
+                        </v-card-text>
+                      </v-card>
+                    </v-col>
 
-                  <v-col cols="6">
-                    <v-card class="stat-card" rounded="xl" variant="tonal">
-                      <v-card-text class="pa-4">
-                        <div class="stat-label">Events</div>
-                        <div class="stat-value">{{ eventItems.length }}</div>
-                      </v-card-text>
-                    </v-card>
-                  </v-col>
+                    <v-col cols="6">
+                      <v-card class="stat-card" rounded="xl" variant="tonal">
+                        <v-card-text class="pa-4">
+                          <div class="stat-label">Events</div>
+                          <div class="stat-value">{{ eventItems.length }}</div>
+                        </v-card-text>
+                      </v-card>
+                    </v-col>
 
-                  <v-col cols="6">
-                    <v-card class="stat-card" rounded="xl" variant="tonal">
+                    <v-col cols="6">
+                      <v-card class="stat-card" rounded="xl" variant="tonal">
+                        <v-card-text class="pa-4">
+                          <div class="stat-label">Venues</div>
+                          <div class="stat-value">{{ venueFilterItems.length - 1 }}</div>
+                        </v-card-text>
+                      </v-card>
+                    </v-col>
+                  </v-row>
+                </template>
+
+                <template v-else>
+                  <div class="hero-stats-rail mt-5 mt-lg-0">
+                    <v-card
+                      v-for="stat in heroStats"
+                      :key="stat.label"
+                      class="stat-card stat-card--rail"
+                      rounded="xl"
+                      variant="tonal"
+                    >
                       <v-card-text class="pa-4">
-                        <div class="stat-label">Venues</div>
-                        <div class="stat-value">{{ venueFilterItems.length - 1 }}</div>
+                        <div class="stat-label">{{ stat.label }}</div>
+                        <div class="stat-value">{{ stat.value }}</div>
                       </v-card-text>
                     </v-card>
-                  </v-col>
-                </v-row>
+                  </div>
+                </template>
               </v-col>
             </v-row>
           </v-card-text>
         </v-card>
 
-        <v-row class="align-start">
-          <!-- LEFT -->
-          <v-col cols="12" md="4">
-            <v-card
-              rounded="xl"
-              variant="outlined"
-              class="glass-card sticky-card"
-              :class="isDarkTheme ? 'glass-card--dark' : 'glass-card--light'"
-            >
-              <div class="section-topbar" />
+        <!-- DESKTOP -->
+        <template v-if="isDesktop">
+          <v-row class="align-start">
+            <!-- LEFT -->
+            <v-col cols="12" lg="4">
+              <v-card
+                rounded="xl"
+                variant="outlined"
+                class="glass-card sticky-card"
+                :class="isDarkTheme ? 'glass-card--dark' : 'glass-card--light'"
+              >
+                <div class="section-topbar" />
 
-              <v-card-title class="pa-5 pb-2">
-                <div class="d-flex align-center ga-3">
-                  <div class="title-icon">
-                    <v-icon size="22">mdi-plus-circle-outline</v-icon>
-                  </div>
-
-                  <div>
-                    <div class="text-h6 font-weight-bold section-title">
-                      Create a carpool
+                <v-card-title class="pa-5 pb-2">
+                  <div class="d-flex align-center ga-3">
+                    <div class="title-icon">
+                      <v-icon size="22">mdi-plus-circle-outline</v-icon>
                     </div>
-                    <div class="text-caption section-subtitle">
-                      Fill in the ride details and publish it instantly
-                    </div>
-                  </div>
-                </div>
-              </v-card-title>
 
-              <v-card-text class="pa-5 pt-3">
-                <v-card
-                  rounded="lg"
-                  variant="tonal"
-                  class="helper-card mb-5"
-                >
-                  <v-card-text class="py-3 px-4">
-                    <div class="d-flex align-start ga-3">
-                      <v-icon size="20" class="mt-1 helper-icon">
-                        mdi-information-outline
-                      </v-icon>
-
-                      <div class="text-body-2 helper-text">
-                        Choose an event, set your departure details, then select one
-                        of your saved contact methods so people can reach you after joining.
+                    <div>
+                      <div class="text-h6 font-weight-bold section-title">
+                        Create a carpool
+                      </div>
+                      <div class="text-caption section-subtitle">
+                        Fill in the ride details and publish it instantly
                       </div>
                     </div>
-                  </v-card-text>
-                </v-card>
-
-                <div class="field-label">
-                  <v-icon size="16" class="mr-1">mdi-calendar-star</v-icon>
-                  Event
-                </div>
-
-                <v-select
-                  v-model="form.event_id"
-                  density="comfortable"
-                  variant="outlined"
-                  :items="eventItems"
-                  item-title="title"
-                  item-value="id"
-                  placeholder="Select event"
-                  hide-details
-                  class="mb-4 polished-field"
-                  color="primary"
-                  rounded="lg"
-                  prepend-inner-icon="mdi-ticket-outline"
-                />
-
-                <div class="field-label">
-                  <v-icon size="16" class="mr-1">mdi-map-marker-radius-outline</v-icon>
-                  Departure location
-                </div>
-
-                <v-text-field
-                  v-model="form.departure_location"
-                  density="comfortable"
-                  variant="outlined"
-                  hide-details
-                  class="mb-4 polished-field"
-                  color="primary"
-                  rounded="lg"
-                  prepend-inner-icon="mdi-map-marker-outline"
-                  placeholder="Ex: MedTech campus, downtown, Mall parking..."
-                />
-
-                <div class="field-label">
-                  <v-icon size="16" class="mr-1">mdi-clock-outline</v-icon>
-                  Time of going
-                </div>
-
-                <v-text-field
-                  v-model="form.time_of_going"
-                  density="comfortable"
-                  variant="outlined"
-                  type="time"
-                  hide-details
-                  class="mb-4 polished-field"
-                  color="primary"
-                  rounded="lg"
-                  prepend-inner-icon="mdi-timer-outline"
-                />
-
-                <v-row class="mb-4">
-                  <v-col cols="6">
-                    <div class="field-label">
-                      <v-icon size="16" class="mr-1">mdi-seat-passenger</v-icon>
-                      Available spots
-                    </div>
-
-                    <v-select
-                      v-model="form.total_spots"
-                      density="comfortable"
-                      variant="outlined"
-                      :items="[1, 2, 3, 4, 5]"
-                      hide-details
-                      color="primary"
-                      rounded="lg"
-                      class="polished-field"
-                      prepend-inner-icon="mdi-account-multiple-outline"
-                    />
-                  </v-col>
-
-                  <v-col cols="6">
-                    <div class="field-label">
-                      <v-icon size="16" class="mr-1">mdi-calendar-clock-outline</v-icon>
-                      Deadline to join
-                    </div>
-
-                    <v-text-field
-                      v-model="form.deadline"
-                      density="comfortable"
-                      variant="outlined"
-                      type="date"
-                      hide-details
-                      color="primary"
-                      rounded="lg"
-                      class="polished-field"
-                      prepend-inner-icon="mdi-calendar-end"
-                    />
-                  </v-col>
-                </v-row>
-
-                <div class="field-label">
-                  <v-icon size="16" class="mr-1">mdi-message-text-outline</v-icon>
-                  How people can contact you
-                </div>
-
-                <v-select
-                  v-model="form.contact_method"
-                  density="comfortable"
-                  variant="outlined"
-                  :items="contactMethodItems"
-                  item-title="title"
-                  item-value="value"
-                  hide-details
-                  class="mb-4 polished-field"
-                  color="primary"
-                  rounded="lg"
-                  :disabled="contactMethodItems.length === 0"
-                  prepend-inner-icon="mdi-account-voice"
-                />
-
-                <v-expand-transition>
-                  <v-alert
-                    v-if="contactMethodItems.length === 0"
-                    type="warning"
-                    variant="tonal"
-                    class="mb-4"
-                    rounded="lg"
-                    border="start"
-                  >
-                    Add a phone number, Instagram, or Facebook to your profile settings first.
-                  </v-alert>
-                </v-expand-transition>
-
-                <div class="d-flex align-center justify-space-between mb-1">
-                  <div class="field-label mb-0">
-                    <v-icon size="16" class="mr-1">mdi-note-text-outline</v-icon>
-                    Note (max 100 characters)
                   </div>
+                </v-card-title>
 
-                  <v-chip
-                    size="x-small"
-                    variant="text"
-                    class="note-counter-chip"
-                  >
-                    {{ noteLength }}/100
-                  </v-chip>
-                </div>
-
-                <v-text-field
-                  v-model="form.note"
-                  density="comfortable"
-                  variant="outlined"
-                  hide-details
-                  maxlength="100"
-                  counter="100"
-                  class="mb-5 polished-field"
-                  color="primary"
-                  rounded="lg"
-                  prepend-inner-icon="mdi-text-short"
-                  placeholder="Ex: Leaving early, no smoking, meeting by main entrance..."
-                />
-
-                <v-card
-                  rounded="lg"
-                  variant="tonal"
-                  class="summary-card mb-5"
-                >
-                  <v-card-text class="py-3 px-4">
-                    <div class="summary-title mb-2">
-                      <v-icon size="16" class="mr-1">mdi-clipboard-text-outline</v-icon>
-                      Quick summary
-                    </div>
-
-                    <div class="summary-line">
-                      <span class="summary-key">Selected event:</span>
-                      <span class="summary-value">{{ selectedFormEventTitle }}</span>
-                    </div>
-
-                    <div class="summary-line">
-                      <span class="summary-key">Spots:</span>
-                      <span class="summary-value">{{ form.total_spots }}</span>
-                    </div>
-
-                    <div class="summary-line">
-                      <span class="summary-key">Contact method:</span>
-                      <span class="summary-value">{{ selectedContactMethodTitle }}</span>
-                    </div>
-                  </v-card-text>
-                </v-card>
-
-                <div class="d-flex flex-column ga-3">
-                  <v-btn
-                    block
-                    color="primary"
-                    variant="flat"
-                    rounded="lg"
-                    size="large"
-                    class="create-btn text-none"
-                    @click="createCarpool"
-                    :disabled="!currentUser || contactMethodItems.length === 0"
-                    prepend-icon="mdi-plus"
-                  >
-                    Create carpool
-                  </v-btn>
-
-                  <div class="text-caption form-footer-text">
-                    Your existing logic and data flow stay intact — this is just a cleaner UI layer.
-                  </div>
-                </div>
-              </v-card-text>
-            </v-card>
-          </v-col>
-
-          <!-- RIGHT -->
-          <v-col cols="12" md="8">
-            <v-card
-              rounded="xl"
-              variant="outlined"
-              class="glass-card mb-4"
-              :class="isDarkTheme ? 'glass-card--dark' : 'glass-card--light'"
-            >
-              <v-card-text class="pa-5">
-                <div class="d-flex flex-column flex-lg-row align-lg-center ga-3 mb-4">
-                  <div>
-                    <div class="text-h6 font-weight-bold section-title">
-                      Browse carpools
-                    </div>
-                    <div class="text-caption section-subtitle">
-                      Filter rides by event, venue, and availability
-                    </div>
-                  </div>
-
-                  <v-spacer />
-
-                  <v-chip
-                    variant="tonal"
-                    rounded="pill"
-                    class="results-chip"
-                  >
-                    <v-icon start size="16">mdi-filter-outline</v-icon>
-                    {{ filteredCarpools.length }} result<span v-if="filteredCarpools.length !== 1">s</span>
-                  </v-chip>
-                </div>
-
-                <v-row>
-                  <v-col cols="12" md="5">
-                    <v-select
-                      v-model="selectedEventId"
-                      density="comfortable"
-                      variant="outlined"
-                      :items="eventFilterItems"
-                      item-title="title"
-                      item-value="id"
-                      label="Filter by events"
-                      hide-details
-                      class="polished-field"
-                      color="primary"
-                      rounded="lg"
-                      prepend-inner-icon="mdi-ticket-outline"
-                    />
-                  </v-col>
-
-                  <v-col cols="12" md="5">
-                    <v-select
-                      v-model="selectedVenueId"
-                      density="comfortable"
-                      variant="outlined"
-                      :items="venueFilterItems"
-                      item-title="title"
-                      item-value="id"
-                      label="Filter by venues"
-                      hide-details
-                      class="polished-field"
-                      color="primary"
-                      rounded="lg"
-                      prepend-inner-icon="mdi-office-building-outline"
-                    />
-                  </v-col>
-
-                  <v-col cols="12" md="2" class="d-flex align-center">
-                    <v-checkbox
-                      v-model="onlyAvailable"
-                      hide-details
-                      density="comfortable"
-                      label="Only available"
-                      class="filter-checkbox mt-1 mt-md-0"
-                      color="primary"
-                    />
-                  </v-col>
-                </v-row>
-              </v-card-text>
-            </v-card>
-
-            <v-card
-              rounded="xl"
-              variant="outlined"
-              class="glass-card"
-              :class="isDarkTheme ? 'glass-card--dark' : 'glass-card--light'"
-            >
-              <v-card-text class="pa-5">
-                <v-fade-transition group>
+                <v-card-text class="pa-5 pt-3">
                   <v-card
-                    v-for="carpool in filteredCarpools"
-                    :key="carpool.id"
-                    variant="outlined"
-                    rounded="xl"
-                    class="pa-4 pa-md-5 mb-4 inner-card carpool-item"
+                    rounded="lg"
+                    variant="tonal"
+                    class="helper-card mb-5"
                   >
-                    <div class="d-flex justify-space-between align-start flex-wrap ga-3 mb-4">
+                    <v-card-text class="py-3 px-4">
                       <div class="d-flex align-start ga-3">
-                        <div class="carpool-badge">
-                          <v-icon size="22">mdi-car-estate</v-icon>
+                        <v-icon size="20" class="mt-1 helper-icon">
+                          mdi-information-outline
+                        </v-icon>
+
+                        <div class="text-body-2 helper-text">
+                          Choose an event, set your departure details, then select one
+                          of your saved contact methods so people can reach you after joining.
+                        </div>
+                      </div>
+                    </v-card-text>
+                  </v-card>
+
+                  <div class="field-label">
+                    <v-icon size="16" class="mr-1">mdi-calendar-star</v-icon>
+                    Event
+                  </div>
+
+                  <v-select
+                    v-model="form.event_id"
+                    density="comfortable"
+                    variant="outlined"
+                    :items="eventItems"
+                    item-title="title"
+                    item-value="id"
+                    placeholder="Select event"
+                    hide-details
+                    class="mb-4 polished-field"
+                    color="primary"
+                    rounded="lg"
+                    prepend-inner-icon="mdi-ticket-outline"
+                  />
+
+                  <div class="field-label">
+                    <v-icon size="16" class="mr-1">mdi-map-marker-radius-outline</v-icon>
+                    Departure location
+                  </div>
+
+                  <v-text-field
+                    v-model="form.departure_location"
+                    density="comfortable"
+                    variant="outlined"
+                    hide-details
+                    class="mb-4 polished-field"
+                    color="primary"
+                    rounded="lg"
+                    prepend-inner-icon="mdi-map-marker-outline"
+                    placeholder="Ex: MedTech campus, downtown, Mall parking..."
+                  />
+
+                  <div class="field-label">
+                    <v-icon size="16" class="mr-1">mdi-clock-outline</v-icon>
+                    Time of going
+                  </div>
+
+                  <v-text-field
+                    v-model="form.time_of_going"
+                    density="comfortable"
+                    variant="outlined"
+                    type="time"
+                    hide-details
+                    class="mb-4 polished-field"
+                    color="primary"
+                    rounded="lg"
+                    prepend-inner-icon="mdi-timer-outline"
+                  />
+
+                  <v-row class="mb-4">
+                    <v-col cols="6">
+                      <div class="field-label">
+                        <v-icon size="16" class="mr-1">mdi-seat-passenger</v-icon>
+                        Available spots
+                      </div>
+
+                      <v-select
+                        v-model="form.total_spots"
+                        density="comfortable"
+                        variant="outlined"
+                        :items="[1, 2, 3, 4, 5]"
+                        hide-details
+                        color="primary"
+                        rounded="lg"
+                        class="polished-field"
+                        prepend-inner-icon="mdi-account-multiple-outline"
+                      />
+                    </v-col>
+
+                    <v-col cols="6">
+                      <div class="field-label">
+                        <v-icon size="16" class="mr-1">mdi-calendar-clock-outline</v-icon>
+                        Deadline to join
+                      </div>
+
+                      <v-text-field
+                        v-model="form.deadline"
+                        density="comfortable"
+                        variant="outlined"
+                        type="date"
+                        hide-details
+                        color="primary"
+                        rounded="lg"
+                        class="polished-field"
+                        prepend-inner-icon="mdi-calendar-end"
+                      />
+                    </v-col>
+                  </v-row>
+
+                  <div class="field-label">
+                    <v-icon size="16" class="mr-1">mdi-message-text-outline</v-icon>
+                    How people can contact you
+                  </div>
+
+                  <v-select
+                    v-model="form.contact_method"
+                    density="comfortable"
+                    variant="outlined"
+                    :items="contactMethodItems"
+                    item-title="title"
+                    item-value="value"
+                    hide-details
+                    class="mb-4 polished-field"
+                    color="primary"
+                    rounded="lg"
+                    :disabled="contactMethodItems.length === 0"
+                    prepend-inner-icon="mdi-account-voice"
+                  />
+
+                  <v-expand-transition>
+                    <v-alert
+                      v-if="contactMethodItems.length === 0"
+                      type="warning"
+                      variant="tonal"
+                      class="mb-4"
+                      rounded="lg"
+                      border="start"
+                    >
+                      Add a phone number, Instagram, or Facebook to your profile settings first.
+                    </v-alert>
+                  </v-expand-transition>
+
+                  <div class="d-flex align-center justify-space-between mb-1">
+                    <div class="field-label mb-0">
+                      <v-icon size="16" class="mr-1">mdi-note-text-outline</v-icon>
+                      Note (max 100 characters)
+                    </div>
+
+                    <v-chip
+                      size="x-small"
+                      variant="text"
+                      class="note-counter-chip"
+                    >
+                      {{ noteLength }}/100
+                    </v-chip>
+                  </div>
+
+                  <v-text-field
+                    v-model="form.note"
+                    density="comfortable"
+                    variant="outlined"
+                    hide-details
+                    maxlength="100"
+                    counter="100"
+                    class="mb-5 polished-field"
+                    color="primary"
+                    rounded="lg"
+                    prepend-inner-icon="mdi-text-short"
+                    placeholder="Ex: Leaving early, no smoking, meeting by main entrance..."
+                  />
+
+                  <v-card
+                    rounded="lg"
+                    variant="tonal"
+                    class="summary-card mb-5"
+                  >
+                    <v-card-text class="py-3 px-4">
+                      <div class="summary-title mb-2">
+                        <v-icon size="16" class="mr-1">mdi-clipboard-text-outline</v-icon>
+                        Quick summary
+                      </div>
+
+                      <div class="summary-line">
+                        <span class="summary-key">Selected event:</span>
+                        <span class="summary-value">{{ selectedFormEventTitle }}</span>
+                      </div>
+
+                      <div class="summary-line">
+                        <span class="summary-key">Spots:</span>
+                        <span class="summary-value">{{ form.total_spots }}</span>
+                      </div>
+
+                      <div class="summary-line">
+                        <span class="summary-key">Contact method:</span>
+                        <span class="summary-value">{{ selectedContactMethodTitle }}</span>
+                      </div>
+                    </v-card-text>
+                  </v-card>
+
+                  <div class="d-flex flex-column ga-3">
+                    <v-btn
+                      block
+                      color="primary"
+                      variant="flat"
+                      rounded="lg"
+                      size="large"
+                      class="create-btn text-none"
+                      @click="createCarpool"
+                      :disabled="!currentUser || contactMethodItems.length === 0"
+                      prepend-icon="mdi-plus"
+                    >
+                      Create carpool
+                    </v-btn>
+
+                    <div class="text-caption form-footer-text">
+                      Your existing logic and data flow stay intact — this is just a cleaner UI layer.
+                    </div>
+                  </div>
+                </v-card-text>
+              </v-card>
+            </v-col>
+
+            <!-- RIGHT -->
+            <v-col cols="12" lg="8">
+              <v-card
+                rounded="xl"
+                variant="outlined"
+                class="glass-card mb-4"
+                :class="isDarkTheme ? 'glass-card--dark' : 'glass-card--light'"
+              >
+                <v-card-text class="pa-5">
+                  <div class="d-flex flex-column flex-lg-row align-lg-center ga-3 mb-4">
+                    <div>
+                      <div class="text-h6 font-weight-bold section-title">
+                        Browse carpools
+                      </div>
+                      <div class="text-caption section-subtitle">
+                        Filter rides by event, venue, and availability
+                      </div>
+                    </div>
+
+                    <v-spacer />
+
+                    <v-chip
+                      variant="tonal"
+                      rounded="pill"
+                      class="results-chip"
+                    >
+                      <v-icon start size="16">mdi-filter-outline</v-icon>
+                      {{ filteredCarpools.length }} result<span v-if="filteredCarpools.length !== 1">s</span>
+                    </v-chip>
+                  </div>
+
+                  <v-row>
+                    <v-col cols="12" md="5">
+                      <v-select
+                        v-model="selectedEventId"
+                        density="comfortable"
+                        variant="outlined"
+                        :items="eventFilterItems"
+                        item-title="title"
+                        item-value="id"
+                        label="Filter by events"
+                        hide-details
+                        class="polished-field"
+                        color="primary"
+                        rounded="lg"
+                        prepend-inner-icon="mdi-ticket-outline"
+                      />
+                    </v-col>
+
+                    <v-col cols="12" md="5">
+                      <v-select
+                        v-model="selectedVenueId"
+                        density="comfortable"
+                        variant="outlined"
+                        :items="venueFilterItems"
+                        item-title="title"
+                        item-value="id"
+                        label="Filter by venues"
+                        hide-details
+                        class="polished-field"
+                        color="primary"
+                        rounded="lg"
+                        prepend-inner-icon="mdi-office-building-outline"
+                      />
+                    </v-col>
+
+                    <v-col cols="12" md="2" class="d-flex align-center">
+                      <v-checkbox
+                        v-model="onlyAvailable"
+                        hide-details
+                        density="comfortable"
+                        label="Only available"
+                        class="filter-checkbox mt-1 mt-md-0"
+                        color="primary"
+                      />
+                    </v-col>
+                  </v-row>
+                </v-card-text>
+              </v-card>
+
+              <v-card
+                rounded="xl"
+                variant="outlined"
+                class="glass-card"
+                :class="isDarkTheme ? 'glass-card--dark' : 'glass-card--light'"
+              >
+                <v-card-text class="pa-5">
+                  <v-fade-transition group>
+                    <v-card
+                      v-for="carpool in filteredCarpools"
+                      :key="carpool.id"
+                      variant="outlined"
+                      rounded="xl"
+                      class="pa-4 pa-md-5 mb-4 inner-card carpool-item"
+                    >
+                      <div class="d-flex justify-space-between align-start flex-wrap ga-3 mb-4">
+                        <div class="d-flex align-start ga-3">
+                          <div class="carpool-badge">
+                            <v-icon size="22">mdi-car-estate</v-icon>
+                          </div>
+
+                          <div>
+                            <RouterLink
+                              :to="carpool.event_route"
+                              class="text-decoration-none"
+                            >
+                              <div class="text-subtitle-1 font-weight-bold clickable-link carpool-title">
+                                {{ carpool.event_title }}
+                              </div>
+                            </RouterLink>
+
+                            <div class="d-flex flex-wrap align-center ga-2 mt-1">
+                              <v-chip size="x-small" variant="tonal" class="mini-chip">
+                                <v-icon start size="13">mdi-calendar</v-icon>
+                                {{ carpool.event_date }}
+                              </v-chip>
+
+                              <v-chip size="x-small" variant="tonal" class="mini-chip">
+                                <v-icon start size="13">mdi-clock-outline</v-icon>
+                                {{ carpool.time_of_going }}
+                              </v-chip>
+                            </div>
+                          </div>
+                        </div>
+
+                        <v-chip
+                          :color="statusColor(carpool.status)"
+                          size="small"
+                          variant="flat"
+                          class="status-chip"
+                        >
+                          <v-icon start size="14">
+                            {{
+                              carpool.status === 'Open'
+                                ? 'mdi-check-circle-outline'
+                                : carpool.status === 'Full'
+                                  ? 'mdi-close-circle-outline'
+                                  : carpool.status === 'Reserved'
+                                    ? 'mdi-bookmark-outline'
+                                    : 'mdi-flag-outline'
+                            }}
+                          </v-icon>
+                          {{ carpool.status }}
+                        </v-chip>
+                      </div>
+
+                      <div class="d-flex align-center mb-4 profile-strip">
+                        <RouterLink
+                          v-if="carpool.driver"
+                          :to="carpool.driver.route"
+                          class="text-decoration-none"
+                        >
+                          <v-avatar size="44" class="mr-3 clickable-avatar avatar-ring">
+                            <v-img
+                              v-if="carpool.driver.avatar"
+                              :src="carpool.driver.avatar"
+                              cover
+                            />
+                            <v-icon v-else>mdi-account</v-icon>
+                          </v-avatar>
+                        </RouterLink>
+
+                        <div class="text-body-2 driver-line">
+                          <RouterLink
+                            v-if="carpool.driver"
+                            :to="carpool.driver.route"
+                            class="text-decoration-none clickable-link driver-name font-weight-medium"
+                          >
+                            {{ carpool.driver.name }}
+                          </RouterLink>
+
+                          <span
+                            v-else
+                            class="font-weight-medium driver-name"
+                          >
+                            {{ carpool.driver_name }}
+                          </span>
+
+                          <span class="driver-separator">•</span>
+                          <span class="driver-location">{{ carpool.departure_location }}</span>
+                        </div>
+                      </div>
+
+                      <v-row class="mb-4">
+                        <v-col cols="12" md="7">
+                          <div class="text-body-2 px-4 py-4 note-box h-100">
+                            <div class="note-box-label mb-2">
+                              <v-icon size="15" class="mr-1">mdi-note-outline</v-icon>
+                              Driver note
+                            </div>
+
+                            <div class="note-box-text">
+                              “{{ carpool.note }}”
+                            </div>
+                          </div>
+                        </v-col>
+
+                        <v-col cols="12" md="5">
+                          <v-card rounded="lg" variant="tonal" class="info-panel h-100">
+                            <v-card-text class="py-4 px-4">
+                              <div class="info-line">
+                                <span class="info-key">
+                                  <v-icon size="14" class="mr-1">mdi-seat-passenger</v-icon>
+                                  Spots left
+                                </span>
+                                <strong class="info-value">{{ carpool.spots_left }}</strong>
+                              </div>
+
+                              <div class="info-line">
+                                <span class="info-key">
+                                  <v-icon size="14" class="mr-1">mdi-calendar-end</v-icon>
+                                  Deadline
+                                </span>
+                                <span class="info-value">{{ carpool.deadline }}</span>
+                              </div>
+
+                              <div class="info-line">
+                                <span class="info-key">
+                                  <v-icon size="14" class="mr-1">mdi-office-building-outline</v-icon>
+                                  Venue
+                                </span>
+                                <span class="info-value text-truncate">{{ carpool.venue_title }}</span>
+                              </div>
+                            </v-card-text>
+                          </v-card>
+                        </v-col>
+                      </v-row>
+
+                      <div class="d-flex flex-wrap ga-2">
+                        <v-btn
+                          color="primary"
+                          variant="flat"
+                          rounded="lg"
+                          class="text-none action-btn"
+                          :block="isMobile"
+                          @click="joinCarpool(carpool.id)"
+                          prepend-icon="mdi-account-plus-outline"
+                        >
+                          Join carpool
+                        </v-btn>
+
+                        <v-btn
+                          variant="text"
+                          rounded="lg"
+                          class="text-none action-btn"
+                          :block="isMobile"
+                          @click="openDetails(carpool)"
+                          prepend-icon="mdi-information-outline"
+                        >
+                          More details
+                        </v-btn>
+                      </div>
+                    </v-card>
+                  </v-fade-transition>
+
+                  <v-scale-transition>
+                    <v-sheet
+                      v-if="filteredCarpools.length === 0"
+                      rounded="xl"
+                      class="empty-state text-center py-10 px-6"
+                    >
+                      <div class="empty-icon mb-4">
+                        <v-icon size="42">mdi-car-off</v-icon>
+                      </div>
+
+                      <div class="text-h6 font-weight-bold mb-2">
+                        No carpools found
+                      </div>
+
+                      <div class="text-body-2 empty-text mx-auto">
+                        Try changing the selected filters or create a new carpool to get things moving.
+                      </div>
+                    </v-sheet>
+                  </v-scale-transition>
+                </v-card-text>
+              </v-card>
+            </v-col>
+          </v-row>
+        </template>
+
+        <!-- TABLET / MOBILE -->
+        <template v-else>
+          <v-row class="align-start">
+            <v-col cols="12">
+              <v-card
+                rounded="xl"
+                variant="outlined"
+                class="glass-card mb-4 mobile-shell-card"
+                :class="isDarkTheme ? 'glass-card--dark' : 'glass-card--light'"
+              >
+                <div class="section-topbar" />
+
+                <v-card-text class="pa-4 pa-md-5">
+                  <div class="mobile-shell-top mb-4">
+                    <div>
+                      <div class="text-h6 font-weight-bold section-title">
+                        Carpool hub
+                      </div>
+                      <div class="text-caption section-subtitle">
+                        Switch between browsing and creating without losing context
+                      </div>
+                    </div>
+
+                    <div class="d-flex align-center ga-2 mobile-shell-actions">
+                      <v-chip
+                        variant="tonal"
+                        rounded="pill"
+                        class="results-chip"
+                      >
+                        <v-icon start size="16">mdi-filter-outline</v-icon>
+                        {{ filteredCarpools.length }} result<span v-if="filteredCarpools.length !== 1">s</span>
+                      </v-chip>
+
+                      <v-btn
+                        v-if="isMobile"
+                        variant="tonal"
+                        rounded="lg"
+                        class="text-none"
+                        prepend-icon="mdi-tune-variant"
+                        @click="filtersSheet = true"
+                      >
+                        Filters
+                      </v-btn>
+                    </div>
+                  </div>
+
+                  <v-btn-toggle
+                    v-model="mobileSection"
+                    mandatory
+                    divided
+                    rounded="xl"
+                    class="mobile-segmented"
+                  >
+                    <v-btn
+                      value="browse"
+                      rounded="xl"
+                      class="text-none"
+                    >
+                      <v-icon start size="18">mdi-car-search</v-icon>
+                      Browse rides
+                    </v-btn>
+
+                    <v-btn
+                      value="create"
+                      rounded="xl"
+                      class="text-none"
+                    >
+                      <v-icon start size="18">mdi-plus-circle-outline</v-icon>
+                      Create ride
+                    </v-btn>
+                  </v-btn-toggle>
+
+                  <div
+                    v-if="activeFilterLabels.length > 0"
+                    class="active-filter-strip mt-4"
+                  >
+                    <v-chip
+                      v-for="label in activeFilterLabels"
+                      :key="label"
+                      size="small"
+                      variant="tonal"
+                      class="mini-chip"
+                    >
+                      {{ label }}
+                    </v-chip>
+
+                    <v-btn
+                      variant="text"
+                      rounded="lg"
+                      class="text-none"
+                      @click="clearFilters"
+                    >
+                      Clear
+                    </v-btn>
+                  </div>
+
+                  <div class="mobile-insights-strip mt-4">
+                    <v-sheet
+                      rounded="xl"
+                      class="mobile-insight-tile"
+                      :class="isDarkTheme ? 'mobile-insight-tile--dark' : 'mobile-insight-tile--light'"
+                    >
+                      <div class="mobile-insight-tile__label">Open rides</div>
+                      <div class="mobile-insight-tile__value">{{ availableCarpoolsCount }}</div>
+                    </v-sheet>
+
+                    <v-sheet
+                      rounded="xl"
+                      class="mobile-insight-tile"
+                      :class="isDarkTheme ? 'mobile-insight-tile--dark' : 'mobile-insight-tile--light'"
+                    >
+                      <div class="mobile-insight-tile__label">Events</div>
+                      <div class="mobile-insight-tile__value">{{ eventItems.length }}</div>
+                    </v-sheet>
+
+                    <v-sheet
+                      rounded="xl"
+                      class="mobile-insight-tile"
+                      :class="isDarkTheme ? 'mobile-insight-tile--dark' : 'mobile-insight-tile--light'"
+                    >
+                      <div class="mobile-insight-tile__label">Venues</div>
+                      <div class="mobile-insight-tile__value">{{ Math.max(venueFilterItems.length - 1, 0) }}</div>
+                    </v-sheet>
+                  </div>
+                </v-card-text>
+              </v-card>
+            </v-col>
+
+            <!-- BROWSE -->
+            <template v-if="mobileSection === 'browse'">
+              <v-col cols="12">
+                <v-card
+                  rounded="xl"
+                  variant="outlined"
+                  class="glass-card mb-4"
+                  :class="isDarkTheme ? 'glass-card--dark' : 'glass-card--light'"
+                >
+                  <v-card-text class="pa-4 pa-md-5">
+                    <template v-if="isTablet">
+                      <div class="browse-toolbar mb-4">
+                        <div>
+                          <div class="text-h6 font-weight-bold section-title">
+                            Browse carpools
+                          </div>
+                          <div class="text-caption section-subtitle">
+                            Filter rides by event, venue, and availability
+                          </div>
+                        </div>
+
+                        <v-btn
+                          variant="text"
+                          rounded="lg"
+                          class="text-none"
+                          prepend-icon="mdi-filter-remove-outline"
+                          @click="clearFilters"
+                        >
+                          Clear filters
+                        </v-btn>
+                      </div>
+
+                      <v-row>
+                        <v-col cols="12" md="5">
+                          <v-select
+                            v-model="selectedEventId"
+                            density="comfortable"
+                            variant="outlined"
+                            :items="eventFilterItems"
+                            item-title="title"
+                            item-value="id"
+                            label="Filter by events"
+                            hide-details
+                            class="polished-field"
+                            color="primary"
+                            rounded="lg"
+                            prepend-inner-icon="mdi-ticket-outline"
+                          />
+                        </v-col>
+
+                        <v-col cols="12" md="5">
+                          <v-select
+                            v-model="selectedVenueId"
+                            density="comfortable"
+                            variant="outlined"
+                            :items="venueFilterItems"
+                            item-title="title"
+                            item-value="id"
+                            label="Filter by venues"
+                            hide-details
+                            class="polished-field"
+                            color="primary"
+                            rounded="lg"
+                            prepend-inner-icon="mdi-office-building-outline"
+                          />
+                        </v-col>
+
+                        <v-col cols="12" md="2" class="d-flex align-center">
+                          <v-checkbox
+                            v-model="onlyAvailable"
+                            hide-details
+                            density="comfortable"
+                            label="Only available"
+                            class="filter-checkbox mt-1 mt-md-0"
+                            color="primary"
+                          />
+                        </v-col>
+                      </v-row>
+                    </template>
+
+                    <template v-else>
+                      <div class="phone-filter-summary">
+                        <div class="phone-filter-summary__copy">
+                          <div class="text-h6 font-weight-bold section-title">
+                            Browse carpools
+                          </div>
+                          <div class="text-caption section-subtitle">
+                            Compact filters, faster scanning, better cards
+                          </div>
+                        </div>
+
+                        <div class="phone-filter-summary__chips">
+                          <v-chip size="small" variant="tonal" class="mini-chip">
+                            Event: {{ selectedEventFilterTitle }}
+                          </v-chip>
+
+                          <v-chip size="small" variant="tonal" class="mini-chip">
+                            Venue: {{ selectedVenueFilterTitle }}
+                          </v-chip>
+
+                          <v-chip size="small" variant="tonal" class="mini-chip">
+                            {{ onlyAvailable ? 'Only available' : 'All statuses' }}
+                          </v-chip>
+                        </div>
+
+                        <div class="phone-stat-shelf">
+                          <v-sheet
+                            rounded="xl"
+                            class="phone-stat-pill"
+                            :class="isDarkTheme ? 'phone-stat-pill--dark' : 'phone-stat-pill--light'"
+                          >
+                            <div class="phone-stat-pill__label">Results</div>
+                            <div class="phone-stat-pill__value">{{ filteredCarpools.length }}</div>
+                          </v-sheet>
+
+                          <v-sheet
+                            rounded="xl"
+                            class="phone-stat-pill"
+                            :class="isDarkTheme ? 'phone-stat-pill--dark' : 'phone-stat-pill--light'"
+                          >
+                            <div class="phone-stat-pill__label">Open</div>
+                            <div class="phone-stat-pill__value">{{ availableCarpoolsCount }}</div>
+                          </v-sheet>
+
+                          <v-sheet
+                            rounded="xl"
+                            class="phone-stat-pill"
+                            :class="isDarkTheme ? 'phone-stat-pill--dark' : 'phone-stat-pill--light'"
+                          >
+                            <div class="phone-stat-pill__label">Events</div>
+                            <div class="phone-stat-pill__value">{{ eventItems.length }}</div>
+                          </v-sheet>
+                        </div>
+                      </div>
+                    </template>
+                  </v-card-text>
+                </v-card>
+              </v-col>
+
+              <v-col cols="12">
+                <v-card
+                  rounded="xl"
+                  variant="outlined"
+                  class="glass-card"
+                  :class="isDarkTheme ? 'glass-card--dark' : 'glass-card--light'"
+                >
+                  <v-card-text class="pa-4 pa-md-5">
+                    <v-fade-transition group>
+                      <template
+                        v-for="carpool in filteredCarpools"
+                        :key="carpool.id"
+                      >
+                        <v-card
+                          variant="outlined"
+                          rounded="xl"
+                          class="mb-4 inner-card carpool-item mobile-carpool-card"
+                        >
+                          <v-card-text class="pa-4 pa-md-5">
+                            <div class="mobile-carpool-head mb-4">
+                              <div class="mobile-carpool-title-wrap">
+                                <div class="d-flex align-start ga-3">
+                                  <div class="carpool-badge mobile-carpool-badge">
+                                    <v-icon size="22">mdi-car-estate</v-icon>
+                                  </div>
+
+                                  <div class="min-w-0">
+                                    <RouterLink
+                                      :to="carpool.event_route"
+                                      class="text-decoration-none"
+                                    >
+                                      <div class="text-subtitle-1 font-weight-bold clickable-link carpool-title mobile-carpool-title">
+                                        {{ carpool.event_title }}
+                                      </div>
+                                    </RouterLink>
+
+                                    <div class="mobile-meta-rail mt-2">
+                                      <v-chip size="x-small" variant="tonal" class="mini-chip">
+                                        <v-icon start size="13">mdi-calendar</v-icon>
+                                        {{ carpool.event_date }}
+                                      </v-chip>
+
+                                      <v-chip size="x-small" variant="tonal" class="mini-chip">
+                                        <v-icon start size="13">mdi-clock-outline</v-icon>
+                                        {{ carpool.time_of_going }}
+                                      </v-chip>
+                                    </div>
+                                  </div>
+                                </div>
+                              </div>
+
+                              <v-chip
+                                :color="statusColor(carpool.status)"
+                                size="small"
+                                variant="flat"
+                                class="status-chip"
+                              >
+                                <v-icon start size="14">
+                                  {{
+                                    carpool.status === 'Open'
+                                      ? 'mdi-check-circle-outline'
+                                      : carpool.status === 'Full'
+                                        ? 'mdi-close-circle-outline'
+                                        : carpool.status === 'Reserved'
+                                          ? 'mdi-bookmark-outline'
+                                          : 'mdi-flag-outline'
+                                  }}
+                                </v-icon>
+                                {{ carpool.status }}
+                              </v-chip>
+                            </div>
+
+                            <div class="mobile-driver-strip mb-4">
+                              <div class="d-flex align-center ga-3 min-w-0">
+                                <RouterLink
+                                  v-if="carpool.driver"
+                                  :to="carpool.driver.route"
+                                  class="text-decoration-none"
+                                >
+                                  <v-avatar size="48" class="clickable-avatar avatar-ring">
+                                    <v-img
+                                      v-if="carpool.driver.avatar"
+                                      :src="carpool.driver.avatar"
+                                      cover
+                                    />
+                                    <v-icon v-else>mdi-account</v-icon>
+                                  </v-avatar>
+                                </RouterLink>
+
+                                <div class="min-w-0">
+                                  <div class="text-body-2 driver-line">
+                                    <RouterLink
+                                      v-if="carpool.driver"
+                                      :to="carpool.driver.route"
+                                      class="text-decoration-none clickable-link driver-name font-weight-medium"
+                                    >
+                                      {{ carpool.driver.name }}
+                                    </RouterLink>
+
+                                    <span
+                                      v-else
+                                      class="font-weight-medium driver-name"
+                                    >
+                                      {{ carpool.driver_name }}
+                                    </span>
+                                  </div>
+
+                                  <div class="mobile-driver-location">
+                                    {{ carpool.departure_location }}
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+
+                            <div class="mobile-info-grid mb-4">
+                              <v-card rounded="lg" variant="tonal" class="mobile-info-tile">
+                                <v-card-text class="py-3 px-4">
+                                  <div class="mobile-info-label">
+                                    <v-icon size="14" class="mr-1">mdi-seat-passenger</v-icon>
+                                    Spots left
+                                  </div>
+                                  <div class="mobile-info-value">{{ carpool.spots_left }}</div>
+                                </v-card-text>
+                              </v-card>
+
+                              <v-card rounded="lg" variant="tonal" class="mobile-info-tile">
+                                <v-card-text class="py-3 px-4">
+                                  <div class="mobile-info-label">
+                                    <v-icon size="14" class="mr-1">mdi-calendar-end</v-icon>
+                                    Deadline
+                                  </div>
+                                  <div class="mobile-info-value">{{ carpool.deadline }}</div>
+                                </v-card-text>
+                              </v-card>
+
+                              <v-card rounded="lg" variant="tonal" class="mobile-info-tile mobile-info-tile--wide">
+                                <v-card-text class="py-3 px-4">
+                                  <div class="mobile-info-label">
+                                    <v-icon size="14" class="mr-1">mdi-office-building-outline</v-icon>
+                                    Venue
+                                  </div>
+                                  <div class="mobile-info-value text-truncate">{{ carpool.venue_title }}</div>
+                                </v-card-text>
+                              </v-card>
+                            </div>
+
+                            <div class="text-body-2 px-4 py-4 note-box mb-4">
+                              <div class="note-box-label mb-2">
+                                <v-icon size="15" class="mr-1">mdi-note-outline</v-icon>
+                                Driver note
+                              </div>
+
+                              <div class="note-box-text">
+                                “{{ carpool.note }}”
+                              </div>
+                            </div>
+
+                            <div class="mobile-action-row">
+                              <v-btn
+                                color="primary"
+                                variant="flat"
+                                rounded="lg"
+                                class="text-none action-btn"
+                                :block="isMobile"
+                                @click="joinCarpool(carpool.id)"
+                                prepend-icon="mdi-account-plus-outline"
+                              >
+                                Join carpool
+                              </v-btn>
+
+                              <v-btn
+                                variant="text"
+                                rounded="lg"
+                                class="text-none action-btn"
+                                :block="isMobile"
+                                @click="openDetails(carpool)"
+                                prepend-icon="mdi-information-outline"
+                              >
+                                More details
+                              </v-btn>
+                            </div>
+                          </v-card-text>
+                        </v-card>
+                      </template>
+                    </v-fade-transition>
+
+                    <v-scale-transition>
+                      <v-sheet
+                        v-if="filteredCarpools.length === 0"
+                        rounded="xl"
+                        class="empty-state text-center py-10 px-6"
+                      >
+                        <div class="empty-icon mb-4">
+                          <v-icon size="42">mdi-car-off</v-icon>
+                        </div>
+
+                        <div class="text-h6 font-weight-bold mb-2">
+                          No carpools found
+                        </div>
+
+                        <div class="text-body-2 empty-text mx-auto">
+                          Try changing the selected filters or create a new carpool to get things moving.
+                        </div>
+
+                        <div class="d-flex justify-center flex-wrap ga-2 mt-5">
+                          <v-btn
+                            variant="tonal"
+                            rounded="lg"
+                            class="text-none"
+                            prepend-icon="mdi-filter-remove-outline"
+                            @click="clearFilters"
+                          >
+                            Clear filters
+                          </v-btn>
+
+                          <v-btn
+                            color="primary"
+                            variant="flat"
+                            rounded="lg"
+                            class="text-none"
+                            prepend-icon="mdi-plus"
+                            @click="switchToCreate"
+                          >
+                            Create carpool
+                          </v-btn>
+                        </div>
+                      </v-sheet>
+                    </v-scale-transition>
+                  </v-card-text>
+                </v-card>
+              </v-col>
+            </template>
+
+            <!-- CREATE -->
+            <template v-else>
+              <v-col cols="12">
+                <v-card
+                  rounded="xl"
+                  variant="outlined"
+                  class="glass-card"
+                  :class="isDarkTheme ? 'glass-card--dark' : 'glass-card--light'"
+                >
+                  <div class="section-topbar" />
+
+                  <v-card-title class="pa-4 pa-md-5 pb-2">
+                    <div class="create-card-title-wrap">
+                      <div class="d-flex align-center ga-3">
+                        <div class="title-icon">
+                          <v-icon size="22">mdi-plus-circle-outline</v-icon>
                         </div>
 
                         <div>
-                          <RouterLink
-                            :to="carpool.event_route"
-                            class="text-decoration-none"
-                          >
-                            <div class="text-subtitle-1 font-weight-bold clickable-link carpool-title">
-                              {{ carpool.event_title }}
-                            </div>
-                          </RouterLink>
-
-                          <div class="d-flex flex-wrap align-center ga-2 mt-1">
-                            <v-chip size="x-small" variant="tonal" class="mini-chip">
-                              <v-icon start size="13">mdi-calendar</v-icon>
-                              {{ carpool.event_date }}
-                            </v-chip>
-
-                            <v-chip size="x-small" variant="tonal" class="mini-chip">
-                              <v-icon start size="13">mdi-clock-outline</v-icon>
-                              {{ carpool.time_of_going }}
-                            </v-chip>
+                          <div class="text-h6 font-weight-bold section-title">
+                            Create a carpool
+                          </div>
+                          <div class="text-caption section-subtitle">
+                            A cleaner mobile/tablet form without sacrificing any existing logic
                           </div>
                         </div>
                       </div>
 
                       <v-chip
-                        :color="statusColor(carpool.status)"
-                        size="small"
-                        variant="flat"
-                        class="status-chip"
+                        variant="tonal"
+                        rounded="pill"
+                        class="results-chip"
                       >
-                        <v-icon start size="14">
-                          {{
-                            carpool.status === 'Open'
-                              ? 'mdi-check-circle-outline'
-                              : carpool.status === 'Full'
-                                ? 'mdi-close-circle-outline'
-                                : carpool.status === 'Reserved'
-                                  ? 'mdi-bookmark-outline'
-                                  : 'mdi-flag-outline'
-                          }}
-                        </v-icon>
-                        {{ carpool.status }}
+                        <v-icon start size="16">mdi-clipboard-text-outline</v-icon>
+                        {{ selectedFormEventTitle }}
                       </v-chip>
                     </div>
+                  </v-card-title>
 
-                    <div class="d-flex align-center mb-4 profile-strip">
-                      <RouterLink
-                        v-if="carpool.driver"
-                        :to="carpool.driver.route"
-                        class="text-decoration-none"
+                  <v-card-text class="pa-4 pa-md-5 pt-3">
+                    <div class="create-quick-strip mb-5">
+                      <v-sheet
+                        rounded="xl"
+                        class="create-quick-tile"
+                        :class="isDarkTheme ? 'create-quick-tile--dark' : 'create-quick-tile--light'"
                       >
-                        <v-avatar size="44" class="mr-3 clickable-avatar avatar-ring">
-                          <v-img
-                            v-if="carpool.driver.avatar"
-                            :src="carpool.driver.avatar"
-                            cover
-                          />
-                          <v-icon v-else>mdi-account</v-icon>
-                        </v-avatar>
-                      </RouterLink>
+                        <div class="create-quick-tile__label">Event</div>
+                        <div class="create-quick-tile__value text-truncate">{{ selectedFormEventTitle }}</div>
+                      </v-sheet>
 
-                      <div class="text-body-2 driver-line">
-                        <RouterLink
-                          v-if="carpool.driver"
-                          :to="carpool.driver.route"
-                          class="text-decoration-none clickable-link driver-name font-weight-medium"
-                        >
-                          {{ carpool.driver.name }}
-                        </RouterLink>
+                      <v-sheet
+                        rounded="xl"
+                        class="create-quick-tile"
+                        :class="isDarkTheme ? 'create-quick-tile--dark' : 'create-quick-tile--light'"
+                      >
+                        <div class="create-quick-tile__label">Spots</div>
+                        <div class="create-quick-tile__value">{{ form.total_spots }}</div>
+                      </v-sheet>
 
-                        <span
-                          v-else
-                          class="font-weight-medium driver-name"
-                        >
-                          {{ carpool.driver_name }}
-                        </span>
-
-                        <span class="driver-separator">•</span>
-                        <span class="driver-location">{{ carpool.departure_location }}</span>
-                      </div>
+                      <v-sheet
+                        rounded="xl"
+                        class="create-quick-tile"
+                        :class="isDarkTheme ? 'create-quick-tile--dark' : 'create-quick-tile--light'"
+                      >
+                        <div class="create-quick-tile__label">Contact</div>
+                        <div class="create-quick-tile__value text-truncate">{{ selectedContactMethodTitle }}</div>
+                      </v-sheet>
                     </div>
 
-                    <v-row class="mb-4">
-                      <v-col cols="12" md="7">
-                        <div class="text-body-2 px-4 py-4 note-box h-100">
-                          <div class="note-box-label mb-2">
-                            <v-icon size="15" class="mr-1">mdi-note-outline</v-icon>
-                            Driver note
-                          </div>
+                    <v-card
+                      rounded="lg"
+                      variant="tonal"
+                      class="helper-card mb-5"
+                    >
+                      <v-card-text class="py-3 px-4">
+                        <div class="d-flex align-start ga-3">
+                          <v-icon size="20" class="mt-1 helper-icon">
+                            mdi-information-outline
+                          </v-icon>
 
-                          <div class="note-box-text">
-                            “{{ carpool.note }}”
+                          <div class="text-body-2 helper-text">
+                            Choose an event, set your departure details, then select one
+                            of your saved contact methods so people can reach you after joining.
                           </div>
                         </div>
+                      </v-card-text>
+                    </v-card>
+
+                    <v-row class="create-layout-grid">
+                      <v-col cols="12" md="7">
+                        <div class="field-label">
+                          <v-icon size="16" class="mr-1">mdi-calendar-star</v-icon>
+                          Event
+                        </div>
+
+                        <v-select
+                          v-model="form.event_id"
+                          density="comfortable"
+                          variant="outlined"
+                          :items="eventItems"
+                          item-title="title"
+                          item-value="id"
+                          placeholder="Select event"
+                          hide-details
+                          class="mb-4 polished-field"
+                          color="primary"
+                          rounded="lg"
+                          prepend-inner-icon="mdi-ticket-outline"
+                        />
+
+                        <div class="field-label">
+                          <v-icon size="16" class="mr-1">mdi-map-marker-radius-outline</v-icon>
+                          Departure location
+                        </div>
+
+                        <v-text-field
+                          v-model="form.departure_location"
+                          density="comfortable"
+                          variant="outlined"
+                          hide-details
+                          class="mb-4 polished-field"
+                          color="primary"
+                          rounded="lg"
+                          prepend-inner-icon="mdi-map-marker-outline"
+                          placeholder="Ex: MedTech campus, downtown, Mall parking..."
+                        />
                       </v-col>
 
                       <v-col cols="12" md="5">
-                        <v-card rounded="lg" variant="tonal" class="info-panel h-100">
-                          <v-card-text class="py-4 px-4">
-                            <div class="info-line">
-                              <span class="info-key">
-                                <v-icon size="14" class="mr-1">mdi-seat-passenger</v-icon>
-                                Spots left
-                              </span>
-                              <strong class="info-value">{{ carpool.spots_left }}</strong>
+                        <div class="field-label">
+                          <v-icon size="16" class="mr-1">mdi-clock-outline</v-icon>
+                          Time of going
+                        </div>
+
+                        <v-text-field
+                          v-model="form.time_of_going"
+                          density="comfortable"
+                          variant="outlined"
+                          type="time"
+                          hide-details
+                          class="mb-4 polished-field"
+                          color="primary"
+                          rounded="lg"
+                          prepend-inner-icon="mdi-timer-outline"
+                        />
+
+                        <div class="field-label">
+                          <v-icon size="16" class="mr-1">mdi-seat-passenger</v-icon>
+                          Available spots
+                        </div>
+
+                        <v-select
+                          v-model="form.total_spots"
+                          density="comfortable"
+                          variant="outlined"
+                          :items="[1, 2, 3, 4, 5]"
+                          hide-details
+                          color="primary"
+                          rounded="lg"
+                          class="mb-4 polished-field"
+                          prepend-inner-icon="mdi-account-multiple-outline"
+                        />
+
+                        <div class="field-label">
+                          <v-icon size="16" class="mr-1">mdi-calendar-clock-outline</v-icon>
+                          Deadline to join
+                        </div>
+
+                        <v-text-field
+                          v-model="form.deadline"
+                          density="comfortable"
+                          variant="outlined"
+                          type="date"
+                          hide-details
+                          color="primary"
+                          rounded="lg"
+                          class="polished-field"
+                          prepend-inner-icon="mdi-calendar-end"
+                        />
+                      </v-col>
+
+                      <v-col cols="12" md="7">
+                        <div class="field-label">
+                          <v-icon size="16" class="mr-1">mdi-message-text-outline</v-icon>
+                          How people can contact you
+                        </div>
+
+                        <v-select
+                          v-model="form.contact_method"
+                          density="comfortable"
+                          variant="outlined"
+                          :items="contactMethodItems"
+                          item-title="title"
+                          item-value="value"
+                          hide-details
+                          class="mb-4 polished-field"
+                          color="primary"
+                          rounded="lg"
+                          :disabled="contactMethodItems.length === 0"
+                          prepend-inner-icon="mdi-account-voice"
+                        />
+
+                        <v-expand-transition>
+                          <v-alert
+                            v-if="contactMethodItems.length === 0"
+                            type="warning"
+                            variant="tonal"
+                            class="mb-4"
+                            rounded="lg"
+                            border="start"
+                          >
+                            Add a phone number, Instagram, or Facebook to your profile settings first.
+                          </v-alert>
+                        </v-expand-transition>
+
+                        <div class="d-flex align-center justify-space-between mb-1">
+                          <div class="field-label mb-0">
+                            <v-icon size="16" class="mr-1">mdi-note-text-outline</v-icon>
+                            Note (max 100 characters)
+                          </div>
+
+                          <v-chip
+                            size="x-small"
+                            variant="text"
+                            class="note-counter-chip"
+                          >
+                            {{ noteLength }}/100
+                          </v-chip>
+                        </div>
+
+                        <v-text-field
+                          v-model="form.note"
+                          density="comfortable"
+                          variant="outlined"
+                          hide-details
+                          maxlength="100"
+                          counter="100"
+                          class="polished-field"
+                          color="primary"
+                          rounded="lg"
+                          prepend-inner-icon="mdi-text-short"
+                          placeholder="Ex: Leaving early, no smoking, meeting by main entrance..."
+                        />
+                      </v-col>
+
+                      <v-col cols="12" md="5">
+                        <v-card
+                          rounded="lg"
+                          variant="tonal"
+                          class="summary-card h-100"
+                        >
+                          <v-card-text class="py-3 px-4">
+                            <div class="summary-title mb-3">
+                              <v-icon size="16" class="mr-1">mdi-clipboard-text-outline</v-icon>
+                              Quick summary
                             </div>
 
-                            <div class="info-line">
-                              <span class="info-key">
-                                <v-icon size="14" class="mr-1">mdi-calendar-end</v-icon>
-                                Deadline
-                              </span>
-                              <span class="info-value">{{ carpool.deadline }}</span>
+                            <div class="summary-line">
+                              <span class="summary-key">Selected event:</span>
+                              <span class="summary-value">{{ selectedFormEventTitle }}</span>
                             </div>
 
-                            <div class="info-line">
-                              <span class="info-key">
-                                <v-icon size="14" class="mr-1">mdi-office-building-outline</v-icon>
-                                Venue
-                              </span>
-                              <span class="info-value text-truncate">{{ carpool.venue_title }}</span>
+                            <div class="summary-line">
+                              <span class="summary-key">Spots:</span>
+                              <span class="summary-value">{{ form.total_spots }}</span>
+                            </div>
+
+                            <div class="summary-line">
+                              <span class="summary-key">Contact method:</span>
+                              <span class="summary-value">{{ selectedContactMethodTitle }}</span>
+                            </div>
+
+                            <div class="summary-line">
+                              <span class="summary-key">Deadline:</span>
+                              <span class="summary-value">{{ form.deadline || 'Not selected yet' }}</span>
                             </div>
                           </v-card-text>
                         </v-card>
                       </v-col>
                     </v-row>
 
-                    <div class="d-flex flex-wrap ga-2">
+                    <div class="create-bottom-actions mt-5">
+                      <div class="text-caption form-footer-text">
+                        Your existing logic and data flow stay intact — this is just a cleaner UI layer.
+                      </div>
+
+                      <div class="d-flex flex-column flex-sm-row justify-end ga-3">
+                        <v-btn
+                          variant="text"
+                          rounded="lg"
+                          class="text-none"
+                          prepend-icon="mdi-car-search"
+                          @click="switchToBrowse"
+                        >
+                          Back to browse
+                        </v-btn>
+
+                        <v-btn
+                          color="primary"
+                          variant="flat"
+                          rounded="lg"
+                          size="large"
+                          class="create-btn text-none"
+                          @click="createCarpool"
+                          :disabled="!currentUser || contactMethodItems.length === 0"
+                          prepend-icon="mdi-plus"
+                        >
+                          Create carpool
+                        </v-btn>
+                      </div>
+                    </div>
+
+                    <div
+                      v-if="isMobile"
+                      class="mobile-create-bar"
+                    >
+                      <div class="mobile-create-bar__summary">
+                        <div class="mobile-create-bar__title">
+                          {{ selectedFormEventTitle }}
+                        </div>
+                        <div class="mobile-create-bar__meta">
+                          {{ form.total_spots }} spot<span v-if="Number(form.total_spots) !== 1">s</span> • {{ selectedContactMethodTitle }}
+                        </div>
+                      </div>
+
                       <v-btn
                         color="primary"
                         variant="flat"
                         rounded="lg"
-                        class="text-none action-btn"
-                        :block="isMobile"
-                        @click="joinCarpool(carpool.id)"
-                        prepend-icon="mdi-account-plus-outline"
+                        class="text-none mobile-create-bar__btn"
+                        @click="createCarpool"
+                        :disabled="!currentUser || contactMethodItems.length === 0"
+                        prepend-icon="mdi-plus"
                       >
-                        Join carpool
-                      </v-btn>
-
-                      <v-btn
-                        variant="text"
-                        rounded="lg"
-                        class="text-none action-btn"
-                        :block="isMobile"
-                        @click="openDetails(carpool)"
-                        prepend-icon="mdi-information-outline"
-                      >
-                        More details
+                        Create
                       </v-btn>
                     </div>
-                  </v-card>
-                </v-fade-transition>
+                  </v-card-text>
+                </v-card>
+              </v-col>
+            </template>
+          </v-row>
+        </template>
 
-                <v-scale-transition>
-                  <v-sheet
-                    v-if="filteredCarpools.length === 0"
-                    rounded="xl"
-                    class="empty-state text-center py-10 px-6"
-                  >
-                    <div class="empty-icon mb-4">
-                      <v-icon size="42">mdi-car-off</v-icon>
-                    </div>
+        <!-- MOBILE FILTERS SHEET -->
+        <v-bottom-sheet
+          v-if="isMobile"
+          v-model="filtersSheet"
+          inset
+        >
+          <v-card
+            rounded="t-xl"
+            class="filters-sheet-card"
+            :class="isDarkTheme ? 'filters-sheet-card--dark' : 'filters-sheet-card--light'"
+          >
+            <v-card-text class="pa-5">
+              <div class="sheet-handle mb-4 mx-auto" />
 
-                    <div class="text-h6 font-weight-bold mb-2">
-                      No carpools found
-                    </div>
+              <div class="d-flex align-center justify-space-between mb-4">
+                <div>
+                  <div class="text-h6 font-weight-bold section-title">
+                    Filters
+                  </div>
+                  <div class="text-caption section-subtitle">
+                    Adjust the browse results for smaller screens
+                  </div>
+                </div>
 
-                    <div class="text-body-2 empty-text mx-auto">
-                      Try changing the selected filters or create a new carpool to get things moving.
-                    </div>
-                  </v-sheet>
-                </v-scale-transition>
-              </v-card-text>
-            </v-card>
-          </v-col>
-        </v-row>
+                <v-btn
+                  icon="mdi-close"
+                  variant="text"
+                  rounded="lg"
+                  @click="filtersSheet = false"
+                />
+              </div>
+
+              <div class="field-label">
+                <v-icon size="16" class="mr-1">mdi-ticket-outline</v-icon>
+                Event
+              </div>
+
+              <v-select
+                v-model="selectedEventId"
+                density="comfortable"
+                variant="outlined"
+                :items="eventFilterItems"
+                item-title="title"
+                item-value="id"
+                hide-details
+                class="mb-4 polished-field"
+                color="primary"
+                rounded="lg"
+                prepend-inner-icon="mdi-ticket-outline"
+              />
+
+              <div class="field-label">
+                <v-icon size="16" class="mr-1">mdi-office-building-outline</v-icon>
+                Venue
+              </div>
+
+              <v-select
+                v-model="selectedVenueId"
+                density="comfortable"
+                variant="outlined"
+                :items="venueFilterItems"
+                item-title="title"
+                item-value="id"
+                hide-details
+                class="mb-4 polished-field"
+                color="primary"
+                rounded="lg"
+                prepend-inner-icon="mdi-office-building-outline"
+              />
+
+              <v-checkbox
+                v-model="onlyAvailable"
+                hide-details
+                density="comfortable"
+                label="Only available"
+                class="filter-checkbox mb-4"
+                color="primary"
+              />
+
+              <div class="d-flex flex-column ga-3">
+                <v-btn
+                  color="primary"
+                  variant="flat"
+                  rounded="lg"
+                  class="text-none"
+                  @click="filtersSheet = false"
+                >
+                  Apply filters
+                </v-btn>
+
+                <v-btn
+                  variant="text"
+                  rounded="lg"
+                  class="text-none"
+                  @click="clearFilters"
+                >
+                  Clear filters
+                </v-btn>
+              </div>
+            </v-card-text>
+          </v-card>
+        </v-bottom-sheet>
 
         <!-- DETAILS DIALOG -->
         <v-dialog
@@ -905,7 +1906,7 @@
           :color="snackbar.color"
           timeout="3500"
           rounded="pill"
-          location="bottom right"
+          :location="isMobile ? 'bottom center' : 'bottom right'"
           class="snackbar-polished"
         >
           <div class="d-flex align-center ga-2">
@@ -958,8 +1959,13 @@ const selectedEventId = ref("all")
 const selectedVenueId = ref("all")
 const detailsDialog = ref(false)
 const selectedCarpool = ref(null)
+const mobileSection = ref("browse")
+const filtersSheet = ref(false)
 
 const isMobile = computed(() => display.smAndDown.value)
+const isTablet = computed(() => display.md.value)
+const isDesktop = computed(() => display.lgAndUp.value)
+
 const currentTheme = computed(() => {
   return theme.global.name.value === "light" ? "light" : "dark"
 })
@@ -1038,6 +2044,53 @@ const selectedContactMethodTitle = computed(() => {
   return selectedMethod?.title || "Not selected yet"
 })
 
+const selectedEventFilterTitle = computed(() => {
+  const selected = eventFilterItems.value.find(item => item.id === selectedEventId.value)
+  return selected?.title || "All events"
+})
+
+const selectedVenueFilterTitle = computed(() => {
+  const selected = venueFilterItems.value.find(item => item.id === selectedVenueId.value)
+  return selected?.title || "All venues"
+})
+
+const activeFilterLabels = computed(() => {
+  const labels = []
+
+  if (selectedEventId.value !== "all") {
+    labels.push(selectedEventFilterTitle.value)
+  }
+
+  if (selectedVenueId.value !== "all") {
+    labels.push(selectedVenueFilterTitle.value)
+  }
+
+  if (onlyAvailable.value) {
+    labels.push("Only available")
+  }
+
+  return labels
+})
+
+const heroStats = computed(() => [
+  {
+    label: "Available",
+    value: availableCarpoolsCount.value,
+  },
+  {
+    label: "All carpools",
+    value: searchableCarpools.value.length,
+  },
+  {
+    label: "Events",
+    value: eventItems.value.length,
+  },
+  {
+    label: "Venues",
+    value: Math.max(venueFilterItems.value.length - 1, 0),
+  },
+])
+
 function applyStoredTheme() {
   if (typeof window === "undefined") return
 
@@ -1101,6 +2154,36 @@ function openDetails(carpool) {
   detailsDialog.value = true
 }
 
+function clearFilters() {
+  selectedEventId.value = "all"
+  selectedVenueId.value = "all"
+  onlyAvailable.value = false
+}
+
+function switchToCreate() {
+  mobileSection.value = "create"
+  filtersSheet.value = false
+
+  if (typeof window !== "undefined" && isMobile.value) {
+    window.scrollTo({
+      top: 0,
+      behavior: "smooth",
+    })
+  }
+}
+
+function switchToBrowse() {
+  mobileSection.value = "browse"
+  filtersSheet.value = false
+
+  if (typeof window !== "undefined" && isMobile.value) {
+    window.scrollTo({
+      top: 0,
+      behavior: "smooth",
+    })
+  }
+}
+
 function createCarpool() {
   if (!currentUser.value) {
     showSnackbar("Please log in first.", "error")
@@ -1153,6 +2236,7 @@ function createCarpool() {
   )
 
   resetForm()
+  mobileSection.value = "browse"
   showSnackbar(`Carpool created for ${created.event_title}.`)
 }
 
@@ -1338,6 +2422,45 @@ resetForm()
   pointer-events: none;
 }
 
+.hero-shell {
+  position: relative;
+  z-index: 1;
+}
+
+.hero-main-row {
+  min-width: 0;
+}
+
+.hero-copy {
+  min-width: 0;
+}
+
+.hero-kicker {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.78rem;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.hero-kicker::before {
+  content: "";
+  width: 18px;
+  height: 2px;
+  border-radius: 999px;
+  background: rgb(var(--v-theme-primary));
+}
+
+.carpool-page--dark .hero-kicker {
+  color: #93c5fd;
+}
+
+.carpool-page--light .hero-kicker {
+  color: #2563eb;
+}
+
 .hero-icon-wrap {
   width: 64px;
   height: 64px;
@@ -1390,6 +2513,26 @@ resetForm()
   color: #1e293b;
 }
 
+.hero-compact-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.hero-stats-rail {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(158px, 1fr);
+  gap: 12px;
+  overflow-x: auto;
+  padding-bottom: 4px;
+  scrollbar-width: none;
+}
+
+.hero-stats-rail::-webkit-scrollbar {
+  display: none;
+}
+
 .stat-card {
   height: 100%;
   border: 1px solid transparent;
@@ -1398,6 +2541,10 @@ resetForm()
 
 .stat-card:hover {
   transform: translateY(-3px);
+}
+
+.stat-card--rail {
+  min-height: 104px;
 }
 
 .carpool-page--dark .stat-card {
@@ -1508,11 +2655,46 @@ resetForm()
   color: #64748b;
 }
 
+.mobile-shell-top,
+.create-card-title-wrap,
+.browse-toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+}
+
+.mobile-shell-actions {
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.mobile-segmented {
+  width: 100%;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0;
+  padding: 4px;
+}
+
+.mobile-segmented :deep(.v-btn) {
+  min-height: 46px;
+  font-weight: 700;
+}
+
+.active-filter-strip {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+
 .helper-card,
 .summary-card,
 .info-panel,
 .driver-card-dialog,
-.dialog-info-card {
+.dialog-info-card,
+.mobile-info-tile {
   border: 1px solid transparent;
 }
 
@@ -1520,7 +2702,8 @@ resetForm()
 .carpool-page--dark .summary-card,
 .carpool-page--dark .info-panel,
 .carpool-page--dark .driver-card-dialog,
-.carpool-page--dark .dialog-info-card {
+.carpool-page--dark .dialog-info-card,
+.carpool-page--dark .mobile-info-tile {
   background: rgba(255, 255, 255, 0.045) !important;
   border-color: rgba(255, 255, 255, 0.06);
 }
@@ -1529,7 +2712,8 @@ resetForm()
 .carpool-page--light .summary-card,
 .carpool-page--light .info-panel,
 .carpool-page--light .driver-card-dialog,
-.carpool-page--light .dialog-info-card {
+.carpool-page--light .dialog-info-card,
+.carpool-page--light .mobile-info-tile {
   background: rgba(15, 23, 42, 0.03) !important;
   border-color: rgba(15, 23, 42, 0.06);
 }
@@ -1650,6 +2834,12 @@ resetForm()
   box-shadow: 0 10px 24px rgba(var(--v-theme-primary), 0.25);
 }
 
+.create-bottom-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
 .form-footer-text {
   text-align: center;
   line-height: 1.4;
@@ -1709,6 +2899,11 @@ resetForm()
   flex-shrink: 0;
 }
 
+.mobile-carpool-badge {
+  width: 46px;
+  height: 46px;
+}
+
 .carpool-title {
   transition: opacity 0.2s ease, transform 0.2s ease;
 }
@@ -1719,6 +2914,10 @@ resetForm()
 
 .carpool-page--light .carpool-title {
   color: #0f172a;
+}
+
+.mobile-carpool-title {
+  line-height: 1.35;
 }
 
 .clickable-link:hover {
@@ -1758,12 +2957,20 @@ resetForm()
   opacity: 0.5;
 }
 
-.carpool-page--dark .driver-location {
+.carpool-page--dark .driver-location,
+.carpool-page--dark .mobile-driver-location {
   color: #cbd5e1;
 }
 
-.carpool-page--light .driver-location {
+.carpool-page--light .driver-location,
+.carpool-page--light .mobile-driver-location {
   color: #475569;
+}
+
+.mobile-driver-location {
+  margin-top: 2px;
+  font-size: 0.9rem;
+  line-height: 1.35;
 }
 
 .avatar-ring {
@@ -1841,6 +3048,84 @@ resetForm()
 
 .carpool-page--light .info-value {
   color: #0f172a;
+}
+
+.mobile-carpool-card {
+  overflow: hidden;
+}
+
+.mobile-carpool-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 14px;
+}
+
+.mobile-carpool-title-wrap {
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
+.mobile-meta-rail {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.mobile-driver-strip {
+  border-radius: 16px;
+  padding: 12px 14px;
+}
+
+.carpool-page--dark .mobile-driver-strip {
+  background: rgba(255, 255, 255, 0.035);
+  border: 1px solid rgba(255, 255, 255, 0.07);
+}
+
+.carpool-page--light .mobile-driver-strip {
+  background: rgba(15, 23, 42, 0.03);
+  border: 1px solid rgba(15, 23, 42, 0.08);
+}
+
+.mobile-info-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.mobile-info-tile--wide {
+  grid-column: 1 / -1;
+}
+
+.mobile-info-label {
+  display: inline-flex;
+  align-items: center;
+  font-size: 0.76rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  opacity: 0.82;
+  margin-bottom: 8px;
+}
+
+.mobile-info-value {
+  font-size: 0.96rem;
+  font-weight: 700;
+  line-height: 1.35;
+}
+
+.carpool-page--dark .mobile-info-value {
+  color: #f8fafc;
+}
+
+.carpool-page--light .mobile-info-value {
+  color: #0f172a;
+}
+
+.mobile-action-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
 }
 
 .empty-state {
@@ -2132,6 +3417,185 @@ resetForm()
   min-height: 42px;
 }
 
+.phone-filter-summary {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.phone-filter-summary__copy {
+  min-width: 0;
+}
+
+.phone-filter-summary__chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.mobile-insights-strip {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.mobile-insight-tile,
+.phone-stat-pill,
+.create-quick-tile {
+  min-width: 0;
+  padding: 14px 14px 13px;
+  border: 1px solid transparent;
+  transition: transform 0.22s ease, border-color 0.22s ease, background 0.22s ease;
+}
+
+.mobile-insight-tile__label,
+.phone-stat-pill__label,
+.create-quick-tile__label {
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  opacity: 0.78;
+}
+
+.mobile-insight-tile__value,
+.phone-stat-pill__value,
+.create-quick-tile__value {
+  margin-top: 8px;
+  font-size: 1.1rem;
+  font-weight: 900;
+  line-height: 1.2;
+}
+
+.mobile-insight-tile--dark,
+.phone-stat-pill--dark,
+.create-quick-tile--dark {
+  background: rgba(255, 255, 255, 0.04);
+  border-color: rgba(255, 255, 255, 0.08);
+  color: #f8fafc;
+}
+
+.mobile-insight-tile--light,
+.phone-stat-pill--light,
+.create-quick-tile--light {
+  background: rgba(255, 255, 255, 0.84);
+  border-color: rgba(15, 23, 42, 0.08);
+  color: #0f172a;
+}
+
+.phone-stat-shelf,
+.create-quick-strip {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.create-quick-strip {
+  margin-top: 2px;
+}
+
+.phone-stat-pill__value,
+.create-quick-tile__value {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.filters-sheet-card {
+  border: 1px solid transparent;
+}
+
+.filters-sheet-card--dark {
+  background: #0f172a;
+  border-color: rgba(255, 255, 255, 0.08);
+}
+
+.filters-sheet-card--light {
+  background: #ffffff;
+  border-color: rgba(15, 23, 42, 0.08);
+}
+
+.sheet-handle {
+  width: 52px;
+  height: 5px;
+  border-radius: 999px;
+}
+
+.carpool-page--dark .sheet-handle,
+.filters-sheet-card--dark .sheet-handle {
+  background: rgba(255, 255, 255, 0.18);
+}
+
+.carpool-page--light .sheet-handle,
+.filters-sheet-card--light .sheet-handle {
+  background: rgba(15, 23, 42, 0.14);
+}
+
+.mobile-create-bar {
+  position: sticky;
+  bottom: 10px;
+  z-index: 6;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 22px;
+  padding: 12px;
+  border-radius: 18px;
+  backdrop-filter: blur(14px);
+  box-shadow: 0 18px 40px rgba(2, 8, 23, 0.16);
+}
+
+.carpool-page--dark .mobile-create-bar {
+  background: rgba(15, 23, 42, 0.88);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.carpool-page--light .mobile-create-bar {
+  background: rgba(255, 255, 255, 0.92);
+  border: 1px solid rgba(15, 23, 42, 0.08);
+}
+
+.mobile-create-bar__summary {
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
+.mobile-create-bar__title {
+  font-size: 0.92rem;
+  font-weight: 800;
+  line-height: 1.3;
+}
+
+.mobile-create-bar__meta {
+  margin-top: 2px;
+  font-size: 0.78rem;
+  opacity: 0.78;
+}
+
+.carpool-page--dark .mobile-create-bar__title {
+  color: #f8fafc;
+}
+
+.carpool-page--light .mobile-create-bar__title {
+  color: #0f172a;
+}
+
+.carpool-page--dark .mobile-create-bar__meta {
+  color: #94a3b8;
+}
+
+.carpool-page--light .mobile-create-bar__meta {
+  color: #64748b;
+}
+
+.mobile-create-bar__btn {
+  flex-shrink: 0;
+}
+
+.min-w-0 {
+  min-width: 0;
+}
+
 @media (hover: none) {
   .hero-card:hover,
   .stat-card:hover,
@@ -2145,10 +3609,27 @@ resetForm()
   }
 }
 
-@media (max-width: 959px) {
+@media (max-width: 1279px) {
   .sticky-card {
     position: static;
     top: auto;
+  }
+}
+
+@media (max-width: 959px) {
+  .mobile-shell-top,
+  .create-card-title-wrap,
+  .browse-toolbar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .mobile-shell-actions {
+    justify-content: flex-start;
+  }
+
+  .create-bottom-actions {
+    gap: 14px;
   }
 }
 
@@ -2168,6 +3649,12 @@ resetForm()
     width: 56px;
     height: 56px;
     border-radius: 16px;
+  }
+
+  .hero-compact-actions {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
   }
 
   .hero-chip,
@@ -2191,6 +3678,50 @@ resetForm()
 
   .action-btn {
     width: 100%;
+  }
+
+  .mobile-carpool-head {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .mobile-action-row {
+    flex-direction: column;
+  }
+
+  .mobile-info-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .mobile-info-tile--wide {
+    grid-column: auto;
+  }
+
+  .mobile-create-bar {
+    padding-bottom: calc(12px + env(safe-area-inset-bottom, 0px));
+  }
+
+  .mobile-insights-strip,
+  .phone-stat-shelf,
+  .create-quick-strip {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 420px) {
+  .mobile-insights-strip,
+  .phone-stat-shelf,
+  .create-quick-strip {
+    grid-template-columns: 1fr;
+  }
+
+  .mobile-segmented {
+    width: 100%;
+  }
+
+  .mobile-segmented :deep(.v-btn) {
+    min-width: 0;
+    padding-inline: 12px;
   }
 }
 </style>

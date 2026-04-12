@@ -1,9 +1,9 @@
 <template>
-  <v-app :theme="currentThemeName" class="profile-page-app" :class="[`theme-${currentThemeName}`, { 'is-mobile': isMobile }]">
+  <v-app :theme="currentThemeName" class="profile-page-app" :class="[`theme-${currentThemeName}`, { 'is-mobile': isMobile, 'is-phone': isPhone, 'is-tablet': isTablet }]">
     <AppNavbar />
 
     <v-main>
-      <v-container class="profile-page-shell">
+      <v-container class="profile-page-shell" :class="{ 'shell-mobile': isPhone, 'shell-tablet': isTablet }">
         <v-fade-transition appear>
           <div>
             <!-- HEADER -->
@@ -245,16 +245,20 @@
         <v-divider class="my-6 section-divider" />
 
         <!-- TABS -->
-        <v-row align="center" justify="center">
+        <v-row align="center" justify="center" class="tabs-row">
           <v-col cols="12" md="8" class="d-flex justify-center">
-            <v-sheet rounded="pill" class="tabs-shell pa-1 w-100">
+            <v-sheet rounded="pill" class="tabs-shell pa-1 w-100" :class="{ 'tabs-shell-mobile': isPhone }">
+              <div v-if="isPhone" class="tabs-mobile-hint px-2 pt-1 pb-2 text-caption text-medium-emphasis d-flex align-center ga-2">
+                <v-icon size="14" icon="mdi-gesture-swipe-horizontal" />
+                <span>Swipe to switch sections</span>
+              </div>
               <v-tabs
                 v-model="tab"
                 color="primary"
-                align-tabs="center"
+                :align-tabs="isPhone ? 'start' : 'center'"
                 class="profile-tabs"
                 slider-color="primary"
-                :direction="isMobile ? 'horizontal' : 'horizontal'"
+                direction="horizontal"
                 show-arrows
               >
                 <v-tab value="upcoming" class="text-none">
@@ -275,7 +279,7 @@
         </v-row>
 
         <!-- CONTENT -->
-        <v-row class="mt-6 mt-md-8">
+        <v-row class="mt-6 mt-md-8 content-grid">
           <!-- LEFT -->
           <v-col cols="12" md="8">
             <div v-if="!viewedUser">
@@ -403,7 +407,153 @@
                 </v-chip>
               </div>
 
-              <v-slide-y-transition group>
+              <template v-if="isPhone && filteredEvents.length > 0">
+                <div class="mobile-events-shell mb-2">
+                  <div class="mobile-events-track">
+                    <v-card
+                      v-for="event in filteredEvents"
+                      :key="event.id"
+                      class="mobile-event-card interactive-card"
+                      rounded="xl"
+                      elevation="0"
+                      variant="outlined"
+                    >
+                      <v-img
+                        :src="event.image"
+                        height="210"
+                        cover
+                        class="event-image"
+                        gradient="to top, rgba(0,0,0,.45), rgba(0,0,0,.05)"
+                      />
+
+                      <v-card-text class="pa-4">
+                        <div class="d-flex justify-space-between align-start ga-3 mb-2">
+                          <div class="text-h6 font-weight-bold event-title mobile-event-title">
+                            {{ event.title }}
+                          </div>
+
+                          <v-chip
+                            v-if="event.tickets_sold >= event.capacity"
+                            size="small"
+                            color="error"
+                            variant="flat"
+                            rounded="pill"
+                            class="flex-shrink-0"
+                          >
+                            Sold out
+                          </v-chip>
+                        </div>
+
+                        <div class="mobile-event-meta-grid mb-3">
+                          <div class="mobile-meta-pill">
+                            <v-icon size="16" icon="mdi-calendar-month-outline" />
+                            <span>{{ event.date }}</span>
+                          </div>
+                          <div class="mobile-meta-pill">
+                            <v-icon size="16" icon="mdi-clock-outline" />
+                            <span>{{ event.time }}</span>
+                          </div>
+                          <div class="mobile-meta-pill mobile-meta-pill-wide">
+                            <v-icon size="16" icon="mdi-map-marker-outline" />
+                            <span>{{ event.venue }} • {{ event.city }}</span>
+                          </div>
+                        </div>
+
+                        <div class="text-body-2 event-description mobile-event-description mb-4">
+                          {{ event.description }}
+                        </div>
+
+                        <div class="d-flex flex-wrap ga-2">
+                          <v-chip size="small" variant="outlined" rounded="pill">
+                            {{ event.tickets_sold }} / {{ event.capacity }} sold
+                          </v-chip>
+                          <v-chip size="small" variant="tonal" color="primary" rounded="pill">
+                            {{ event.ticket_types?.length || 0 }} ticket types
+                          </v-chip>
+                        </div>
+                      </v-card-text>
+                    </v-card>
+                  </div>
+                </div>
+              </template>
+
+              <template v-else-if="isTablet && filteredEvents.length > 0">
+                <v-row class="tablet-events-grid" dense>
+                  <v-col
+                    v-for="event in filteredEvents"
+                    :key="event.id"
+                    cols="12"
+                    sm="6"
+                    class="d-flex"
+                  >
+                    <v-card
+                      class="event-card tablet-event-card interactive-card flex-grow-1"
+                      rounded="xl"
+                      elevation="0"
+                      variant="outlined"
+                    >
+                      <v-img
+                        :src="event.image"
+                        height="220"
+                        cover
+                        class="event-image"
+                        gradient="to top, rgba(0,0,0,.45), rgba(0,0,0,.05)"
+                      />
+
+                      <v-card-text class="pa-4 pa-sm-5">
+                        <div class="d-flex justify-space-between align-start ga-3 flex-wrap">
+                          <div>
+                            <div class="text-h6 font-weight-bold event-title">
+                              {{ event.title }}
+                            </div>
+
+                            <div class="text-body-2 text-medium-emphasis mt-2 d-flex flex-wrap ga-3">
+                              <span class="d-inline-flex align-center ga-1">
+                                <v-icon size="16" icon="mdi-calendar-month-outline" />
+                                {{ event.date }}
+                              </span>
+                              <span class="d-inline-flex align-center ga-1">
+                                <v-icon size="16" icon="mdi-clock-outline" />
+                                {{ event.time }}
+                              </span>
+                            </div>
+
+                            <div class="text-body-2 text-medium-emphasis mt-1 d-flex flex-wrap ga-1">
+                              <v-icon size="16" icon="mdi-map-marker-outline" />
+                              <span>{{ event.venue }} • {{ event.city }}</span>
+                            </div>
+                          </div>
+
+                          <v-chip
+                            v-if="event.tickets_sold >= event.capacity"
+                            size="small"
+                            color="error"
+                            variant="flat"
+                            rounded="pill"
+                          >
+                            Sold out
+                          </v-chip>
+                        </div>
+
+                        <div class="text-body-2 mt-4 event-description">
+                          {{ event.description }}
+                        </div>
+
+                        <div class="mt-4 d-flex flex-wrap ga-2">
+                          <v-chip size="small" variant="outlined" rounded="pill">
+                            {{ event.tickets_sold }} / {{ event.capacity }} sold
+                          </v-chip>
+                          <v-chip size="small" variant="tonal" color="primary" rounded="pill">
+                            {{ event.ticket_types?.length || 0 }} ticket types
+                          </v-chip>
+                        </div>
+                      </v-card-text>
+                    </v-card>
+                  </v-col>
+                </v-row>
+              </template>
+
+              <v-slide-y-transition v-else group>
                 <v-card
                   v-for="event in filteredEvents"
                   :key="event.id"
@@ -927,6 +1077,8 @@ const reportReason = ref("Spam")
 const reportOtherReason = ref("")
 
 const isMobile = computed(() => display.mdAndDown.value)
+const isPhone = computed(() => display.xs.value)
+const isTablet = computed(() => display.sm.value || display.md.value)
 
 function getStoredThemeChoice() {
   if (typeof window === "undefined") return "dark"
@@ -1433,6 +1585,14 @@ function unsuspendViewedUser() {
   padding: 20px 16px 28px;
 }
 
+.shell-mobile {
+  padding-inline: 12px;
+}
+
+.shell-tablet {
+  padding-inline: 18px;
+}
+
 .profile-hero-spacing {
   padding: 20px;
   margin-bottom: 20px;
@@ -1547,6 +1707,15 @@ function unsuspendViewedUser() {
   opacity: 0.65;
 }
 
+.tabs-row {
+  position: relative;
+  z-index: 2;
+}
+
+.tabs-mobile-hint {
+  opacity: 0.82;
+}
+
 .profile-tabs {
   width: 100%;
 }
@@ -1649,6 +1818,72 @@ function unsuspendViewedUser() {
   line-height: 1.7;
 }
 
+.mobile-events-shell {
+  position: relative;
+}
+
+.mobile-events-track {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(290px, 86vw);
+  gap: 14px;
+  overflow-x: auto;
+  padding: 4px 2px 8px;
+  scroll-snap-type: x proximity;
+  scrollbar-width: thin;
+}
+
+.mobile-event-card {
+  overflow: hidden;
+  border-color: rgba(var(--v-border-color), 0.08) !important;
+  background: rgba(var(--v-theme-surface), 0.96);
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.06);
+  scroll-snap-align: start;
+}
+
+.mobile-event-title {
+  font-size: 1.05rem;
+  line-height: 1.25;
+}
+
+.mobile-event-description {
+  display: -webkit-box;
+    line-clamp: 4;
+  -webkit-line-clamp: 4;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.mobile-event-meta-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.mobile-meta-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 40px;
+  padding: 10px 12px;
+  border-radius: 16px;
+  background: rgba(var(--v-theme-surface-variant), 0.28);
+  color: rgba(var(--v-theme-on-surface), 0.82);
+  font-size: 0.88rem;
+}
+
+.mobile-meta-pill-wide {
+  grid-column: 1 / -1;
+}
+
+.tablet-events-grid {
+  margin: -6px;
+}
+
+.tablet-event-card {
+  min-height: 100%;
+}
+
 .empty-state {
   border-style: dashed !important;
   border-color: rgba(var(--v-border-color), 0.12) !important;
@@ -1736,6 +1971,10 @@ function unsuspendViewedUser() {
     max-width: 100%;
   }
 
+  .content-grid {
+    row-gap: 14px;
+  }
+
   .action-column {
     justify-content: flex-start !important;
   }
@@ -1757,16 +1996,33 @@ function unsuspendViewedUser() {
   .profile-preview {
     min-height: 260px;
   }
+
+  .side-card {
+    border-radius: 24px !important;
+  }
 }
 
 @media (max-width: 600px) {
+  .profile-page-shell {
+    padding-top: 14px;
+    padding-bottom: 22px;
+  }
+
   .profile-hero {
     padding: 18px !important;
     border-radius: 24px !important;
   }
 
+  .profile-hero-spacing {
+    margin-bottom: 14px;
+  }
+
   .profile-main-column {
     text-align: center;
+  }
+
+  .profile-avatar-column {
+    margin-bottom: 6px !important;
   }
 
   .profile-quick-stats {
@@ -1785,9 +2041,14 @@ function unsuspendViewedUser() {
     border-radius: 24px !important;
   }
 
+  .tabs-shell-mobile {
+    padding-top: 10px !important;
+  }
+
   .profile-tabs :deep(.v-slide-group__content) {
     gap: 6px;
     justify-content: flex-start;
+    padding-inline: 2px;
   }
 
   .profile-tabs :deep(.v-tab) {
@@ -1807,10 +2068,23 @@ function unsuspendViewedUser() {
     flex: 1 1 auto;
   }
 
+  .action-column {
+    gap: 8px;
+  }
+
   .action-column .touch-btn,
   .quick-actions-wrap .touch-btn {
     flex: 1 1 100%;
     width: 100%;
+  }
+
+  .quick-actions-wrap {
+    flex-direction: column;
+    align-items: stretch !important;
+  }
+
+  .profile-preview {
+    min-height: 220px;
   }
 
   .dots-btn {

@@ -1,5 +1,5 @@
 <template>
-  <v-app :class="['mainpage-app', `theme-${currentTheme}`, { 'is-mobile': isMobile }]">
+  <v-app :class="['mainpage-app', `theme-${currentTheme}`, { 'is-mobile': isMobile, 'is-tablet': isTablet }]">
     <AppNavbar />
 
     <v-main class="mainpage-root">
@@ -10,23 +10,54 @@
         <section class="hero-section hero-section-minimal hero-section--blended mb-8">
           <div class="hero-accent hero-accent-primary"></div>
           <div class="hero-accent hero-accent-secondary"></div>
-          <div class="hero-copy">
-            <h1 class="hero-title">
-              Welcome, {{ currentUser ? currentUserName : "Guest" }}
-            </h1>
 
-            <p class="hero-subtitle text-medium-emphasis">
-              {{ currentUser
-                ? "Here are picks tailored for you."
-                : "Login to unlock personalized recommendations." }}
-            </p>
+          <div class="hero-shell">
+            <div class="hero-copy">
+              <div class="hero-eyebrow">
+                <v-icon size="15" class="me-2">mdi-sparkles</v-icon>
+                Blassti picks
+              </div>
+
+              <h1 class="hero-title">
+                Welcome, {{ currentUser ? currentUserName : "Guest" }}
+              </h1>
+
+              <p class="hero-subtitle text-medium-emphasis">
+                {{ currentUser
+                  ? "Here are picks tailored for you."
+                  : "Login to unlock personalized recommendations." }}
+              </p>
+            </div>
+
+          </div>
+
+          <div class="hero-nav-pills" aria-label="Homepage sections">
+            <button type="button" class="hero-nav-pill" @click="scrollToSection('recommended-section')">
+              <v-icon size="16">mdi-star-four-points</v-icon>
+              <span>Recommended</span>
+            </button>
+
+            <button type="button" class="hero-nav-pill" @click="scrollToSection('venues-section')">
+              <v-icon size="16">mdi-office-building-marker-outline</v-icon>
+              <span>Venues</span>
+            </button>
+
+            <button type="button" class="hero-nav-pill" @click="scrollToSection('last-call-section')">
+              <v-icon size="16">mdi-fire</v-icon>
+              <span>Last Call</span>
+            </button>
+
+            <button type="button" class="hero-nav-pill" @click="scrollToSection('sold-out-section')">
+              <v-icon size="16">mdi-ticket-off-outline</v-icon>
+              <span>Sold Out</span>
+            </button>
           </div>
         </section>
 
         <v-divider class="section-divider my-8"></v-divider>
 
         <!-- Recommended Events -->
-        <section class="section-shell mb-10">
+        <section id="recommended-section" class="section-shell section-shell--recommended mb-10">
           <div class="section-header mb-4">
             <div>
               <div class="section-kicker">
@@ -121,7 +152,7 @@
 
           <!-- Logged-in recommendations -->
           <div v-else>
-            <v-row class="mt-1">
+            <v-row class="cards-grid cards-grid--recommended cards-grid--preview mt-1">
               <v-col
                 v-for="(event, index) in recommendedPreview"
                 :key="event.id"
@@ -129,7 +160,7 @@
                 sm="6"
                 md="4"
                 lg="3"
-                class="stagger-col"
+                class="cards-col stagger-col"
                 :style="getStaggerStyle(index)"
               >
                 <v-card
@@ -206,7 +237,7 @@
 
             <v-expand-transition>
               <div v-show="showMoreRecommended">
-                <v-row class="mt-0">
+                <v-row class="cards-grid cards-grid--recommended cards-grid--expanded mt-0">
                   <v-col
                     v-for="(event, index) in recommendedExtra"
                     :key="event.id"
@@ -214,7 +245,7 @@
                     sm="6"
                     md="4"
                     lg="3"
-                    class="stagger-col stagger-col-delayed"
+                    class="cards-col stagger-col stagger-col-delayed"
                     :style="getStaggerStyle(index + 4)"
                   >
                     <v-card
@@ -287,7 +318,7 @@
         </section>
 
         <!-- Featured Venues -->
-        <section class="section-shell mt-8 mb-10">
+        <section id="venues-section" class="section-shell section-shell--venues mt-8 mb-10">
           <div class="section-header mb-4">
             <div>
               <div class="section-kicker">
@@ -316,7 +347,7 @@
             </div>
           </div>
 
-          <v-row>
+          <v-row class="cards-grid cards-grid--venues cards-grid--preview">
             <v-col
               v-for="(venue, index) in featuredVenuesPreview"
               :key="venue.id"
@@ -324,7 +355,7 @@
               sm="6"
               md="4"
               lg="3"
-              class="stagger-col"
+              class="cards-col stagger-col"
               :style="getStaggerStyle(index)"
             >
               <v-card
@@ -394,7 +425,7 @@
 
           <v-expand-transition>
             <div v-show="showMoreVenues">
-              <v-row class="mt-0">
+              <v-row class="cards-grid cards-grid--venues cards-grid--expanded mt-0">
                 <v-col
                   v-for="(venue, index) in featuredVenuesExtra"
                   :key="venue.id"
@@ -402,7 +433,7 @@
                   sm="6"
                   md="4"
                   lg="3"
-                  class="stagger-col stagger-col-delayed"
+                  class="cards-col stagger-col stagger-col-delayed"
                   :style="getStaggerStyle(index + 4)"
                 >
                   <v-card
@@ -481,7 +512,7 @@
         </section>
 
         <!-- Last Call -->
-        <section class="section-shell mt-8 mb-10">
+        <section id="last-call-section" class="section-shell section-shell--last-call mt-8 mb-10">
           <div class="section-header mb-4">
             <div>
               <div class="section-kicker">
@@ -510,7 +541,7 @@
             </div>
           </div>
 
-          <v-row>
+          <v-row class="cards-grid cards-grid--last-call cards-grid--preview">
             <v-col
               v-for="(event, index) in lastCallEventsPreview"
               :key="event.id"
@@ -518,7 +549,7 @@
               sm="6"
               md="4"
               lg="3"
-              class="stagger-col"
+              class="cards-col stagger-col"
               :style="getStaggerStyle(index)"
             >
               <v-card
@@ -595,7 +626,7 @@
 
           <v-expand-transition>
             <div v-show="showMoreLastCall">
-              <v-row class="mt-0">
+              <v-row class="cards-grid cards-grid--last-call cards-grid--expanded mt-0">
                 <v-col
                   v-for="(event, index) in lastCallEventsExtra"
                   :key="event.id"
@@ -603,7 +634,7 @@
                   sm="6"
                   md="4"
                   lg="3"
-                  class="stagger-col stagger-col-delayed"
+                  class="cards-col stagger-col stagger-col-delayed"
                   :style="getStaggerStyle(index + 4)"
                 >
                   <v-card
@@ -682,7 +713,7 @@
         </section>
 
         <!-- Sold Out -->
-        <section class="section-shell mt-8 mb-12">
+        <section id="sold-out-section" class="section-shell section-shell--sold-out mt-8 mb-12">
           <div class="section-header mb-4">
             <div>
               <div class="section-kicker">
@@ -711,7 +742,7 @@
             </div>
           </div>
 
-          <v-row>
+          <v-row class="cards-grid cards-grid--sold-out cards-grid--preview">
             <v-col
               v-for="(event, index) in soldOutEventsPreview"
               :key="event.id"
@@ -719,7 +750,7 @@
               sm="6"
               md="4"
               lg="3"
-              class="stagger-col"
+              class="cards-col stagger-col"
               :style="getStaggerStyle(index)"
             >
               <v-card
@@ -792,7 +823,7 @@
 
           <v-expand-transition>
             <div v-show="showMoreSoldOut">
-              <v-row class="mt-0">
+              <v-row class="cards-grid cards-grid--sold-out cards-grid--expanded mt-0">
                 <v-col
                   v-for="(event, index) in soldOutEventsExtra"
                   :key="event.id"
@@ -800,7 +831,7 @@
                   sm="6"
                   md="4"
                   lg="3"
-                  class="stagger-col stagger-col-delayed"
+                  class="cards-col stagger-col stagger-col-delayed"
                   :style="getStaggerStyle(index + 4)"
                 >
                   <v-card
@@ -944,6 +975,7 @@ const LONG_PRESS_DURATION = 520
 
 const windowWidth = ref(typeof window !== "undefined" ? window.innerWidth : 1280)
 const isMobile = computed(() => windowWidth.value <= MOBILE_BREAKPOINT)
+const isTablet = computed(() => windowWidth.value > 600 && windowWidth.value <= 1264)
 const currentTheme = computed(() => {
   return theme?.global?.name?.value === "light" ? "light" : "dark"
 })
@@ -1265,6 +1297,18 @@ function openVenue(venueId) {
     query: { id: venueId }
   })
 }
+
+function scrollToSection(sectionId) {
+  if (typeof document === "undefined" || !sectionId) return
+
+  const target = document.getElementById(sectionId)
+  if (!target) return
+
+  target.scrollIntoView({
+    behavior: "smooth",
+    block: "start",
+  })
+}
 </script>
 
 <style scoped>
@@ -1316,6 +1360,132 @@ function openVenue(venueId) {
     border-color 0.22s ease,
     background 0.22s ease;
 }
+.hero-shell {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  grid-template-columns: minmax(0, 1.4fr) minmax(280px, 0.72fr);
+  gap: 24px;
+  align-items: stretch;
+}
+
+.hero-eyebrow {
+  display: inline-flex;
+  align-items: center;
+  margin-bottom: 14px;
+  padding: 8px 14px;
+  border-radius: 999px;
+  font-size: 0.78rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: rgb(var(--v-theme-primary));
+  background: rgba(var(--v-theme-primary), 0.08);
+  border: 1px solid rgba(var(--v-theme-primary), 0.12);
+}
+
+.hero-summary-card {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 18px;
+  min-height: 100%;
+  padding: 20px 22px;
+  border-radius: 24px;
+  border: 1px solid rgba(var(--v-border-color), 0.12);
+  background:
+    linear-gradient(180deg, rgba(var(--v-theme-surface), 0.88), rgba(var(--v-theme-surface), 0.72));
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.08);
+  backdrop-filter: blur(12px);
+}
+
+.hero-summary-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  color: rgba(var(--v-theme-on-surface), 0.86);
+}
+
+.hero-summary-label {
+  font-size: 0.82rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.hero-summary-text {
+  font-size: 0.95rem;
+  line-height: 1.65;
+  color: rgba(var(--v-theme-on-surface), 0.74);
+}
+
+.hero-stats {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.hero-stat-pill {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 12px 14px;
+  border-radius: 18px;
+  background: rgba(var(--v-theme-primary), 0.07);
+  border: 1px solid rgba(var(--v-border-color), 0.1);
+}
+
+.hero-stat-pill span {
+  font-size: 1.08rem;
+  font-weight: 800;
+  line-height: 1;
+}
+
+.hero-stat-pill small {
+  font-size: 0.76rem;
+  color: rgba(var(--v-theme-on-surface), 0.68);
+}
+
+.hero-nav-pills {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  gap: 10px;
+  margin-top: 22px;
+  flex-wrap: wrap;
+}
+
+.hero-nav-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 11px 15px;
+  border-radius: 999px;
+  border: 1px solid rgba(var(--v-border-color), 0.12);
+  background: rgba(var(--v-theme-surface), 0.56);
+  color: rgba(var(--v-theme-on-surface), 0.9);
+  font-size: 0.9rem;
+  font-weight: 700;
+  line-height: 1;
+  backdrop-filter: blur(10px);
+  transition: transform 0.22s ease, border-color 0.22s ease, background 0.22s ease;
+}
+
+.hero-nav-pill:hover {
+  transform: translateY(-1px);
+  border-color: rgba(var(--v-theme-primary), 0.22);
+  background: rgba(var(--v-theme-primary), 0.1);
+}
+
+.cards-grid {
+  --mobile-card-width: 84vw;
+  --mobile-featured-width: 90vw;
+  --mobile-card-min-width: 280px;
+}
+
 
 .hero-section--blended {
   border: 1px solid rgba(var(--v-border-color), 0.05);
@@ -1713,6 +1883,31 @@ function openVenue(venueId) {
   animation: cardEnter 0.55s ease both;
 }
 
+.cards-grid {
+  position: relative;
+}
+
+.cards-col {
+  display: flex;
+}
+
+.cards-col > .v-card {
+  width: 100%;
+}
+
+.section-shell--recommended .cards-grid--preview .cards-col:first-child .content-card,
+.section-shell--last-call .cards-grid--preview .cards-col:first-child .content-card,
+.section-shell--sold-out .cards-grid--preview .cards-col:first-child .content-card {
+  min-height: 100%;
+}
+
+.section-shell--recommended .cards-grid--preview .cards-col:first-child .card-media .v-img__img,
+.section-shell--last-call .cards-grid--preview .cards-col:first-child .card-media .v-img__img,
+.section-shell--sold-out .cards-grid--preview .cards-col:first-child .card-media .v-img__img,
+.section-shell--venues .cards-grid--preview .cards-col:first-child .card-media .v-img__img {
+  object-position: center;
+}
+
 .stagger-col-delayed {
   animation-duration: 0.62s;
 }
@@ -1866,6 +2061,266 @@ function openVenue(venueId) {
   }
 }
 
+
+@media (min-width: 601px) and (max-width: 960px) {
+  .hero-shell {
+    grid-template-columns: 1fr;
+  }
+
+  .hero-summary-card {
+    padding: 18px 20px;
+  }
+
+  .cards-grid {
+    display: grid !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0;
+  }
+
+  .cards-grid > .cards-col {
+    max-width: none !important;
+    width: auto !important;
+    flex: 1 1 auto !important;
+    padding: 10px !important;
+  }
+
+  .section-shell--recommended .cards-grid--preview > .cards-col:first-child,
+  .section-shell--venues .cards-grid--preview > .cards-col:first-child {
+    grid-column: 1 / -1;
+  }
+
+  .section-shell--recommended .cards-grid--preview > .cards-col:first-child .card-media .v-img,
+  .section-shell--venues .cards-grid--preview > .cards-col:first-child .card-media .v-img {
+    height: 260px !important;
+  }
+}
+
+@media (max-width: 960px) {
+  .mainpage-container {
+    padding-inline: 18px !important;
+  }
+
+  .hero-section {
+    border-radius: 24px;
+  }
+
+  .hero-shell {
+    grid-template-columns: 1fr;
+    gap: 18px;
+  }
+
+  .hero-nav-pills {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    padding-bottom: 4px;
+    margin-inline: -2px;
+    scrollbar-width: none;
+  }
+
+  .hero-nav-pills::-webkit-scrollbar {
+    display: none;
+  }
+
+  .hero-nav-pill {
+    flex: 0 0 auto;
+    white-space: nowrap;
+  }
+
+  .section-actions {
+    width: 100%;
+    justify-content: flex-start;
+  }
+
+  .section-toggle-btn {
+    min-height: 42px;
+  }
+
+  .card-action-btn,
+  .sold-out-btn,
+  .state-action-btn {
+    min-height: 46px;
+  }
+}
+
+@media (max-width: 600px) {
+  .mainpage-container {
+    padding-inline: 14px !important;
+    padding-top: 18px;
+    padding-bottom: 40px;
+  }
+
+  .hero-section {
+    border-radius: 24px;
+  }
+
+  .hero-section-minimal {
+    padding: 18px 16px 16px;
+  }
+
+  .hero-eyebrow {
+    margin-bottom: 12px;
+    padding: 7px 12px;
+    font-size: 0.72rem;
+  }
+
+  .hero-copy {
+    text-align: left;
+  }
+
+  .hero-title {
+    font-size: clamp(2rem, 10vw, 2.7rem);
+    line-height: 0.98;
+  }
+
+  .hero-subtitle {
+    font-size: 0.96rem;
+    line-height: 1.55;
+    max-width: 100%;
+  }
+
+  .hero-summary-card {
+    padding: 16px;
+    gap: 14px;
+    border-radius: 20px;
+  }
+
+  .hero-summary-text {
+    font-size: 0.9rem;
+    line-height: 1.55;
+  }
+
+  .hero-stats {
+    display: flex;
+    overflow-x: auto;
+    gap: 10px;
+    scrollbar-width: none;
+    padding-bottom: 2px;
+    margin-inline: -1px;
+  }
+
+  .hero-stats::-webkit-scrollbar {
+    display: none;
+  }
+
+  .hero-stat-pill {
+    min-width: 116px;
+    flex: 0 0 auto;
+    padding: 11px 13px;
+  }
+
+  .section-header {
+    gap: 12px;
+    align-items: flex-start;
+  }
+
+  .section-shell {
+    margin-bottom: 34px !important;
+  }
+
+  .section-shell::before {
+    width: 64px;
+    top: -12px;
+  }
+
+  .section-title {
+    font-size: 1.42rem;
+  }
+
+  .section-subtitle {
+    max-width: 100%;
+  }
+
+  .section-actions {
+    width: 100%;
+  }
+
+  .section-toggle-btn {
+    width: 100%;
+    justify-content: center;
+    border: 1px solid rgba(var(--v-border-color), 0.1);
+    background: rgba(var(--v-theme-surface), 0.55);
+  }
+
+  .cards-grid {
+    display: flex !important;
+    flex-wrap: nowrap !important;
+    overflow-x: auto;
+    overflow-y: visible;
+    margin-left: -6px;
+    margin-right: -6px;
+    padding: 4px 6px 14px;
+    scroll-snap-type: x proximity;
+    scrollbar-width: none;
+  }
+
+  .cards-grid::-webkit-scrollbar {
+    display: none;
+  }
+
+  .cards-grid > .cards-col {
+    flex: 0 0 var(--mobile-card-width) !important;
+    width: var(--mobile-card-width) !important;
+    max-width: var(--mobile-card-width) !important;
+    min-width: min(var(--mobile-card-width), max(78vw, var(--mobile-card-min-width))) !important;
+    padding: 0 8px !important;
+    scroll-snap-align: start;
+  }
+
+  .section-shell--recommended .cards-grid--preview > .cards-col:first-child,
+  .section-shell--venues .cards-grid--preview > .cards-col:first-child,
+  .section-shell--last-call .cards-grid--preview > .cards-col:first-child,
+  .section-shell--sold-out .cards-grid--preview > .cards-col:first-child {
+    flex-basis: var(--mobile-featured-width) !important;
+    width: var(--mobile-featured-width) !important;
+    max-width: var(--mobile-featured-width) !important;
+  }
+
+  .cards-col .content-card {
+    border-radius: 24px !important;
+    box-shadow: 0 14px 28px rgba(0, 0, 0, 0.1);
+  }
+
+  .cards-grid--preview .cards-col:first-child .content-card .card-media .v-img {
+    height: 240px !important;
+  }
+
+  .cards-grid--preview .cards-col:not(:first-child) .content-card .card-media .v-img {
+    height: 190px !important;
+  }
+
+  .cards-grid--expanded .cards-col .content-card .card-media .v-img {
+    height: 190px !important;
+  }
+
+  .card-title {
+    font-size: 1rem;
+    padding-bottom: 8px;
+  }
+
+  .meta-row {
+    font-size: 0.89rem;
+    align-items: flex-start;
+    margin-bottom: 6px;
+  }
+
+  .card-media-overlay {
+    opacity: 1;
+    background: linear-gradient(180deg, rgba(0, 0, 0, 0.01) 0%, rgba(0, 0, 0, 0.06) 46%, rgba(0, 0, 0, 0.42) 100%);
+  }
+
+  .card-media-overlay-content {
+    transform: translateY(0);
+    padding: 7px 10px;
+  }
+
+  .content-card:hover .card-media {
+    transform: scale(1.04);
+  }
+
+  .context-menu-list :deep(.v-list-item) {
+    min-height: 48px;
+  }
+}
 .mainpage-app {
   min-height: 100vh;
 }

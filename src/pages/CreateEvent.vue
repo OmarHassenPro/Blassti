@@ -62,7 +62,89 @@
                     </div>
 
                     <template v-if="usableReservations.length">
-                      <v-radio-group v-model="selectedReservationId" color="primary" class="reservation-radio-group">
+                      <div v-if="isMobile" class="mobile-reservation-rail mb-4">
+                        <v-card
+                          v-for="reservation in usableReservations"
+                          :key="`mobile-${reservation.id}`"
+                          rounded="xl"
+                          variant="outlined"
+                          class="reservation-option mobile-reservation-card"
+                          :class="{ 'reservation-option--active': selectedReservationId === reservation.id }"
+                          @click="selectedReservationId = reservation.id"
+                        >
+                          <div
+                            v-if="getVenueImage(reservationVenueMap[reservation.id])"
+                            class="mobile-reservation-card__media"
+                          >
+                            <img
+                              :src="getVenueImage(reservationVenueMap[reservation.id])"
+                              :alt="reservationVenueMap[reservation.id]?.title || 'Venue'"
+                              class="mobile-reservation-card__image"
+                            />
+                            <div class="mobile-reservation-card__overlay">
+                              <v-chip size="small" color="primary" variant="elevated">
+                                {{ Number(reservation.total_price || 0).toFixed(2) }} TND
+                              </v-chip>
+                            </div>
+                          </div>
+
+                          <v-card-text class="pa-4">
+                            <div class="d-flex align-start justify-space-between ga-2 mb-2">
+                              <div class="mobile-reservation-card__title-wrap">
+                                <div class="text-subtitle-1 font-weight-bold mobile-reservation-card__title">
+                                  {{ reservationVenueMap[reservation.id]?.title || "Venue" }}
+                                </div>
+                                <div class="text-caption text-medium-emphasis mobile-reservation-card__location">
+                                  {{ getVenueLocationText(reservationVenueMap[reservation.id]) }}
+                                </div>
+                              </div>
+
+                              <v-avatar
+                                size="30"
+                                class="mobile-reservation-card__selector"
+                                :class="{ 'mobile-reservation-card__selector--active': selectedReservationId === reservation.id }"
+                              >
+                                <v-icon size="18">
+                                  {{ selectedReservationId === reservation.id ? 'mdi-check-circle' : 'mdi-circle-outline' }}
+                                </v-icon>
+                              </v-avatar>
+                            </div>
+
+                            <div class="d-flex flex-wrap ga-2 mb-3">
+                              <v-chip size="x-small" variant="outlined" rounded="lg">
+                                {{ reservationVenueMap[reservation.id]?.category || "Venue" }}
+                              </v-chip>
+
+                              <v-chip size="x-small" variant="outlined" rounded="lg">
+                                {{ reservationVenueMap[reservation.id]?.type || "Type" }}
+                              </v-chip>
+
+                              <v-chip size="x-small" color="success" variant="tonal" rounded="lg">
+                                {{ formatSeatClasses(getSeatClassesForVenue(reservationVenueMap[reservation.id])) }}
+                              </v-chip>
+                            </div>
+
+                            <div class="mobile-reservation-card__meta">
+                              <div class="mobile-meta-pill">
+                                <v-icon size="14">mdi-calendar-clock</v-icon>
+                                <span>{{ formatReservationWindow(reservation) }}</span>
+                              </div>
+
+                              <div class="mobile-meta-pill">
+                                <v-icon size="14">mdi-seat</v-icon>
+                                <span>{{ getVenueCapacity(reservationVenueMap[reservation.id]) }} seats</span>
+                              </div>
+                            </div>
+                          </v-card-text>
+                        </v-card>
+                      </div>
+
+                      <v-radio-group
+                        v-model="selectedReservationId"
+                        color="primary"
+                        class="reservation-radio-group"
+                        :class="{ 'd-none': isMobile }"
+                      >
                         <v-card
                           v-for="reservation in usableReservations"
                           :key="reservation.id"
@@ -148,7 +230,7 @@
                   </v-card>
                 </v-col>
 
-                <v-col cols="12" md="4">
+                <v-col cols="12" md="4" v-if="!isMobile">
                   <v-card
                     rounded="xl"
                     variant="outlined"
@@ -220,9 +302,63 @@
                 </v-col>
               </v-row>
 
+              <v-card
+                v-if="isMobile"
+                rounded="xl"
+                variant="outlined"
+                class="pa-4 mt-4 clean-section-card section-card-glow mobile-inline-preview"
+              >
+                <div class="d-flex align-center justify-space-between ga-3 mb-3">
+                  <div class="section-title d-flex align-center ga-2">
+                    <v-icon size="18">mdi-eye-outline</v-icon>
+                    <span>Selection preview</span>
+                  </div>
+
+                  <v-chip size="small" color="info" variant="tonal">
+                    {{ selectedReservation ? 'Ready to continue' : 'Choose one slot' }}
+                  </v-chip>
+                </div>
+
+                <template v-if="selectedReservation && selectedVenue">
+                  <div class="mobile-inline-preview__top">
+                    <div class="mobile-inline-preview__copy">
+                      <div class="text-subtitle-1 font-weight-bold">{{ selectedVenue.title }}</div>
+                      <div class="text-caption text-medium-emphasis">
+                        {{ getVenueLocationText(selectedVenue) }}
+                      </div>
+                    </div>
+
+                    <v-chip size="small" color="primary" variant="tonal">
+                      {{ formatSeatClasses(selectedSeatClasses) }}
+                    </v-chip>
+                  </div>
+
+                  <div class="mobile-inline-preview__stats mt-3">
+                    <div class="mobile-stat-card">
+                      <span class="mobile-stat-card__label">Date</span>
+                      <strong>{{ formatDateOnly(selectedReservation.start_datetime || selectedReservation.start_date) }}</strong>
+                    </div>
+                    <div class="mobile-stat-card">
+                      <span class="mobile-stat-card__label">Time</span>
+                      <strong>{{ formatTimeRange(selectedReservation.start_datetime || selectedReservation.start_date, selectedReservation.end_datetime || selectedReservation.end_date) }}</strong>
+                    </div>
+                    <div class="mobile-stat-card">
+                      <span class="mobile-stat-card__label">Capacity</span>
+                      <strong>{{ getVenueCapacity(selectedVenue) }}</strong>
+                    </div>
+                  </div>
+                </template>
+
+                <template v-else>
+                  <div class="text-body-2 text-medium-emphasis">
+                    Pick a reserved venue card above to unlock the event form.
+                  </div>
+                </template>
+              </v-card>
+
               <v-divider class="my-6" />
 
-              <div class="d-flex justify-space-between flex-wrap ga-3 action-bar">
+              <div class="d-flex justify-space-between flex-wrap ga-3 action-bar" :class="{ 'mobile-sticky-action-bar': isMobile }">
                 <v-btn
                   variant="outlined"
                   rounded="lg"
@@ -252,8 +388,507 @@
             </div>
 
             <div v-show="step === 2" class="mt-8 step-panel">
-              <v-row class="ga-md-0 ga-2">
-                <v-col cols="12" md="8">
+              <div v-if="isMobile" class="mobile-editor-shell">
+                <v-card rounded="xl" variant="outlined" class="pa-4 clean-section-card section-card-glow mobile-editor-hero mb-4">
+                  <div class="d-flex align-start justify-space-between ga-3 mb-3">
+                    <div>
+                      <div class="section-title d-flex align-center ga-2 mb-1"><v-icon size="18">mdi-pencil-ruler</v-icon><span>Event builder</span></div>
+                      <div class="text-body-2 text-medium-emphasis">
+                        Fill each section in a cleaner mobile flow, then preview and publish.
+                      </div>
+                    </div>
+
+                    <v-chip size="small" color="primary" variant="tonal">
+                      {{ mobileEditorTab === 'preview' ? 'Final review' : 'In progress' }}
+                    </v-chip>
+                  </div>
+
+                  <div class="mobile-inline-preview__top mb-3">
+                    <div class="mobile-inline-preview__copy">
+                      <div class="text-subtitle-1 font-weight-bold">{{ selectedVenue?.title || "Venue locked" }}</div>
+                      <div class="text-caption text-medium-emphasis">{{ getVenueLocationText(selectedVenue) }}</div>
+                    </div>
+
+                    <v-chip size="small" color="success" variant="tonal">
+                      {{ formatSeatClasses(selectedSeatClasses) }}
+                    </v-chip>
+                  </div>
+
+                  <div class="mobile-inline-preview__stats mobile-editor-hero__stats">
+                    <div class="mobile-stat-card">
+                      <span class="mobile-stat-card__label">Date</span>
+                      <strong>{{ lockedEventDate || "Date locked" }}</strong>
+                    </div>
+                    <div class="mobile-stat-card">
+                      <span class="mobile-stat-card__label">Time</span>
+                      <strong>{{ lockedStartTime && lockedEndTime ? `${lockedStartTime} - ${lockedEndTime}` : "Time locked" }}</strong>
+                    </div>
+                    <div class="mobile-stat-card">
+                      <span class="mobile-stat-card__label">Capacity</span>
+                      <strong>{{ getVenueCapacity(selectedVenue) }}</strong>
+                    </div>
+                  </div>
+                </v-card>
+
+                <div class="mobile-editor-tabs mb-4">
+                  <v-btn
+                    rounded="pill"
+                    variant="flat"
+                    class="mobile-editor-tab"
+                    :class="{ 'mobile-editor-tab--active': mobileEditorTab === 'details' }"
+                    @click="mobileEditorTab = 'details'"
+                  >
+                    Details
+                  </v-btn>
+
+                  <v-btn
+                    rounded="pill"
+                    variant="flat"
+                    class="mobile-editor-tab"
+                    :class="{ 'mobile-editor-tab--active': mobileEditorTab === 'media' }"
+                    @click="mobileEditorTab = 'media'"
+                  >
+                    Media
+                  </v-btn>
+
+                  <v-btn
+                    rounded="pill"
+                    variant="flat"
+                    class="mobile-editor-tab"
+                    :class="{ 'mobile-editor-tab--active': mobileEditorTab === 'tickets' }"
+                    @click="mobileEditorTab = 'tickets'"
+                  >
+                    Tickets
+                  </v-btn>
+
+                  <v-btn
+                    rounded="pill"
+                    variant="flat"
+                    class="mobile-editor-tab"
+                    :class="{ 'mobile-editor-tab--active': mobileEditorTab === 'finance' }"
+                    @click="mobileEditorTab = 'finance'"
+                  >
+                    Finance
+                  </v-btn>
+
+                  <v-btn
+                    rounded="pill"
+                    variant="flat"
+                    class="mobile-editor-tab"
+                    :class="{ 'mobile-editor-tab--active': mobileEditorTab === 'preview' }"
+                    @click="mobileEditorTab = 'preview'"
+                  >
+                    Preview
+                  </v-btn>
+                </div>
+
+                <v-window v-model="mobileEditorTab" class="mobile-editor-window" :touch="false">
+                  <v-window-item value="details">
+                    <v-card rounded="xl" variant="outlined" class="pa-4 clean-section-card section-card-glow mobile-editor-card">
+                      <div class="section-title mb-4 d-flex align-center ga-2"><v-icon size="18">mdi-form-select</v-icon><span>Basic event details</span></div>
+
+                      <div class="d-flex flex-wrap ga-2 mb-4 quick-meta-row">
+                        <v-chip size="small" color="primary" variant="tonal">
+                          <v-icon start size="16">mdi-office-building</v-icon>
+                          {{ selectedVenue?.title || "Venue locked" }}
+                        </v-chip>
+                        <v-chip size="small" color="success" variant="tonal">
+                          <v-icon start size="16">mdi-calendar-check-outline</v-icon>
+                          {{ lockedEventDate || "Date locked" }}
+                        </v-chip>
+                        <v-chip size="small" color="info" variant="tonal">
+                          <v-icon start size="16">mdi-clock-outline</v-icon>
+                          {{ lockedStartTime && lockedEndTime ? `${lockedStartTime} - ${lockedEndTime}` : "Time locked" }}
+                        </v-chip>
+                      </div>
+
+                      <v-row>
+                        <v-col cols="12">
+                          <v-text-field
+                            v-model="form.title"
+                            label="Event title"
+                            variant="outlined"
+                            rounded="lg"
+                          />
+                        </v-col>
+
+                        <v-col cols="12">
+                          <v-select
+                            v-model="form.type"
+                            :items="eventTypeOptions"
+                            label="Event category"
+                            variant="outlined"
+                            rounded="lg"
+                          />
+                        </v-col>
+
+                        <v-col cols="6">
+                          <v-text-field
+                            :model-value="lockedEventDate"
+                            label="Event date"
+                            variant="outlined"
+                            rounded="lg"
+                            readonly
+                          />
+                        </v-col>
+
+                        <v-col cols="6">
+                          <v-text-field
+                            :model-value="lockedStartTime && lockedEndTime ? `${lockedStartTime} - ${lockedEndTime}` : ''"
+                            label="Time"
+                            variant="outlined"
+                            rounded="lg"
+                            readonly
+                          />
+                        </v-col>
+
+                        <v-col cols="12">
+                          <v-select
+                            v-model="form.age_restriction"
+                            :items="ageRestrictionOptions"
+                            label="Age restriction"
+                            variant="outlined"
+                            rounded="lg"
+                          />
+                        </v-col>
+
+                        <v-col cols="12">
+                          <v-text-field
+                            :model-value="selectedVenue?.title || ''"
+                            label="Venue"
+                            variant="outlined"
+                            rounded="lg"
+                            readonly
+                          />
+                        </v-col>
+
+                        <v-col cols="12">
+                          <v-text-field
+                            :model-value="getVenueCity(selectedVenue)"
+                            label="City"
+                            variant="outlined"
+                            rounded="lg"
+                            readonly
+                          />
+                        </v-col>
+
+                        <v-col cols="12">
+                          <v-textarea
+                            v-model="form.description"
+                            label="Event description"
+                            rows="5"
+                            variant="outlined"
+                            rounded="lg"
+                          />
+                        </v-col>
+                      </v-row>
+                    </v-card>
+                  </v-window-item>
+
+                  <v-window-item value="media">
+                    <div class="mobile-editor-stack">
+                      <v-card rounded="xl" variant="outlined" class="pa-4 clean-section-card section-card-glow mobile-editor-card">
+                        <div class="section-title mb-2 d-flex align-center ga-2"><v-icon size="18">mdi-image-outline</v-icon><span>Event images</span></div>
+                        <div class="text-caption text-medium-emphasis mb-4">
+                          One profile image is required. You can also add up to 3 extra images.
+                        </div>
+
+                        <v-row>
+                          <v-col cols="12">
+                            <v-file-input
+                              ref="coverImageInput"
+                              accept="image/*"
+                              label="Event profile image"
+                              variant="outlined"
+                              rounded="lg"
+                              prepend-icon="mdi-camera"
+                              show-size
+                              @update:modelValue="handleCoverImage"
+                            />
+                          </v-col>
+
+                          <v-col cols="12" v-if="form.image">
+                            <div class="preview-box">
+                              <img :src="form.image" class="preview-image" alt="Event cover" />
+                            </div>
+                          </v-col>
+
+                          <v-col cols="12">
+                            <v-file-input
+                              ref="extraImagesInput"
+                              accept="image/*"
+                              label="Extra event images (max 3)"
+                              variant="outlined"
+                              rounded="lg"
+                              prepend-icon="mdi-image-multiple"
+                              show-size
+                              multiple
+                              @update:modelValue="handleExtraImages"
+                            />
+                          </v-col>
+
+                          <v-col cols="12" v-if="form.extra_images.length">
+                            <div class="mobile-extra-images-grid">
+                              <v-card
+                                v-for="(image, index) in form.extra_images"
+                                :key="`mobile-extra-${index}`"
+                                rounded="xl"
+                                variant="outlined"
+                                class="pa-2"
+                              >
+                                <v-img :src="image" height="132" cover class="rounded-lg" />
+                                <div class="d-flex justify-end mt-2">
+                                  <v-btn
+                                    color="error"
+                                    variant="text"
+                                    size="small"
+                                    prepend-icon="mdi-delete-outline"
+                                    @click="removeExtraImage(index)"
+                                  >
+                                    Remove
+                                  </v-btn>
+                                </div>
+                              </v-card>
+                            </div>
+                          </v-col>
+                        </v-row>
+                      </v-card>
+                    </div>
+                  </v-window-item>
+
+                  <v-window-item value="tickets">
+                    <div class="mobile-editor-stack">
+                      <v-card rounded="xl" variant="outlined" class="pa-4 clean-section-card section-card-glow mobile-editor-card">
+                        <div class="section-title mb-2 d-flex align-center ga-2"><v-icon size="18">mdi-ticket-confirmation-outline</v-icon><span>Ticket pricing by seat type</span></div>
+                        <div class="text-caption text-medium-emphasis mb-4">
+                          Only the seat categories that exist in the selected venue are shown.
+                        </div>
+
+                        <v-row>
+                          <v-col cols="12" v-if="hasSeatClass('Regular')">
+                            <v-text-field
+                              v-model.number="form.ticket_prices.regular"
+                              type="number"
+                              min="0"
+                              label="Regular ticket price (TND)"
+                              variant="outlined"
+                              rounded="lg"
+                            />
+                          </v-col>
+
+                          <v-col cols="12" v-if="hasSeatClass('Special')">
+                            <v-text-field
+                              v-model.number="form.ticket_prices.special"
+                              type="number"
+                              min="0"
+                              label="Special ticket price (TND)"
+                              variant="outlined"
+                              rounded="lg"
+                            />
+                          </v-col>
+
+                          <v-col cols="12" v-if="hasSeatClass('VIP')">
+                            <v-text-field
+                              v-model.number="form.ticket_prices.vip"
+                              type="number"
+                              min="0"
+                              label="VIP ticket price (TND)"
+                              variant="outlined"
+                              rounded="lg"
+                            />
+                          </v-col>
+                        </v-row>
+                      </v-card>
+
+                      <v-card rounded="xl" variant="outlined" class="pa-4 clean-section-card section-card-glow mobile-editor-card">
+                        <div class="section-title mb-2 d-flex align-center ga-2"><v-icon size="18">mdi-account-music-outline</v-icon><span>Featured artists</span></div>
+                        <div class="text-caption text-medium-emphasis mb-4">
+                          Add actual users as artists. They will receive a notification when the event is published.
+                        </div>
+
+                        <v-autocomplete
+                          v-model="form.featured_artist_ids"
+                          :items="artistUserOptions"
+                          item-title="label"
+                          item-value="value"
+                          label="Select featured artist(s)"
+                          variant="outlined"
+                          rounded="lg"
+                          chips
+                          closable-chips
+                          multiple
+                          clearable
+                        />
+
+                        <div v-if="selectedArtistUsers.length" class="mt-4 d-flex flex-wrap ga-2">
+                          <v-chip
+                            v-for="artist in selectedArtistUsers"
+                            :key="artist.id"
+                            color="primary"
+                            variant="tonal"
+                            rounded="lg"
+                          >
+                            {{ artist.full_name }}
+                          </v-chip>
+                        </div>
+                      </v-card>
+                    </div>
+                  </v-window-item>
+
+                  <v-window-item value="finance">
+                    <v-card rounded="xl" variant="outlined" class="pa-4 clean-section-card section-card-glow mobile-editor-card">
+                      <div class="section-title mb-2 d-flex align-center ga-2"><v-icon size="18">mdi-bank-outline</v-icon><span>Organizer banking info</span></div>
+                      <div class="text-caption text-medium-emphasis mb-4">
+                        This banking info is stored privately so you can receive money later from event sales.
+                      </div>
+
+                      <v-row>
+                        <v-col cols="12">
+                          <v-text-field
+                            v-model="form.bank_account_info.account_holder_name"
+                            label="Account holder full name"
+                            variant="outlined"
+                            rounded="lg"
+                          />
+                        </v-col>
+
+                        <v-col cols="12">
+                          <v-text-field
+                            v-model="form.bank_account_info.bank_name"
+                            label="Bank name"
+                            variant="outlined"
+                            rounded="lg"
+                          />
+                        </v-col>
+
+                        <v-col cols="12">
+                          <v-text-field
+                            v-model="form.bank_account_info.account_number"
+                            label="Account number"
+                            variant="outlined"
+                            rounded="lg"
+                          />
+                        </v-col>
+
+                        <v-col cols="12">
+                          <v-text-field
+                            v-model="form.bank_account_info.rib"
+                            label="RIB"
+                            variant="outlined"
+                            rounded="lg"
+                          />
+                        </v-col>
+
+                        <v-col cols="12">
+                          <v-text-field
+                            v-model="form.bank_account_info.iban"
+                            label="IBAN"
+                            variant="outlined"
+                            rounded="lg"
+                          />
+                        </v-col>
+
+                        <v-col cols="12">
+                          <v-text-field
+                            v-model="form.bank_account_info.swift"
+                            label="SWIFT / BIC"
+                            variant="outlined"
+                            rounded="lg"
+                          />
+                        </v-col>
+                      </v-row>
+                    </v-card>
+                  </v-window-item>
+
+                  <v-window-item value="preview">
+                    <div class="mobile-editor-stack">
+                      <v-card rounded="xl" variant="outlined" class="pa-4 clean-section-card section-card-glow mobile-inline-preview mobile-editor-card">
+                        <div class="section-title mb-3 d-flex align-center ga-2"><v-icon size="18">mdi-calendar-clock-outline</v-icon><span>Venue slot snapshot</span></div>
+
+                        <div class="mobile-inline-preview__top">
+                          <div class="mobile-inline-preview__copy">
+                            <div class="text-subtitle-1 font-weight-bold">
+                              {{ selectedVenue?.title || "No venue" }}
+                            </div>
+                            <div class="text-caption text-medium-emphasis">
+                              {{ getVenueLocationText(selectedVenue) }}
+                            </div>
+                          </div>
+                          <v-chip size="small" color="primary" variant="tonal">
+                            {{ formatSeatClasses(selectedSeatClasses) }}
+                          </v-chip>
+                        </div>
+
+                        <div class="mobile-inline-preview__stats mt-3">
+                          <div class="mobile-stat-card">
+                            <span class="mobile-stat-card__label">Date</span>
+                            <strong>{{ lockedEventDate }}</strong>
+                          </div>
+                          <div class="mobile-stat-card">
+                            <span class="mobile-stat-card__label">Time</span>
+                            <strong>{{ lockedStartTime }} - {{ lockedEndTime }}</strong>
+                          </div>
+                          <div class="mobile-stat-card">
+                            <span class="mobile-stat-card__label">Capacity</span>
+                            <strong>{{ getVenueCapacity(selectedVenue) }}</strong>
+                          </div>
+                        </div>
+                      </v-card>
+
+                      <v-card rounded="xl" variant="outlined" class="pa-4 clean-section-card section-card-glow mobile-inline-preview mobile-editor-card">
+                        <div class="section-title mb-3 d-flex align-center ga-2"><v-icon size="18">mdi-monitor-eye</v-icon><span>Live event preview</span></div>
+
+                        <div class="mobile-event-preview">
+                          <div class="mobile-event-preview__media" v-if="form.image">
+                            <img :src="form.image" class="mobile-event-preview__image" alt="Preview image" />
+                          </div>
+
+                          <div class="mobile-event-preview__body">
+                            <div class="text-subtitle-1 font-weight-bold">
+                              {{ form.title || "Untitled event" }}
+                            </div>
+
+                            <div class="text-caption text-medium-emphasis mb-2">
+                              {{ selectedVenue?.title || "Venue not selected" }}
+                            </div>
+
+                            <div class="d-flex ga-2 flex-wrap mb-3">
+                              <v-chip size="small" color="primary" variant="tonal">
+                                {{ form.type || "Category" }}
+                              </v-chip>
+
+                              <v-chip size="small" variant="outlined">
+                                {{ form.age_restriction || "Age restriction" }}
+                              </v-chip>
+                            </div>
+
+                            <div class="text-body-2 preview-description mb-3">
+                              {{ form.description || "No description yet." }}
+                            </div>
+
+                            <div class="mobile-price-row">
+                              <v-chip v-if="hasSeatClass('Regular')" size="small" color="info" variant="tonal">
+                                Regular: {{ numberOrDash(form.ticket_prices.regular) }} TND
+                              </v-chip>
+
+                              <v-chip v-if="hasSeatClass('Special')" size="small" color="error" variant="tonal">
+                                Special: {{ numberOrDash(form.ticket_prices.special) }} TND
+                              </v-chip>
+
+                              <v-chip v-if="hasSeatClass('VIP')" size="small" color="warning" variant="tonal">
+                                VIP: {{ numberOrDash(form.ticket_prices.vip) }} TND
+                              </v-chip>
+                            </div>
+                          </div>
+                        </div>
+                      </v-card>
+                    </div>
+                  </v-window-item>
+                </v-window>
+              </div>
+
+              <v-row v-if="!isMobile" class="ga-md-0 ga-2 step-two-layout">
+                <v-col cols="12" md="7" lg="8">
                   <v-card rounded="xl" variant="outlined" class="pa-4 pa-md-6 clean-section-card section-card-glow">
                     <div class="section-title mb-4 d-flex align-center ga-2"><v-icon size="18">mdi-form-select</v-icon><span>Basic event details</span></div>
 
@@ -271,6 +906,33 @@
                         {{ lockedStartTime && lockedEndTime ? `${lockedStartTime} - ${lockedEndTime}` : "Time locked" }}
                       </v-chip>
                     </div>
+
+                    <v-card
+                      v-if="isMobile"
+                      rounded="xl"
+                      variant="outlined"
+                      class="pa-3 mb-4 mobile-inline-preview mobile-form-summary"
+                    >
+                      <div class="d-flex align-center justify-space-between ga-3 mb-3">
+                        <div class="text-subtitle-2 font-weight-bold">Locked venue slot</div>
+                        <v-chip size="small" color="success" variant="tonal">Reservation linked</v-chip>
+                      </div>
+
+                      <div class="mobile-inline-preview__stats">
+                        <div class="mobile-stat-card">
+                          <span class="mobile-stat-card__label">Venue</span>
+                          <strong>{{ selectedVenue?.title || "Venue locked" }}</strong>
+                        </div>
+                        <div class="mobile-stat-card">
+                          <span class="mobile-stat-card__label">Date</span>
+                          <strong>{{ lockedEventDate || "Date locked" }}</strong>
+                        </div>
+                        <div class="mobile-stat-card">
+                          <span class="mobile-stat-card__label">Time</span>
+                          <strong>{{ lockedStartTime && lockedEndTime ? `${lockedStartTime} - ${lockedEndTime}` : "Time locked" }}</strong>
+                        </div>
+                      </div>
+                    </v-card>
 
                     <v-row>
                       <v-col cols="12" md="7">
@@ -570,9 +1232,92 @@
                       </v-chip>
                     </div>
                   </v-card>
+
+                  <div v-if="isMobile" class="mobile-preview-stack mt-4">
+                    <v-card rounded="xl" variant="outlined" class="pa-4 clean-section-card section-card-glow mobile-inline-preview">
+                      <div class="section-title mb-3 d-flex align-center ga-2"><v-icon size="18">mdi-calendar-clock-outline</v-icon><span>Venue slot snapshot</span></div>
+
+                      <div class="mobile-inline-preview__top">
+                        <div class="mobile-inline-preview__copy">
+                          <div class="text-subtitle-1 font-weight-bold">
+                            {{ selectedVenue?.title || "No venue" }}
+                          </div>
+                          <div class="text-caption text-medium-emphasis">
+                            {{ getVenueLocationText(selectedVenue) }}
+                          </div>
+                        </div>
+                        <v-chip size="small" color="primary" variant="tonal">
+                          {{ formatSeatClasses(selectedSeatClasses) }}
+                        </v-chip>
+                      </div>
+
+                      <div class="mobile-inline-preview__stats mt-3">
+                        <div class="mobile-stat-card">
+                          <span class="mobile-stat-card__label">Date</span>
+                          <strong>{{ lockedEventDate }}</strong>
+                        </div>
+                        <div class="mobile-stat-card">
+                          <span class="mobile-stat-card__label">Time</span>
+                          <strong>{{ lockedStartTime }} - {{ lockedEndTime }}</strong>
+                        </div>
+                        <div class="mobile-stat-card">
+                          <span class="mobile-stat-card__label">Capacity</span>
+                          <strong>{{ getVenueCapacity(selectedVenue) }}</strong>
+                        </div>
+                      </div>
+                    </v-card>
+
+                    <v-card rounded="xl" variant="outlined" class="pa-4 clean-section-card section-card-glow mobile-inline-preview">
+                      <div class="section-title mb-3 d-flex align-center ga-2"><v-icon size="18">mdi-monitor-eye</v-icon><span>Live event preview</span></div>
+
+                      <div class="mobile-event-preview">
+                        <div class="mobile-event-preview__media" v-if="form.image">
+                          <img :src="form.image" class="mobile-event-preview__image" alt="Preview image" />
+                        </div>
+
+                        <div class="mobile-event-preview__body">
+                          <div class="text-subtitle-1 font-weight-bold">
+                            {{ form.title || "Untitled event" }}
+                          </div>
+
+                          <div class="text-caption text-medium-emphasis mb-2">
+                            {{ selectedVenue?.title || "Venue not selected" }}
+                          </div>
+
+                          <div class="d-flex ga-2 flex-wrap mb-3">
+                            <v-chip size="small" color="primary" variant="tonal">
+                              {{ form.type || "Category" }}
+                            </v-chip>
+
+                            <v-chip size="small" variant="outlined">
+                              {{ form.age_restriction || "Age restriction" }}
+                            </v-chip>
+                          </div>
+
+                          <div class="text-body-2 preview-description mb-3">
+                            {{ form.description || "No description yet." }}
+                          </div>
+
+                          <div class="mobile-price-row">
+                            <v-chip v-if="hasSeatClass('Regular')" size="small" color="info" variant="tonal">
+                              Regular: {{ numberOrDash(form.ticket_prices.regular) }} TND
+                            </v-chip>
+
+                            <v-chip v-if="hasSeatClass('Special')" size="small" color="error" variant="tonal">
+                              Special: {{ numberOrDash(form.ticket_prices.special) }} TND
+                            </v-chip>
+
+                            <v-chip v-if="hasSeatClass('VIP')" size="small" color="warning" variant="tonal">
+                              VIP: {{ numberOrDash(form.ticket_prices.vip) }} TND
+                            </v-chip>
+                          </div>
+                        </div>
+                      </div>
+                    </v-card>
+                  </div>
                 </v-col>
 
-                <v-col cols="12" md="4">
+                <v-col cols="12" md="5" lg="4" v-if="!isMobile">
                   <v-card rounded="xl" variant="outlined" class="pa-4 pa-md-6 clean-section-card section-card-glow mb-4 sticky-preview-card">
                     <div class="section-title mb-4 d-flex align-center ga-2"><v-icon size="18">mdi-calendar-clock-outline</v-icon><span>Selected venue slot</span></div>
 
@@ -657,7 +1402,7 @@
 
               <v-divider class="my-6" />
 
-              <div class="d-flex justify-space-between flex-wrap ga-3 action-bar">
+              <div class="d-flex justify-space-between flex-wrap ga-3 action-bar" :class="{ 'mobile-sticky-action-bar': isMobile }">
                 <v-btn
                   variant="outlined"
                   rounded="lg"
@@ -913,6 +1658,7 @@ const snackbar = reactive({
 })
 
 const selectedReservationId = ref("")
+const mobileEditorTab = ref("details")
 
 const form = reactive({
   title: "",
@@ -2067,6 +2813,10 @@ function goToPublishedEvent() {
 }
 
 @media (max-width: 960px) {
+  .step-two-layout {
+    align-items: start;
+  }
+
   .preview-image {
     height: 190px;
   }
@@ -2088,6 +2838,232 @@ function goToPublishedEvent() {
   .action-btn {
     width: auto;
   }
+}
+
+.mobile-reservation-rail {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(280px, 84vw);
+  gap: 12px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding-bottom: 4px;
+  scroll-snap-type: x proximity;
+  scrollbar-width: none;
+}
+
+.mobile-reservation-rail::-webkit-scrollbar {
+  display: none;
+}
+
+.mobile-reservation-card {
+  overflow: hidden;
+  scroll-snap-align: start;
+}
+
+.mobile-reservation-card__media {
+  position: relative;
+  height: 146px;
+  overflow: hidden;
+}
+
+.mobile-reservation-card__image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.mobile-reservation-card__overlay {
+  position: absolute;
+  inset: 12px 12px auto auto;
+}
+
+.mobile-reservation-card__title-wrap {
+  min-width: 0;
+  flex: 1;
+}
+
+.mobile-reservation-card__location {
+  display: -webkit-box;
+    line-clamp: 2;
+
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.mobile-reservation-card__selector {
+  flex-shrink: 0;
+  background: rgba(33, 150, 243, 0.08);
+}
+
+.mobile-reservation-card__selector--active {
+  background: rgba(33, 150, 243, 0.18);
+  color: rgb(33, 150, 243);
+}
+
+.mobile-reservation-card__meta,
+.mobile-inline-preview__stats {
+  display: grid;
+  gap: 10px;
+}
+
+.mobile-meta-pill {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border-radius: 14px;
+  padding: 10px 12px;
+  font-size: 0.8rem;
+  line-height: 1.35;
+}
+
+.event-page-shell--dark .mobile-meta-pill,
+.event-page-shell--dark .mobile-stat-card {
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.event-page-shell--light .mobile-meta-pill,
+.event-page-shell--light .mobile-stat-card {
+  background: rgba(255, 255, 255, 0.92);
+  border: 1px solid rgba(25, 118, 210, 0.10);
+}
+
+.mobile-inline-preview__top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.mobile-inline-preview__copy {
+  min-width: 0;
+}
+
+.mobile-stat-card {
+  border-radius: 16px;
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.mobile-stat-card__label {
+  font-size: 0.73rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  opacity: 0.72;
+}
+
+.mobile-form-summary {
+  border-style: dashed;
+}
+
+.mobile-editor-shell {
+  display: grid;
+  gap: 16px;
+}
+
+.mobile-editor-hero {
+  overflow: hidden;
+}
+
+.mobile-editor-hero__stats {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.mobile-editor-tabs {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: max-content;
+  gap: 10px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding-bottom: 4px;
+  scrollbar-width: none;
+}
+
+.mobile-editor-tabs::-webkit-scrollbar {
+  display: none;
+}
+
+.mobile-editor-tab {
+  min-width: 108px;
+}
+
+.event-page-shell--dark .mobile-editor-tab {
+  background: rgba(255, 255, 255, 0.04) !important;
+  color: rgba(255, 255, 255, 0.82) !important;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.event-page-shell--light .mobile-editor-tab {
+  background: rgba(255, 255, 255, 0.9) !important;
+  color: #16304f !important;
+  border: 1px solid rgba(25, 118, 210, 0.10);
+}
+
+.mobile-editor-tab--active {
+  box-shadow: 0 10px 24px rgba(33, 150, 243, 0.16);
+}
+
+.event-page-shell--dark .mobile-editor-tab--active {
+  background: rgba(76, 175, 255, 0.16) !important;
+  border-color: rgba(76, 175, 255, 0.30);
+}
+
+.event-page-shell--light .mobile-editor-tab--active {
+  background: rgba(227, 242, 253, 0.95) !important;
+  border-color: rgba(25, 118, 210, 0.22);
+}
+
+.mobile-editor-window {
+  overflow: visible;
+}
+
+.mobile-editor-card {
+  overflow: hidden;
+}
+
+.mobile-editor-stack {
+  display: grid;
+  gap: 16px;
+}
+
+.mobile-extra-images-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.mobile-preview-stack {
+  display: grid;
+  gap: 16px;
+}
+
+.mobile-event-preview {
+  display: grid;
+  gap: 14px;
+}
+
+.mobile-event-preview__media {
+  overflow: hidden;
+  border-radius: 18px;
+}
+
+.mobile-event-preview__image {
+  width: 100%;
+  height: 184px;
+  object-fit: cover;
+  display: block;
+}
+
+.mobile-price-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
 }
 
 .route-context-menu :deep(.v-overlay__content) {
@@ -2189,6 +3165,26 @@ function goToPublishedEvent() {
   align-items: stretch;
 }
 
+.event-page-shell.is-mobile-layout .mobile-sticky-action-bar {
+  position: sticky;
+  bottom: 10px;
+  z-index: 15;
+  padding: 12px;
+  margin-top: 2px;
+  border-radius: 20px;
+  backdrop-filter: blur(16px);
+}
+
+.event-page-shell--dark.is-mobile-layout .mobile-sticky-action-bar {
+  background: rgba(10, 12, 18, 0.82);
+  border: 1px solid rgba(255, 255, 255, 0.07);
+}
+
+.event-page-shell--light.is-mobile-layout .mobile-sticky-action-bar {
+  background: rgba(255, 255, 255, 0.86);
+  border: 1px solid rgba(25, 118, 210, 0.10);
+}
+
 .event-page-shell.is-mobile-layout .action-bar > div {
   display: flex;
   flex-wrap: wrap;
@@ -2259,7 +3255,6 @@ function goToPublishedEvent() {
   max-height: 100% !important;
 }
 
-
 .event-page-shell.is-mobile-layout .page-hero,
 .event-page-shell.is-mobile-layout .clean-section-card,
 .event-page-shell.is-mobile-layout .reservation-option,
@@ -2321,6 +3316,39 @@ function goToPublishedEvent() {
   padding: 6px;
 }
 
+.event-page-shell.is-mobile-layout .mobile-inline-preview__stats {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.event-page-shell.is-mobile-layout .mobile-meta-pill span,
+.event-page-shell.is-mobile-layout .mobile-stat-card strong {
+  word-break: break-word;
+}
+
+.event-page-shell.is-mobile-layout .mobile-event-preview__image {
+  height: 170px;
+}
+
+.event-page-shell.is-tablet-layout .page-hero {
+  padding: 20px 22px;
+}
+
+.event-page-shell.is-tablet-layout .step-two-layout {
+  align-items: start;
+}
+
+.event-page-shell.is-tablet-layout .quick-meta-row {
+  gap: 10px !important;
+}
+
+.event-page-shell.is-tablet-layout .clean-section-card {
+  border-radius: 24px !important;
+}
+
+.event-page-shell.is-tablet-layout .sticky-preview-card {
+  top: 12px;
+}
+
 @media (hover: none) and (pointer: coarse) {
   .clean-section-card:hover,
   .reservation-option:hover,
@@ -2367,6 +3395,15 @@ function goToPublishedEvent() {
 }
 
 @media (max-width: 600px) {
+  .mobile-editor-hero__stats,
+  .mobile-extra-images-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .mobile-editor-tab {
+    min-width: 94px;
+  }
+
   .event-main-card {
     padding: 16px !important;
   }
@@ -2375,6 +3412,20 @@ function goToPublishedEvent() {
     border-radius: 20px !important;
   }
 
+  .mobile-reservation-rail {
+    grid-auto-columns: minmax(262px, 88vw);
+  }
+
+  .mobile-inline-preview__top {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .event-page-shell.is-mobile-layout .mobile-inline-preview__stats {
+    grid-template-columns: 1fr;
+  }
+
+  .mobile-event-preview__image,
   .preview-image {
     height: 172px;
   }
@@ -2388,5 +3439,4 @@ function goToPublishedEvent() {
     margin: 0 12px 12px;
   }
 }
-
 </style>

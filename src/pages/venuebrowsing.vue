@@ -88,9 +88,73 @@
         </v-col>
       </v-row>
 
+      <v-row v-if="isCompactLayout" justify="center" class="mb-4">
+        <v-col cols="12" xl="11">
+          <v-card rounded="xl" class="compact-toolbar pa-3 pa-sm-4">
+            <div class="compact-toolbar-top">
+              <div>
+                <div class="text-subtitle-1 font-weight-bold">Curated browsing controls</div>
+                <div class="text-body-2 text-medium-emphasis">Open filters, change sorting, and browse without the left sidebar taking over the screen.</div>
+              </div>
+
+              <v-btn
+                color="primary"
+                rounded="xl"
+                variant="flat"
+                class="compact-filter-btn"
+                @click="showMobileFilters = true"
+              >
+                <v-icon start>mdi-tune-variant</v-icon>
+                Filters
+                <v-chip
+                  v-if="hasActiveFilters || !showUnavailable"
+                  size="x-small"
+                  rounded="pill"
+                  class="ms-2"
+                  color="white"
+                  variant="flat"
+                >
+                  {{ activeFilterCount + (!showUnavailable ? 1 : 0) }}
+                </v-chip>
+              </v-btn>
+            </div>
+
+            <div class="compact-toolbar-pills mt-3">
+              <v-chip color="primary" variant="tonal" rounded="lg">
+                <v-icon start size="16">mdi-domain</v-icon>
+                {{ filteredAndSortedVenues.length }} results
+              </v-chip>
+              <v-chip variant="outlined" rounded="lg">
+                <v-icon start size="16">mdi-sort</v-icon>
+                {{ activeSortLabel }}
+              </v-chip>
+              <v-chip :variant="showUnavailable ? 'outlined' : 'tonal'" :color="showUnavailable ? undefined : 'success'" rounded="lg">
+                <v-icon start size="16">{{ showUnavailable ? 'mdi-eye-outline' : 'mdi-eye' }}</v-icon>
+                {{ showUnavailable ? 'All venues' : 'Available only' }}
+              </v-chip>
+            </div>
+
+            <div class="compact-toolbar-scroll mt-3">
+              <v-chip
+                v-for="quickFilter in quickFilterChips"
+                :key="`compact-${quickFilter.value}`"
+                rounded="xl"
+                :color="selectedCategory === quickFilter.value ? 'primary' : undefined"
+                :variant="selectedCategory === quickFilter.value ? 'flat' : 'outlined'"
+                class="quick-filter-chip"
+                @click="toggleQuickCategory(quickFilter.value)"
+              >
+                <v-icon start size="16">{{ quickFilter.icon }}</v-icon>
+                {{ quickFilter.label }}
+              </v-chip>
+            </div>
+          </v-card>
+        </v-col>
+      </v-row>
+
       <v-row justify="center" align="start" class="content-row">
         <!-- SIDE FILTERS -->
-        <v-col cols="12" lg="3" xl="3">
+        <v-col v-if="!isCompactLayout" cols="12" lg="3" xl="3">
           <v-card rounded="xl" class="filter-card pa-4">
             <div class="d-flex align-center justify-space-between mb-3">
               <div>
@@ -251,7 +315,7 @@
 
         <!-- RESULTS -->
         <v-col cols="12" lg="9" xl="8">
-          <v-card rounded="xl" class="results-toolbar pa-3 pa-md-4 mb-4">
+          <v-card rounded="xl" class="results-toolbar pa-3 pa-md-4 mb-4" :class="{ 'results-toolbar--compact': isCompactLayout }">
             <div class="d-flex flex-column flex-md-row align-md-center justify-space-between ga-3">
               <div>
                 <div class="text-subtitle-1 font-weight-bold">
@@ -270,7 +334,18 @@
                 </div>
               </div>
 
-              <div class="d-flex flex-wrap ga-2">
+              <div class="d-flex flex-wrap ga-2 results-toolbar-actions">
+                <v-btn
+                  v-if="isCompactLayout"
+                  rounded="lg"
+                  variant="outlined"
+                  class="toolbar-filter-btn"
+                  @click="showMobileFilters = true"
+                >
+                  <v-icon start>mdi-filter-variant</v-icon>
+                  Filter &amp; sort
+                </v-btn>
+
                 <v-chip size="small" rounded="lg" color="primary" variant="tonal">
                   <v-icon start size="16">mdi-sort</v-icon>
                   {{
@@ -376,11 +451,16 @@
               cols="12"
               sm="6"
               xl="4"
+              class="venue-grid-col"
             >
               <v-card
                 rounded="xl"
                 class="venue-card h-100 d-flex flex-column"
-                :class="{ 'venue-card--unavailable': !venue.availability }"
+                :class="{
+                  'venue-card--compact': isCompactLayout,
+                  'venue-card--mobile': isMobile,
+                  'venue-card--unavailable': !venue.availability
+                }"
                 @click="openVenue(venue)"
                 @contextmenu.prevent="openVenueContextMenu($event, venue)"
                 @touchstart.passive="startVenueLongPress($event, venue)"
@@ -436,13 +516,13 @@
 
                   <div class="quick-action-hint">
                     <v-icon size="16" class="me-1">mdi-cursor-default-click-outline</v-icon>
-                    {{ isTouchDevice ? "Tap to open" : "Click to open" }}
+                    {{ isTouchDevice ? (isMobile ? "Tap for details" : "Tap to open") : "Click to open" }}
                   </div>
                 </div>
 
                 <v-card-text class="pa-4 pa-md-5 d-flex flex-column flex-grow-1">
                   <div class="d-flex align-start justify-space-between ga-3 mb-2">
-                    <div class="text-h6 font-weight-bold venue-title">
+                    <div class="text-h6 font-weight-bold venue-title" :class="{ 'text-subtitle-1': isCompactLayout }">
                       {{ venue.title }}
                     </div>
 
@@ -467,7 +547,7 @@
                   </div>
 
                   <div class="text-body-2 card-description mb-4">
-                    {{ truncateText(venue.description, 120) }}
+                    {{ truncateText(venue.description, isMobile ? 88 : isTablet ? 104 : 120) }}
                   </div>
 
                   <div class="venue-meta-grid mb-4">
@@ -483,17 +563,17 @@
                   </div>
 
                   <div class="mt-auto">
-                    <div class="d-flex align-center justify-space-between stat-row mb-2">
+                    <div v-if="!isCompactLayout" class="d-flex align-center justify-space-between stat-row mb-2">
                       <span class="text-body-2 text-medium-emphasis">Capacity</span>
                       <span class="text-body-2 font-weight-bold">{{ formatNumber(venue.capacity) }}</span>
                     </div>
 
-                    <div class="d-flex align-center justify-space-between stat-row mb-4">
+                    <div v-if="!isCompactLayout" class="d-flex align-center justify-space-between stat-row mb-4">
                       <span class="text-body-2 text-medium-emphasis">Price / hour</span>
                       <span class="text-body-2 font-weight-bold">{{ venue.price_per_hour }} TND</span>
                     </div>
 
-                    <div class="d-flex ga-2">
+                    <div class="d-flex ga-2 venue-action-row">
                       <v-btn
                         block
                         rounded="lg"
@@ -563,6 +643,77 @@
     </v-container>
   </div>
 
+  <v-bottom-sheet v-model="showMobileFilters" inset>
+    <v-card rounded="t-xl" class="mobile-filter-sheet" :class="themeClass">
+      <div class="mobile-filter-sheet__handle"></div>
+
+      <div class="d-flex align-start justify-space-between ga-3 mb-4">
+        <div>
+          <div class="text-h6 font-weight-bold">Browse controls</div>
+          <div class="text-body-2 text-medium-emphasis">Designed for tablet and phone so filtering does not crush the browsing layout.</div>
+        </div>
+
+        <v-btn icon variant="text" @click="showMobileFilters = false">
+          <v-icon>mdi-close</v-icon>
+        </v-btn>
+      </div>
+
+      <div class="mobile-sheet-grid">
+        <v-select v-model="sortBy" :items="sortOptions" label="Sort by" variant="outlined" rounded="lg" density="comfortable" hide-details />
+        <v-select v-model="selectedLocation" :items="locationOptions" label="City / State" variant="outlined" rounded="lg" density="comfortable" clearable hide-details />
+        <v-select v-model="selectedType" :items="typeOptions" label="Venue type" variant="outlined" rounded="lg" density="comfortable" clearable hide-details />
+        <v-select v-model="selectedCategory" :items="categoryOptions" label="Category" variant="outlined" rounded="lg" density="comfortable" clearable hide-details />
+      </div>
+
+      <div class="mobile-sheet-section mt-4">
+        <div class="d-flex align-center justify-space-between mb-3 ga-3">
+          <div>
+            <div class="text-subtitle-2 font-weight-bold">Availability</div>
+            <div class="text-caption text-medium-emphasis">Toggle visibility and focus on what can be booked right now.</div>
+          </div>
+
+          <v-switch v-model="showUnavailable" color="primary" hide-details inset density="compact">
+            <template #label>
+              <span class="text-body-2">Show unavailable</span>
+            </template>
+          </v-switch>
+        </div>
+
+        <div class="compact-toolbar-pills">
+          <v-chip
+            v-for="option in availabilityOptions"
+            :key="`sheet-${option}`"
+            rounded="lg"
+            filter
+            :color="selectedAvailability === option ? 'primary' : undefined"
+            :variant="selectedAvailability === option ? 'flat' : 'outlined'"
+            class="availability-filter-chip"
+            @click="toggleAvailability(option)"
+          >
+            <v-icon start size="16">
+              {{ option === 'Available' ? 'mdi-check-circle-outline' : 'mdi-close-circle-outline' }}
+            </v-icon>
+            {{ option }}
+          </v-chip>
+        </div>
+      </div>
+
+      <div v-if="hasActiveFilters || !showUnavailable || normalizedSearch" class="compact-toolbar-pills mt-4">
+        <v-chip v-if="normalizedSearch" closable rounded="lg" color="primary" variant="tonal" @click:close="search = ''">Search: {{ truncateText(search, 18) }}</v-chip>
+        <v-chip v-if="selectedLocation" closable rounded="lg" color="primary" variant="tonal" @click:close="selectedLocation = null">{{ selectedLocation }}</v-chip>
+        <v-chip v-if="selectedType" closable rounded="lg" color="primary" variant="tonal" @click:close="selectedType = null">{{ selectedType }}</v-chip>
+        <v-chip v-if="selectedCategory" closable rounded="lg" color="primary" variant="tonal" @click:close="selectedCategory = null">{{ selectedCategory }}</v-chip>
+        <v-chip v-if="selectedAvailability" closable rounded="lg" color="primary" variant="tonal" @click:close="selectedAvailability = null">{{ selectedAvailability }}</v-chip>
+      </div>
+
+      <div class="mobile-sheet-actions mt-5">
+        <v-btn color="primary" rounded="lg" size="large" variant="flat" @click="showMobileFilters = false">Apply and browse</v-btn>
+        <v-btn rounded="lg" size="large" variant="outlined" @click="resetFilters">Reset filters</v-btn>
+        <v-btn rounded="lg" size="large" variant="text" @click="clearOnlyFilters">Clear active filters</v-btn>
+      </div>
+    </v-card>
+  </v-bottom-sheet>
+
   <!-- Link Context Menu -->
   <v-menu
     v-model="linkContextMenu.show"
@@ -606,6 +757,10 @@ const THEME_STORAGE_KEY = "blassti-theme"
 const LONG_PRESS_DELAY = 520
 
 const isTouchDevice = computed(() => display.smAndDown.value)
+const isMobile = computed(() => display.xs.value)
+const isTablet = computed(() => display.sm.value || display.md.value)
+const isCompactLayout = computed(() => display.mdAndDown.value)
+const showMobileFilters = ref(false)
 
 const linkContextMenu = ref({
   show: false,
@@ -708,6 +863,12 @@ const selectedAvailability = ref(null)
 const showUnavailable = ref(false)
 const sortBy = ref("rating_desc")
 
+watch(isCompactLayout, value => {
+  if (!value) {
+    showMobileFilters.value = false
+  }
+})
+
 const sortOptions = [
   { title: "Highest rating", value: "rating_desc" },
   { title: "Lowest price", value: "price_asc" },
@@ -716,6 +877,7 @@ const sortOptions = [
 ]
 
 const availabilityOptions = ["Available", "Unavailable"]
+const activeSortLabel = computed(() => sortOptions.find(option => option.value === sortBy.value)?.title || "Highest rating")
 const quickFilterChips = [
   { label: "Concerts", value: "Concert Hall", icon: "mdi-music" },
   { label: "Sports", value: "Sports Arena", icon: "mdi-basketball" },
@@ -861,16 +1023,133 @@ function truncateText(text, max = 100) {
   return `${safeText.slice(0, max).trim()}...`
 }
 
+function buildVenueHref(venue) {
+  return `/O_venueinfo?id=${venue?.id ?? ""}`
+}
+
 function openVenue(venue) {
-  router.push(`/O_venueinfo?id=${venue.id}`)
+  router.push(buildVenueHref(venue))
+}
+
+function openRouteContextMenu(event, routePath, label = "Open", query = {}) {
+  const resolved = router.resolve({
+    path: routePath,
+    query,
+  })
+
+  linkContextMenu.value = {
+    show: true,
+    x: event?.clientX ?? 0,
+    y: event?.clientY ?? 0,
+    href: resolved.href,
+    label,
+  }
+}
+
+function openVenueContextMenu(event, venue) {
+  openRouteContextMenu(event, "/O_venueinfo", venue?.title || "Venue details", {
+    id: venue?.id,
+  })
+}
+
+function openContextMenuTargetInNewTab() {
+  if (!linkContextMenu.value.href) return
+  window.open(linkContextMenu.value.href, "_blank", "noopener,noreferrer")
+  linkContextMenu.value.show = false
+}
+
+function openContextMenuTargetInNewWindow() {
+  if (!linkContextMenu.value.href) return
+  window.open(linkContextMenu.value.href, "_blank", "noopener,noreferrer,width=1280,height=900")
+  linkContextMenu.value.show = false
 }
 </script>
 
 <style scoped>
-
 .page-container {
   position: relative;
   z-index: 1;
+}
+
+.compact-toolbar {
+  position: relative;
+  overflow: hidden;
+}
+
+.compact-toolbar-top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.compact-filter-btn {
+  flex-shrink: 0;
+}
+
+.compact-toolbar-pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.compact-toolbar-scroll {
+  display: flex;
+  gap: 10px;
+  overflow-x: auto;
+  padding-bottom: 4px;
+  scrollbar-width: none;
+}
+
+.compact-toolbar-scroll::-webkit-scrollbar {
+  display: none;
+}
+
+.mobile-filter-sheet {
+  padding: 14px 16px calc(18px + env(safe-area-inset-bottom));
+  max-height: min(88vh, 860px);
+  overflow-y: auto;
+}
+
+.mobile-filter-sheet__handle {
+  width: 56px;
+  height: 5px;
+  border-radius: 999px;
+  margin: 0 auto 14px;
+  background: rgba(148, 163, 184, 0.45);
+}
+
+.mobile-sheet-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.mobile-sheet-section {
+  border-radius: 18px;
+  padding: 14px;
+}
+
+.mobile-sheet-actions {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.results-toolbar--compact .results-toolbar-actions {
+  width: 100%;
+}
+
+.toolbar-filter-btn {
+  flex: 1 1 180px;
+}
+
+.venue-grid-col {
+  display: flex;
+}
+
+.venue-action-row {
+  flex-wrap: nowrap;
 }
 
 .content-row {
@@ -980,6 +1259,28 @@ function openVenue(venue) {
 }
 
 @media (max-width: 959px) {
+  .compact-toolbar-top {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .compact-filter-btn {
+    width: 100%;
+  }
+
+  .mobile-sheet-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .results-toolbar--compact .results-toolbar-actions {
+    display: grid !important;
+    grid-template-columns: 1fr;
+  }
+
+  .venue-action-row {
+    flex-wrap: wrap;
+  }
+
   .venue-browsing-shell::before,
   .venue-browsing-shell::after {
     width: 18rem;
@@ -1012,6 +1313,53 @@ function openVenue(venue) {
 }
 
 @media (max-width: 600px) {
+  .compact-toolbar {
+    border-radius: 22px !important;
+  }
+
+  .compact-toolbar-pills {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    padding-bottom: 2px;
+    scrollbar-width: none;
+  }
+
+  .compact-toolbar-pills::-webkit-scrollbar {
+    display: none;
+  }
+
+  .compact-toolbar-pills > * {
+    flex: 0 0 auto;
+  }
+
+  .mobile-sheet-actions {
+    grid-template-columns: 1fr;
+  }
+
+  .results-toolbar--compact {
+    position: sticky;
+    top: 76px;
+    z-index: 3;
+  }
+
+  .results-toolbar--compact .results-toolbar-actions :deep(.v-chip),
+  .results-toolbar--compact .results-toolbar-actions .toolbar-filter-btn {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .venue-card--compact .venue-image-wrap {
+    min-height: 196px;
+  }
+
+  .venue-card--compact :deep(.v-card-text) {
+    padding: 16px !important;
+  }
+
+  .venue-card--compact .card-description {
+    margin-bottom: 14px !important;
+  }
+
   .page-container {
     padding-top: 20px !important;
     padding-bottom: 28px !important;
@@ -1063,7 +1411,6 @@ function openVenue(venue) {
     background: rgba(10, 14, 24, 0.5);
   }
 }
-
 
 /* -------------------- DARK THEME -------------------- */
 .venue-browsing-shell.theme-dark {
@@ -1263,6 +1610,28 @@ function openVenue(venue) {
     rgba(255, 255, 255, 0.9);
   box-shadow: 0 14px 34px rgba(36, 60, 96, 0.12);
   backdrop-filter: blur(10px);
+}
+
+.venue-browsing-shell.theme-dark .compact-toolbar,
+.venue-browsing-shell.theme-dark .mobile-filter-sheet,
+.venue-browsing-shell.theme-dark .mobile-sheet-section {
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.025), rgba(255, 255, 255, 0.012)),
+    rgba(13, 17, 23, 0.96);
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.22);
+  backdrop-filter: blur(12px);
+}
+
+.venue-browsing-shell.theme-light .compact-toolbar,
+.venue-browsing-shell.theme-light .mobile-filter-sheet,
+.venue-browsing-shell.theme-light .mobile-sheet-section {
+  border: 1px solid rgba(19, 35, 62, 0.08);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.96), rgba(248, 251, 255, 0.94)),
+    rgba(255, 255, 255, 0.94);
+  box-shadow: 0 14px 34px rgba(36, 60, 96, 0.12);
+  backdrop-filter: blur(12px);
 }
 
 .hero-stat-card:hover,

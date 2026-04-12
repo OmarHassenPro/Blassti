@@ -15,7 +15,7 @@
       <div class="statistics-content-wrap">
         <v-row justify="center" align="start" class="ma-0 statistics-root-row">
         <v-col cols="12" xxl="11" class="pa-0 statistics-root-col">
-          <v-card class="page-shell pa-4 pa-md-6" :class="{ 'page-shell-mobile': isMobile }" rounded="xl">
+          <v-card class="page-shell pa-4 pa-md-6" :class="{ 'page-shell-mobile': isMobile, 'page-shell-tablet': isTablet, 'page-shell-phone': isPhone }" rounded="xl">
             <div class="page-shell-glow"></div>
 
             <div class="page-topbar mb-4">
@@ -25,7 +25,7 @@
               </div>
             </div>
 
-            <div class="d-flex flex-column flex-lg-row align-lg-center justify-space-between ga-4 mb-6 page-hero">
+            <div class="d-flex flex-column flex-lg-row align-lg-center justify-space-between ga-4 mb-6 page-hero" :class="{ 'page-hero-mobile': isMobile, 'page-hero-phone': isPhone }">
               <div class="hero-copy">
                 <div class="text-overline text-primary font-weight-bold mb-1 hero-kicker">
                   ADMIN DASHBOARD
@@ -111,7 +111,7 @@
               <span class="section-label-text">Overview</span>
             </div>
 
-            <v-row class="mb-2" dense>
+            <v-row class="mb-2 overview-stats-row" dense>
               <v-col
                 v-for="card in stats.cards"
                 :key="card.id"
@@ -166,11 +166,11 @@
               <span class="section-label-text">Revenue Analytics</span>
             </div>
 
-            <v-row dense class="mt-2">
-              <v-col cols="12" lg="8">
+            <v-row dense class="mt-2 revenue-analytics-row" :class="{ 'revenue-analytics-row-mobile': isMobile, 'revenue-analytics-row-phone': isPhone }">
+              <v-col cols="12" lg="8" class="revenue-main-col">
                 <v-card rounded="xl" class="glass-card h-100 chart-card revenue-main-card">
                   <v-card-text class="pa-5 pa-md-6">
-                    <div class="d-flex align-center justify-space-between mb-4 chart-header ga-3 flex-wrap">
+                    <div class="d-flex align-center justify-space-between mb-4 chart-header ga-3 flex-wrap" :class="{ 'chart-header-mobile': isMobile, 'chart-header-phone': isPhone }">
                       <div>
                         <div class="text-h6 font-weight-bold chart-title">Revenue Trend</div>
                         <div class="text-body-2 text-medium-emphasis chart-subtitle">
@@ -186,13 +186,13 @@
                     <LineChart
                       :points="stats.details.totalRevenue.line"
                       :currency="true"
-                      height="290"
+                      :height="isPhone ? 238 : isTablet ? 270 : 290"
                     />
                   </v-card-text>
                 </v-card>
               </v-col>
 
-              <v-col cols="12" lg="4">
+              <v-col cols="12" lg="4" class="revenue-side-col">
                 <v-card rounded="xl" class="glass-card h-100 chart-card">
                   <v-card-text class="pa-5 pa-md-6">
                     <div class="text-h6 font-weight-bold mb-1 chart-title">
@@ -652,6 +652,8 @@ const themeReady = ref(false)
 
 const currentUser = computed(() => get_Current_User())
 const isAdmin = computed(() => Boolean(currentUser.value?.is_admin))
+const isPhone = computed(() => display.smAndDown.value)
+const isTablet = computed(() => display.md.value)
 const isMobile = computed(() => display.mdAndDown.value)
 
 const browserThemeName = computed(() => (theme.global.name.value === "light" ? "light" : "dark"))
@@ -869,9 +871,9 @@ const LineChart = defineComponent({
       const items = Array.isArray(props.points) ? props.points : []
       const width = 760
       const height = Number(props.height)
-      const paddingX = 28
-      const paddingTop = 16
-      const paddingBottom = 34
+      const paddingX = isPhone.value ? 16 : 28
+      const paddingTop = isPhone.value ? 36 : 30
+      const paddingBottom = isPhone.value ? 42 : 38
       const chartHeight = height - paddingTop - paddingBottom
       const chartWidth = width - paddingX * 2
 
@@ -897,6 +899,12 @@ const LineChart = defineComponent({
       })
 
       const polyline = normalized.map(item => `${item.x},${item.y}`).join(" ")
+      const gridStroke = browserThemeName.value === "dark" ? "rgba(148,163,184,0.18)" : "rgba(71,85,105,0.18)"
+      const labelFill = browserThemeName.value === "dark" ? "rgba(226,232,240,0.76)" : "rgba(15,23,42,0.88)"
+      const valueFill = browserThemeName.value === "dark" ? "#f8fafc" : "#0f172a"
+      const pointFill = browserThemeName.value === "dark" ? "#0f172a" : "#ffffff"
+      const valueFontSize = isPhone.value ? 11 : 12
+      const labelFontSize = isPhone.value ? 11 : 12
 
       return h("div", { class: "line-chart-wrap" }, [
         h(
@@ -922,7 +930,7 @@ const LineChart = defineComponent({
                 y1: y,
                 x2: width - paddingX,
                 y2: y,
-                stroke: "rgba(148,163,184,0.18)",
+                stroke: gridStroke,
                 "stroke-width": "1",
               })
             }),
@@ -951,7 +959,7 @@ const LineChart = defineComponent({
                   cx: point.x,
                   cy: point.y,
                   r: "5",
-                  fill: "#0f172a",
+                  fill: pointFill,
                   stroke: "#60a5fa",
                   "stroke-width": "3",
                 }),
@@ -959,9 +967,11 @@ const LineChart = defineComponent({
                   "text",
                   {
                     x: point.x,
-                    y: point.y - 12,
-                    "text-anchor": "middle",
+                    y: point.y - (isPhone.value ? 16 : 14),
+                    "text-anchor": index === 0 ? "start" : index === normalized.length - 1 ? "end" : "middle",
                     class: "line-chart-value",
+                    fill: valueFill,
+                    style: { fontSize: `${valueFontSize}px`, fontWeight: 800 },
                   },
                   props.currency ? money(point.value) : formatValue(point.value)
                 ),
@@ -970,8 +980,10 @@ const LineChart = defineComponent({
                   {
                     x: point.x,
                     y: height - 10,
-                    "text-anchor": "middle",
+                    "text-anchor": index === 0 ? "start" : index === normalized.length - 1 ? "end" : "middle",
                     class: "line-chart-label",
+                    fill: labelFill,
+                    style: { fontSize: `${labelFontSize}px`, fontWeight: 600 },
                   },
                   point.label
                 ),
@@ -1353,6 +1365,88 @@ const RevenueList = defineComponent({
 
 .browser-light .orb-two {
   background: rgba(168, 85, 247, 0.16);
+}
+
+
+.page-shell-mobile {
+  padding: 20px !important;
+}
+
+.page-shell-tablet {
+  padding: 22px !important;
+}
+
+.page-shell-phone {
+  border-radius: 24px !important;
+  padding: 16px !important;
+}
+
+.page-hero-mobile {
+  gap: 18px !important;
+}
+
+.page-hero-phone {
+  margin-bottom: 20px !important;
+}
+
+.overview-stats-row {
+  row-gap: 2px;
+}
+
+.revenue-analytics-row-mobile {
+  row-gap: 12px;
+}
+
+.chart-header-mobile {
+  align-items: flex-start !important;
+}
+
+.chart-header-phone {
+  flex-direction: column;
+  align-items: stretch !important;
+}
+
+.chart-header-phone .chart-chip {
+  align-self: flex-start;
+}
+
+.revenue-main-col,
+.revenue-side-col {
+  display: flex;
+}
+
+.revenue-main-col > .v-card,
+.revenue-side-col > .v-card {
+  width: 100%;
+}
+
+:deep(.line-chart-wrap) {
+  width: 100%;
+  overflow: visible;
+}
+
+:deep(.line-chart-svg) {
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+
+:deep(.line-chart-label),
+:deep(.line-chart-value) {
+  paint-order: stroke;
+}
+
+:deep(.line-chart-value) {
+  stroke: rgba(15, 23, 42, 0.18);
+  stroke-width: 2px;
+}
+
+.browser-dark :deep(.line-chart-value) {
+  stroke: rgba(2, 6, 23, 0.45);
+}
+
+.browser-light :deep(.line-chart-value) {
+  stroke: rgba(255, 255, 255, 0.72);
 }
 
 .page-shell {
@@ -2366,6 +2460,15 @@ const RevenueList = defineComponent({
 }
 
 @media (max-width: 960px) {
+  .revenue-main-card .v-card-text,
+  .chart-card .v-card-text {
+    padding: 22px !important;
+  }
+
+  .chart-title {
+    font-size: 1.05rem !important;
+  }
+
   .donut-wrap {
     width: 200px;
     height: 200px;
@@ -2398,6 +2501,41 @@ const RevenueList = defineComponent({
 
   .page-topbar-pill {
     font-size: 0.72rem;
+    width: 100%;
+    justify-content: center;
+  }
+
+  .hero-actions {
+    width: 100%;
+  }
+
+  .hero-actions > * {
+    flex: 1 1 calc(50% - 6px);
+    min-width: calc(50% - 6px);
+  }
+
+  .hero-actions .refresh-btn {
+    width: 100%;
+  }
+
+  .stat-card .v-card-text {
+    padding: 18px !important;
+  }
+
+  .stat-value {
+    font-size: 1.72rem !important;
+  }
+
+  .chart-card {
+    border-radius: 22px !important;
+  }
+
+  .chart-card .v-card-text {
+    padding: 18px !important;
+  }
+
+  .chart-subtitle {
+    max-width: 100%;
   }
 
   .hero-meta {
@@ -2431,6 +2569,22 @@ const RevenueList = defineComponent({
 
   .detail-section-banner {
     flex-direction: column;
+  }
+}
+
+@media (max-width: 420px) {
+  .hero-actions > * {
+    flex: 1 1 100%;
+    min-width: 100%;
+  }
+
+  .chart-chip {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .mini-insight-card {
+    padding: 16px;
   }
 }
 </style>

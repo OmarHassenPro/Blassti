@@ -47,9 +47,169 @@
             </v-tabs>
           </div>
 
+          <div v-if="isTabletOrMobile" class="mobile-overview-strip mb-6">
+            <div class="overview-stat-card">
+              <div class="overview-stat-label">Now viewing</div>
+              <div class="overview-stat-value">{{ activeTabLabel }}</div>
+            </div>
+            <div class="overview-stat-card">
+              <div class="overview-stat-label">Visible items</div>
+              <div class="overview-stat-value">{{ activeVenueCount }}</div>
+            </div>
+            <div class="overview-stat-card overview-stat-card--hint">
+              <v-icon size="18" class="me-2">mdi-gesture-swipe-horizontal</v-icon>
+              <span>{{ mobileHintText }}</span>
+            </div>
+          </div>
+
           <v-window v-model="tab">
             <v-window-item value="reserved">
-              <v-row>
+              <div v-if="isMobile" class="mobile-card-rail-wrap">
+                <div v-if="reservedVenueCards.length" class="mobile-card-rail-header mb-4">
+                  <div>
+                    <div class="rail-eyebrow">Reserved collection</div>
+                    <div class="rail-title">Swipe through your booked venues</div>
+                  </div>
+                  <v-chip size="small" color="primary" variant="tonal" rounded="lg">
+                    {{ reservedVenueCards.length }} total
+                  </v-chip>
+                </div>
+
+                <v-slide-group
+                  v-if="reservedVenueCards.length"
+                  class="mobile-card-rail"
+                  show-arrows="desktop"
+                  center-active
+                >
+                  <v-slide-group-item
+                    v-for="reservation in reservedVenueCards"
+                    :key="reservation.id"
+                  >
+                    <div class="mobile-rail-item">
+                      <v-card
+                        rounded="xl"
+                        variant="outlined"
+                        class="h-100 card-shell venue-card touch-card mobile-venue-card"
+                        @contextmenu.prevent="openNavigationMenu($event, `/O_venueinfo?id=${reservation.venue.id}`)"
+                        @touchstart.passive="startLongPress($event, `/O_venueinfo?id=${reservation.venue.id}`)"
+                        @touchend="cancelLongPress"
+                        @touchmove="cancelLongPress"
+                        @touchcancel="cancelLongPress"
+                      >
+                        <div class="image-wrap">
+                          <v-img :src="reservation.venue.image || fallbackImage" height="220" cover />
+                          <div class="image-overlay" />
+                          <div class="image-chip-row">
+                            <v-chip size="small" color="primary" variant="flat" rounded="lg">
+                              <v-icon start size="14">mdi-map-marker-outline</v-icon>
+                              Reserved
+                            </v-chip>
+                          </div>
+                        </div>
+
+                        <v-card-text class="card-content">
+                          <div class="text-h6 font-weight-bold mb-1 card-title">
+                            {{ reservation.venue.title }}
+                          </div>
+
+                          <div class="text-body-2 text-medium-emphasis mb-3 card-subtitle">
+                            {{ reservation.venue.location }} ·
+                            {{
+                              reservation.venue.exact_address ||
+                              reservation.venue.contact_info?.address ||
+                              'No address'
+                            }}
+                          </div>
+
+                          <div class="d-flex ga-2 flex-wrap mb-4">
+                            <v-chip
+                              size="small"
+                              color="primary"
+                              variant="tonal"
+                              rounded="lg"
+                              class="info-chip"
+                            >
+                              {{ reservation.venue.category || 'Venue' }}
+                            </v-chip>
+
+                            <v-chip
+                              size="small"
+                              color="success"
+                              variant="tonal"
+                              rounded="lg"
+                              class="info-chip"
+                            >
+                              {{ Number(reservation.total_price || 0).toFixed(2) }} TND
+                            </v-chip>
+                          </div>
+
+                          <div class="details-panel">
+                            <div class="info-row">
+                              <span class="info-label">Start</span>
+                              <span class="info-value">{{ formatDateTime(reservation.start_date) }}</span>
+                            </div>
+
+                            <div class="info-row">
+                              <span class="info-label">End</span>
+                              <span class="info-value">{{ formatDateTime(reservation.end_date) }}</span>
+                            </div>
+
+                            <div class="info-row">
+                              <span class="info-label">Duration</span>
+                              <span class="info-value">
+                                {{ reservation.duration }} {{ reservation.duration_unit }}
+                              </span>
+                            </div>
+
+                            <div class="info-row">
+                              <span class="info-label">Status</span>
+                              <span class="info-value">
+                                <v-chip
+                                  size="x-small"
+                                  color="info"
+                                  variant="tonal"
+                                  rounded="lg"
+                                  class="status-chip"
+                                >
+                                  {{ reservation.status }}
+                                </v-chip>
+                              </span>
+                            </div>
+                          </div>
+                        </v-card-text>
+
+                        <v-card-actions class="card-actions mobile-card-actions">
+                          <v-btn
+                            variant="text"
+                            color="primary"
+                            rounded="lg"
+                            prepend-icon="mdi-open-in-new"
+                            class="nav-btn touch-action-btn"
+                            block
+                            @click="goToVenue(reservation.venue.id)"
+                            @contextmenu.prevent="openNavigationMenu($event, `/O_venueinfo?id=${reservation.venue.id}`)"
+                            @touchstart.passive="startLongPress($event, `/O_venueinfo?id=${reservation.venue.id}`)"
+                            @touchend="cancelLongPress"
+                            @touchmove="cancelLongPress"
+                            @touchcancel="cancelLongPress"
+                          >
+                            View venue
+                          </v-btn>
+                        </v-card-actions>
+                      </v-card>
+                    </div>
+                  </v-slide-group-item>
+                </v-slide-group>
+
+                <v-alert v-else type="info" variant="tonal" rounded="xl" class="empty-alert">
+                  <div class="d-flex align-center ga-3">
+                    <v-icon size="24">mdi-information-outline</v-icon>
+                    <div>You have no venue reservations yet.</div>
+                  </div>
+                </v-alert>
+              </div>
+
+              <v-row v-else class="content-grid-row">
                 <v-col
                   v-for="reservation in reservedVenueCards"
                   :key="reservation.id"
@@ -181,7 +341,159 @@
             </v-window-item>
 
             <v-window-item value="owned">
-              <v-row>
+              <div v-if="isMobile" class="mobile-card-rail-wrap">
+                <div v-if="ownedVenues.length" class="mobile-card-rail-header mb-4">
+                  <div>
+                    <div class="rail-eyebrow">Owned collection</div>
+                    <div class="rail-title">Swipe through venues you manage</div>
+                  </div>
+                  <v-chip size="small" color="success" variant="tonal" rounded="lg">
+                    {{ ownedVenues.length }} total
+                  </v-chip>
+                </div>
+
+                <v-slide-group
+                  v-if="ownedVenues.length"
+                  class="mobile-card-rail"
+                  show-arrows="desktop"
+                  center-active
+                >
+                  <v-slide-group-item v-for="venue in ownedVenues" :key="venue.id">
+                    <div class="mobile-rail-item">
+                      <v-card
+                        rounded="xl"
+                        variant="outlined"
+                        class="h-100 card-shell venue-card touch-card mobile-venue-card"
+                        @contextmenu.prevent="openNavigationMenu($event, `/O_venueinfo?id=${venue.id}`)"
+                        @touchstart.passive="startLongPress($event, `/O_venueinfo?id=${venue.id}`)"
+                        @touchend="cancelLongPress"
+                        @touchmove="cancelLongPress"
+                        @touchcancel="cancelLongPress"
+                      >
+                        <div class="image-wrap">
+                          <v-img :src="venue.image || fallbackImage" height="220" cover />
+                          <div class="image-overlay" />
+                          <div class="image-chip-row">
+                            <v-chip size="small" color="success" variant="flat" rounded="lg">
+                              <v-icon start size="14">mdi-shield-home-outline</v-icon>
+                              Owner
+                            </v-chip>
+                          </div>
+                        </div>
+
+                        <v-card-text class="card-content">
+                          <div class="text-h6 font-weight-bold mb-1 card-title">{{ venue.title }}</div>
+
+                          <div class="text-body-2 text-medium-emphasis mb-3 card-subtitle">
+                            {{ venue.location }} ·
+                            {{ venue.exact_address || venue.contact_info?.address || 'No address' }}
+                          </div>
+
+                          <div class="d-flex ga-2 flex-wrap mb-4">
+                            <v-chip
+                              size="small"
+                              color="primary"
+                              variant="tonal"
+                              rounded="lg"
+                              class="info-chip"
+                            >
+                              {{ venue.category || 'Venue' }}
+                            </v-chip>
+
+                            <v-chip
+                              size="small"
+                              variant="outlined"
+                              rounded="lg"
+                              class="info-chip"
+                            >
+                              {{ Number(venue.price_per_hour || 0).toFixed(2) }} TND / hour
+                            </v-chip>
+
+                            <v-chip
+                              size="small"
+                              color="error"
+                              variant="tonal"
+                              rounded="lg"
+                              class="info-chip"
+                            >
+                              Administration blocks: {{ administrationBlockCount(venue) }}
+                            </v-chip>
+                          </div>
+
+                          <div class="details-panel">
+                            <div class="info-row">
+                              <span class="info-label">Capacity</span>
+                              <span class="info-value">{{ venue.capacity || 0 }} seats</span>
+                            </div>
+
+                            <div class="info-row">
+                              <span class="info-label">Reservations</span>
+                              <span class="info-value">{{ ownerReservationCount(venue.id) }}</span>
+                            </div>
+
+                            <div class="info-row">
+                              <span class="info-label">Bank holder</span>
+                              <span class="info-value">
+                                {{ venue.bank_account_info?.account_holder_name || '-' }}
+                              </span>
+                            </div>
+
+                            <div class="info-row">
+                              <span class="info-label">Bank</span>
+                              <span class="info-value">{{ venue.bank_account_info?.bank_name || '-' }}</span>
+                            </div>
+
+                            <div class="info-row">
+                              <span class="info-label">Account no.</span>
+                              <span class="info-value">
+                                {{ formatMaskedAccount(venue.bank_account_info?.account_number) }}
+                              </span>
+                            </div>
+                          </div>
+                        </v-card-text>
+
+                        <v-card-actions class="d-flex flex-wrap ga-2 justify-space-between card-actions mobile-card-actions">
+                          <v-btn
+                            variant="text"
+                            color="primary"
+                            rounded="lg"
+                            prepend-icon="mdi-open-in-new"
+                            class="nav-btn touch-action-btn"
+                            @click="goToVenue(venue.id)"
+                            @contextmenu.prevent="openNavigationMenu($event, `/O_venueinfo?id=${venue.id}`)"
+                            @touchstart.passive="startLongPress($event, `/O_venueinfo?id=${venue.id}`)"
+                            @touchend="cancelLongPress"
+                            @touchmove="cancelLongPress"
+                            @touchcancel="cancelLongPress"
+                          >
+                            View venue
+                          </v-btn>
+
+                          <v-btn
+                            color="error"
+                            variant="tonal"
+                            prepend-icon="mdi-delete-outline"
+                            rounded="lg"
+                            class="delete-btn touch-action-btn"
+                            @click="openDeleteDialog(venue)"
+                          >
+                            Delete venue
+                          </v-btn>
+                        </v-card-actions>
+                      </v-card>
+                    </div>
+                  </v-slide-group-item>
+                </v-slide-group>
+
+                <v-alert v-else type="info" variant="tonal" rounded="xl" class="empty-alert">
+                  <div class="d-flex align-center ga-3">
+                    <v-icon size="24">mdi-information-outline</v-icon>
+                    <div>You do not own any approved venues yet.</div>
+                  </div>
+                </v-alert>
+              </div>
+
+              <v-row v-else class="content-grid-row">
                 <v-col v-for="venue in ownedVenues" :key="venue.id" cols="12" sm="6" xl="4">
                   <v-card
                     rounded="xl"
@@ -455,7 +767,18 @@ const ownedVenues = computed(() =>
   allVenues.value.filter(venue => venue.owner_user_id === currentUser.value?.id)
 )
 
-const isMobile = computed(() => display.smAndDown.value)
+const isMobile = computed(() => display.xs.value)
+const isTablet = computed(() => display.sm.value || display.md.value)
+const isTabletOrMobile = computed(() => display.mdAndDown.value)
+const activeVenueCount = computed(() =>
+  tab.value === "reserved" ? reservedVenueCards.value.length : ownedVenues.value.length
+)
+const activeTabLabel = computed(() =>
+  tab.value === "reserved" ? "Reserved venues" : "Owned venues"
+)
+const mobileHintText = computed(() =>
+  tab.value === "reserved" ? "Swipe cards to browse bookings" : "Swipe cards to manage venues"
+)
 
 const currentTheme = computed(() => {
   return theme.global.name.value === "light" ? "light" : "dark"
@@ -1071,6 +1394,101 @@ onBeforeUnmount(() => {
   }
 }
 
+
+.mobile-overview-strip {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.overview-stat-card {
+  border-radius: 20px;
+  padding: 14px 16px;
+  transition:
+    background 0.35s ease,
+    border-color 0.35s ease,
+    color 0.35s ease;
+}
+
+.app-theme-dark .overview-stat-card {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.app-theme-light .overview-stat-card {
+  background: rgba(255, 255, 255, 0.82);
+  border: 1px solid rgba(25, 118, 210, 0.09);
+}
+
+.overview-stat-label {
+  font-size: 0.77rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  opacity: 0.72;
+  margin-bottom: 6px;
+}
+
+.overview-stat-value {
+  font-size: 1.05rem;
+  font-weight: 800;
+  line-height: 1.2;
+}
+
+.overview-stat-card--hint {
+  display: flex;
+  align-items: center;
+  font-weight: 600;
+}
+
+.content-grid-row {
+  row-gap: 4px;
+}
+
+.mobile-card-rail-wrap {
+  margin-inline: -2px;
+}
+
+.mobile-card-rail-header {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.rail-eyebrow {
+  font-size: 0.76rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  font-weight: 800;
+  opacity: 0.68;
+  margin-bottom: 6px;
+}
+
+.rail-title {
+  font-size: 1rem;
+  font-weight: 800;
+  line-height: 1.25;
+}
+
+.mobile-card-rail :deep(.v-slide-group__content) {
+  padding: 4px 2px 14px;
+}
+
+.mobile-rail-item {
+  width: min(86vw, 360px);
+  padding-right: 14px;
+}
+
+.mobile-venue-card {
+  min-height: 100%;
+}
+
+.mobile-card-actions {
+  position: sticky;
+  bottom: 0;
+}
+
 @media (max-width: 959px) {
   .reserved-venues-page {
     padding-top: 20px !important;
@@ -1078,7 +1496,7 @@ onBeforeUnmount(() => {
   }
 
   .reserved-main-card {
-    padding: 18px !important;
+    padding: 20px !important;
     border-radius: 24px !important;
   }
 
@@ -1102,6 +1520,14 @@ onBeforeUnmount(() => {
   .hero-chip-group {
     width: 100%;
     justify-content: flex-start;
+  }
+
+  .mobile-overview-strip {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .overview-stat-card--hint {
+    grid-column: 1 / -1;
   }
 
   .tabs-shell {
@@ -1148,6 +1574,25 @@ onBeforeUnmount(() => {
 @media (max-width: 600px) {
   .reserved-main-card {
     padding: 14px !important;
+  }
+
+  .mobile-overview-strip {
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+
+  .overview-stat-card--hint {
+    grid-column: auto;
+  }
+
+  .mobile-card-rail-header {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .mobile-rail-item {
+    width: calc(100vw - 52px);
+    max-width: 350px;
   }
 
   .hero-title {

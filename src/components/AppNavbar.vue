@@ -3,7 +3,7 @@
     elevation="0"
     :height="isMobile ? 70 : 76"
     class="px-3 pl-5 navbar-glass app-navbar"
-    :class="[`theme-${currentTheme}`, { 'navbar-mobile': isMobile }]"
+    :class="[`theme-${currentTheme}`, { 'navbar-mobile': isMobile, 'app-navbar--hidden': isNavbarHidden }]"
   >
     <div
       class="d-flex align-center ga-5 brand-block"
@@ -1355,6 +1355,8 @@ const linkContextMenu = ref({
   label: "",
 })
 const mobileDrawer = ref(false)
+const isNavbarHidden = ref(false)
+const lastScrollY = ref(0)
 
 const broadcastForm = ref({
   title: "",
@@ -1426,20 +1428,54 @@ function handleWindowStorage(event) {
   }
 }
 
+function handleNavbarScroll() {
+  const currentScrollY = window.scrollY || window.pageYOffset || 0
+
+  if (notificationsMenu.value || mobileDrawer.value || broadcastDialog.value || reportsDialog.value || subscribedDialog.value || logoutDialog.value || loginRequiredDialog.value || clearReportsDialog.value) {
+    isNavbarHidden.value = false
+    lastScrollY.value = currentScrollY
+    return
+  }
+
+  if (currentScrollY <= 24) {
+    isNavbarHidden.value = false
+    lastScrollY.value = currentScrollY
+    return
+  }
+
+  if (currentScrollY > lastScrollY.value + 6) {
+    isNavbarHidden.value = true
+  } else if (currentScrollY < lastScrollY.value) {
+    isNavbarHidden.value = false
+  }
+
+  lastScrollY.value = currentScrollY
+}
+
 onMounted(() => {
   loadSavedTheme()
   syncCurrentUser()
+  lastScrollY.value = window.scrollY || window.pageYOffset || 0
   window.addEventListener("storage", handleWindowStorage)
   window.addEventListener("focus", syncCurrentUser)
+  window.addEventListener("scroll", handleNavbarScroll, { passive: true })
 })
 
 onBeforeUnmount(() => {
   window.removeEventListener("storage", handleWindowStorage)
   window.removeEventListener("focus", syncCurrentUser)
+  window.removeEventListener("scroll", handleNavbarScroll)
 })
 
 watch(() => route.fullPath, () => {
   mobileDrawer.value = false
+  isNavbarHidden.value = false
+})
+
+watch([mobileDrawer, notificationsMenu, broadcastDialog, reportsDialog, subscribedDialog, logoutDialog, loginRequiredDialog, clearReportsDialog], ([isDrawerOpen, isNotificationsOpen, isBroadcastOpen, isReportsOpen, isSubscribedOpen, isLogoutOpen, isLoginRequiredOpen, isClearReportsOpen]) => {
+  if (isDrawerOpen || isNotificationsOpen || isBroadcastOpen || isReportsOpen || isSubscribedOpen || isLogoutOpen || isLoginRequiredOpen || isClearReportsOpen) {
+    isNavbarHidden.value = false
+  }
 })
 
 const canModerate = computed(() => {
@@ -1854,6 +1890,16 @@ function logout() {
   box-shadow:
     0 10px 28px rgba(0, 0, 0, 0.18),
     inset 0 -1px 0 rgba(255, 255, 255, 0.03);
+}
+
+.app-navbar {
+  transition: transform 0.22s ease, opacity 0.22s ease, background-color 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+  will-change: transform, opacity;
+}
+
+.app-navbar--hidden {
+  transform: translateY(-100%);
+  opacity: 0;
 }
 
 .brand-block {

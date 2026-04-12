@@ -118,9 +118,171 @@
             </v-col>
           </v-row>
 
+          <v-row
+            v-if="isCompactLayout && currentUser"
+            class="mb-4 mb-sm-5 compact-controls-row"
+          >
+            <v-col cols="12">
+              <v-card
+                class="compact-controls-card"
+                variant="outlined"
+                rounded="xl"
+                elevation="0"
+              >
+                <v-card-text class="pa-4 pa-sm-5">
+                  <div class="d-flex flex-column ga-4">
+                    <div class="d-flex align-center justify-space-between flex-wrap ga-3 compact-controls-header">
+                      <div class="min-w-0">
+                        <div class="text-subtitle-1 font-weight-bold">
+                          Browse your tickets
+                        </div>
+                        <div class="text-body-2 text-medium-emphasis">
+                          {{ filteredBookings.length }} visible booking<span v-if="filteredBookings.length !== 1">s</span>
+                        </div>
+                      </div>
+
+                      <div class="d-flex align-center ga-2 compact-controls-actions">
+                        <v-chip
+                          color="primary"
+                          variant="tonal"
+                          rounded="xl"
+                          prepend-icon="mdi-filter-check-outline"
+                          class="compact-active-chip"
+                        >
+                          {{ selectedStatus }}
+                        </v-chip>
+
+                        <v-btn
+                          color="primary"
+                          variant="flat"
+                          rounded="xl"
+                          prepend-icon="mdi-tune-variant"
+                          class="text-none compact-filter-btn"
+                          @click="mobileFiltersOpen = true"
+                        >
+                          Filters
+                        </v-btn>
+                      </div>
+                    </div>
+
+                    <v-text-field
+                      v-model="search"
+                      label="Search tickets"
+                      variant="outlined"
+                      density="comfortable"
+                      rounded="xl"
+                      prepend-inner-icon="mdi-magnify"
+                      hide-details="auto"
+                      class="search-field compact-search-field"
+                      placeholder="Event, venue, city, or seat"
+                    />
+
+                    <div class="compact-status-strip">
+                      <button
+                        type="button"
+                        class="compact-status-pill"
+                        :class="{ 'compact-status-pill--active': selectedStatus === 'All statuses' }"
+                        @click="selectedStatus = 'All statuses'"
+                      >
+                        <v-icon size="18">mdi-filter-variant-remove</v-icon>
+                        <span>All</span>
+                      </button>
+
+                      <button
+                        type="button"
+                        class="compact-status-pill"
+                        :class="{ 'compact-status-pill--active': selectedStatus === 'Upcoming' }"
+                        @click="selectedStatus = 'Upcoming'"
+                      >
+                        <v-icon size="18">mdi-calendar-clock-outline</v-icon>
+                        <span>Upcoming</span>
+                      </button>
+
+                      <button
+                        type="button"
+                        class="compact-status-pill"
+                        :class="{ 'compact-status-pill--active': selectedStatus === 'Past' }"
+                        @click="selectedStatus = 'Past'"
+                      >
+                        <v-icon size="18">mdi-history</v-icon>
+                        <span>Past</span>
+                      </button>
+
+                      <button
+                        type="button"
+                        class="compact-status-pill"
+                        :class="{ 'compact-status-pill--active': selectedStatus === 'Cancelled' }"
+                        @click="selectedStatus = 'Cancelled'"
+                      >
+                        <v-icon size="18">mdi-cancel</v-icon>
+                        <span>Cancelled</span>
+                      </button>
+                    </div>
+
+                    <div class="compact-summary-scroll">
+                      <v-sheet
+                        class="summary-card summary-card-upcoming compact-summary-card"
+                        rounded="xl"
+                        border
+                      >
+                        <div class="text-caption text-medium-emphasis mb-1">
+                          Upcoming
+                        </div>
+                        <div class="d-flex align-center justify-space-between ga-3">
+                          <div class="text-h5 font-weight-bold">
+                            {{ upcomingCount }}
+                          </div>
+                          <v-avatar size="42" class="summary-icon">
+                            <v-icon size="22">mdi-calendar-clock-outline</v-icon>
+                          </v-avatar>
+                        </div>
+                      </v-sheet>
+
+                      <v-sheet
+                        class="summary-card summary-card-past compact-summary-card"
+                        rounded="xl"
+                        border
+                      >
+                        <div class="text-caption text-medium-emphasis mb-1">
+                          Past
+                        </div>
+                        <div class="d-flex align-center justify-space-between ga-3">
+                          <div class="text-h5 font-weight-bold">
+                            {{ pastCount }}
+                          </div>
+                          <v-avatar size="42" class="summary-icon">
+                            <v-icon size="22">mdi-history</v-icon>
+                          </v-avatar>
+                        </div>
+                      </v-sheet>
+
+                      <v-sheet
+                        class="summary-card summary-card-cancelled compact-summary-card"
+                        rounded="xl"
+                        border
+                      >
+                        <div class="text-caption text-medium-emphasis mb-1">
+                          Cancelled
+                        </div>
+                        <div class="d-flex align-center justify-space-between ga-3">
+                          <div class="text-h5 font-weight-bold">
+                            {{ cancelledCount }}
+                          </div>
+                          <v-avatar size="42" class="summary-icon">
+                            <v-icon size="22">mdi-cancel</v-icon>
+                          </v-avatar>
+                        </div>
+                      </v-sheet>
+                    </div>
+                  </div>
+                </v-card-text>
+              </v-card>
+            </v-col>
+          </v-row>
+
           <v-row class="ga-md-0 bookings-main-row">
             <!-- LEFT FILTERS COLUMN -->
-            <v-col cols="12" md="4" lg="3">
+            <v-col v-if="isDesktopLayout" cols="12" md="4" lg="3">
               <v-card
                 class="filters-card sticky-filters"
                 variant="outlined"
@@ -300,7 +462,7 @@
             </v-col>
 
             <!-- RIGHT COLUMN -->
-            <v-col cols="12" md="8" lg="9">
+            <v-col cols="12" :md="isDesktopLayout ? 8 : 12" :lg="isDesktopLayout ? 9 : 12">
               <v-card
                 class="content-card"
                 variant="outlined"
@@ -336,7 +498,7 @@
 
                   <template v-else>
                     <!-- Summary boxes -->
-                    <v-row class="mb-2">
+                    <v-row v-if="!isCompactLayout" class="mb-2">
                       <v-col cols="12" md="4">
                         <v-sheet
                           class="summary-card summary-card-upcoming"
@@ -516,6 +678,23 @@
                               </v-chip>
                             </div>
 
+                            <div class="booking-top-meta-strip mb-3">
+                              <div class="booking-top-meta-pill">
+                                <span class="booking-top-meta-label">Booking</span>
+                                <span class="booking-top-meta-value">#{{ booking.id }}</span>
+                              </div>
+
+                              <div class="booking-top-meta-pill">
+                                <span class="booking-top-meta-label">Tickets</span>
+                                <span class="booking-top-meta-value">{{ booking.ticket_count }}</span>
+                              </div>
+
+                              <div class="booking-top-meta-pill">
+                                <span class="booking-top-meta-label">Paid</span>
+                                <span class="booking-top-meta-value">{{ formatPrice(booking.total_price) }}</span>
+                              </div>
+                            </div>
+
                             <v-row dense class="booking-meta-row">
                               <v-col cols="12" sm="6" lg="4">
                                 <div class="booking-meta-item">
@@ -621,6 +800,206 @@
             </v-col>
           </v-row>
         </v-container>
+
+        <v-dialog
+          v-model="mobileFiltersOpen"
+          :max-width="isTabletLayout ? 720 : 560"
+          :fullscreen="isMobile"
+          transition="dialog-bottom-transition"
+        >
+          <v-card rounded="xl" class="ticket-dialog-card compact-filter-dialog">
+            <v-card-title class="d-flex align-center justify-space-between py-4 px-4 px-md-5 ticket-dialog-title">
+              <div class="d-flex align-center min-w-0">
+                <v-avatar size="38" class="dialog-title-avatar me-3">
+                  <v-icon size="20">mdi-tune-variant</v-icon>
+                </v-avatar>
+                <div class="min-w-0">
+                  <div class="text-h6 font-weight-bold text-truncate">Filter bookings</div>
+                  <div class="text-caption text-medium-emphasis">
+                    Refine tickets without leaving the list
+                  </div>
+                </div>
+              </div>
+
+              <v-btn icon variant="text" @click="mobileFiltersOpen = false">
+                <v-icon>mdi-close</v-icon>
+              </v-btn>
+            </v-card-title>
+
+            <v-divider />
+
+            <v-card-text class="pa-4 pa-sm-5 pa-md-6">
+              <div class="d-flex flex-column ga-4">
+                <div class="d-flex align-center justify-space-between flex-wrap ga-3">
+                  <div>
+                    <div class="font-weight-bold text-subtitle-1">
+                      Filters
+                    </div>
+                    <div class="text-caption text-medium-emphasis">
+                      Choose a status, date, or search phrase
+                    </div>
+                  </div>
+
+                  <v-btn
+                    variant="text"
+                    class="text-none"
+                    @click="resetFilters"
+                  >
+                    Reset all
+                  </v-btn>
+                </div>
+
+                <div class="d-flex flex-wrap ga-2 mobile-friendly-filter-pills">
+                  <v-chip
+                    class="filter-chip"
+                    rounded="xl"
+                    :variant="selectedStatus === 'All statuses' ? 'flat' : 'outlined'"
+                    :color="selectedStatus === 'All statuses' ? 'primary' : undefined"
+                    prepend-icon="mdi-filter-variant-remove"
+                    @click="selectedStatus = 'All statuses'"
+                  >
+                    All
+                  </v-chip>
+
+                  <v-chip
+                    class="filter-chip"
+                    rounded="xl"
+                    :variant="selectedStatus === 'Upcoming' ? 'flat' : 'outlined'"
+                    :color="selectedStatus === 'Upcoming' ? 'primary' : undefined"
+                    prepend-icon="mdi-calendar-clock-outline"
+                    @click="selectedStatus = 'Upcoming'"
+                  >
+                    Upcoming
+                  </v-chip>
+
+                  <v-chip
+                    class="filter-chip"
+                    rounded="xl"
+                    :variant="selectedStatus === 'Past' ? 'flat' : 'outlined'"
+                    :color="selectedStatus === 'Past' ? 'primary' : undefined"
+                    prepend-icon="mdi-history"
+                    @click="selectedStatus = 'Past'"
+                  >
+                    Past
+                  </v-chip>
+
+                  <v-chip
+                    class="filter-chip"
+                    rounded="xl"
+                    :variant="selectedStatus === 'Cancelled' ? 'flat' : 'outlined'"
+                    :color="selectedStatus === 'Cancelled' ? 'error' : undefined"
+                    prepend-icon="mdi-cancel"
+                    @click="selectedStatus = 'Cancelled'"
+                  >
+                    Cancelled
+                  </v-chip>
+                </div>
+
+                <v-select
+                  v-model="selectedStatus"
+                  label="Status"
+                  :items="['All statuses', 'Upcoming', 'Past', 'Cancelled']"
+                  variant="outlined"
+                  density="comfortable"
+                  rounded="lg"
+                  prepend-inner-icon="mdi-filter-outline"
+                  hide-details="auto"
+                />
+
+                <v-text-field
+                  v-model="chosenDate"
+                  label="Choose Date"
+                  variant="outlined"
+                  density="comfortable"
+                  rounded="lg"
+                  prepend-inner-icon="mdi-calendar-outline"
+                  hide-details="auto"
+                  placeholder="Search by event date"
+                />
+
+                <v-text-field
+                  v-model="search"
+                  label="Search booking..."
+                  variant="outlined"
+                  density="comfortable"
+                  rounded="lg"
+                  prepend-inner-icon="mdi-magnify"
+                  hide-details="auto"
+                  placeholder="Event, venue, city, or seat"
+                />
+
+                <div class="quick-status-grid">
+                  <v-sheet
+                    class="quick-status-item"
+                    rounded="lg"
+                    border
+                    role="button"
+                    tabindex="0"
+                    @click="selectedStatus = 'Upcoming'"
+                    @keydown.enter="selectedStatus = 'Upcoming'"
+                  >
+                    <div class="d-flex align-center justify-space-between">
+                      <div class="d-flex align-center">
+                        <v-icon size="18" class="me-2 status-icon status-icon-upcoming">mdi-calendar-clock-outline</v-icon>
+                        <span class="text-body-2">Upcoming</span>
+                      </div>
+                      <span class="font-weight-bold">{{ upcomingCount }}</span>
+                    </div>
+                  </v-sheet>
+
+                  <v-sheet
+                    class="quick-status-item"
+                    rounded="lg"
+                    border
+                    role="button"
+                    tabindex="0"
+                    @click="selectedStatus = 'Past'"
+                    @keydown.enter="selectedStatus = 'Past'"
+                  >
+                    <div class="d-flex align-center justify-space-between">
+                      <div class="d-flex align-center">
+                        <v-icon size="18" class="me-2 status-icon status-icon-past">mdi-history</v-icon>
+                        <span class="text-body-2">Past</span>
+                      </div>
+                      <span class="font-weight-bold">{{ pastCount }}</span>
+                    </div>
+                  </v-sheet>
+
+                  <v-sheet
+                    class="quick-status-item"
+                    rounded="lg"
+                    border
+                    role="button"
+                    tabindex="0"
+                    @click="selectedStatus = 'Cancelled'"
+                    @keydown.enter="selectedStatus = 'Cancelled'"
+                  >
+                    <div class="d-flex align-center justify-space-between">
+                      <div class="d-flex align-center">
+                        <v-icon size="18" class="me-2 status-icon status-icon-cancelled">mdi-cancel</v-icon>
+                        <span class="text-body-2">Cancelled</span>
+                      </div>
+                      <span class="font-weight-bold">{{ cancelledCount }}</span>
+                    </div>
+                  </v-sheet>
+                </div>
+
+                <div class="d-flex justify-end pt-2">
+                  <v-btn
+                    color="primary"
+                    variant="flat"
+                    rounded="xl"
+                    prepend-icon="mdi-check"
+                    class="text-none"
+                    @click="mobileFiltersOpen = false"
+                  >
+                    Apply filters
+                  </v-btn>
+                </div>
+              </div>
+            </v-card-text>
+          </v-card>
+        </v-dialog>
 
         <v-dialog
           v-model="ticketDialog"
@@ -782,11 +1161,15 @@ const chosenDate = ref("")
 const search = ref("")
 const ticketDialog = ref(false)
 const selectedBooking = ref(null)
+const mobileFiltersOpen = ref(false)
 
 const currentUser = computed(() => get_Current_User())
 const reservations = get_All_Reservations()
 
 const isMobile = computed(() => display.smAndDown.value)
+const isTabletLayout = computed(() => display.md.value)
+const isCompactLayout = computed(() => display.mdAndDown.value)
+const isDesktopLayout = computed(() => display.lgAndUp.value)
 
 const currentTheme = computed(() => {
   return theme.global.name.value === "light" ? "light" : "dark"
@@ -1351,6 +1734,110 @@ onBeforeUnmount(() => {
   transform: translateY(10px);
 }
 
+
+.compact-controls-card {
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+}
+
+.bookings-theme-light .compact-controls-card {
+  background: rgba(255, 255, 255, 0.84);
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  box-shadow: 0 18px 38px rgba(15, 23, 42, 0.07);
+}
+
+.bookings-theme-dark .compact-controls-card {
+  background: rgba(17, 24, 39, 0.82);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 0 20px 42px rgba(0, 0, 0, 0.28);
+}
+
+.compact-status-strip,
+.compact-summary-scroll {
+  display: flex;
+  gap: 12px;
+  overflow-x: auto;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.compact-status-strip::-webkit-scrollbar,
+.compact-summary-scroll::-webkit-scrollbar {
+  display: none;
+}
+
+.compact-status-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  white-space: nowrap;
+  border-radius: 999px;
+  padding: 11px 16px;
+  border: 1px solid rgba(var(--v-theme-primary), 0.16);
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  min-height: 42px;
+  transition: transform 0.2s ease, border-color 0.2s ease, background 0.2s ease, box-shadow 0.2s ease;
+}
+
+.compact-status-pill:hover {
+  transform: translateY(-1px);
+}
+
+.compact-status-pill--active {
+  background: rgba(var(--v-theme-primary), 0.1);
+  border-color: rgba(var(--v-theme-primary), 0.42);
+  box-shadow: inset 0 0 0 1px rgba(var(--v-theme-primary), 0.18);
+}
+
+.compact-summary-card {
+  min-width: 220px;
+  flex: 0 0 220px;
+}
+
+.booking-top-meta-strip {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.booking-top-meta-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 12px;
+  border-radius: 14px;
+  border: 1px solid rgba(var(--v-theme-primary), 0.1);
+}
+
+.bookings-theme-light .booking-top-meta-pill {
+  background: rgba(15, 23, 42, 0.025);
+}
+
+.bookings-theme-dark .booking-top-meta-pill {
+  background: rgba(255, 255, 255, 0.035);
+}
+
+.booking-top-meta-label {
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  opacity: 0.66;
+}
+
+.booking-top-meta-value {
+  font-size: 0.9rem;
+  font-weight: 700;
+}
+
+.quick-status-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+
 @media (max-width: 1279px) {
   .hero-stats {
     justify-content: flex-start;
@@ -1363,6 +1850,10 @@ onBeforeUnmount(() => {
     top: auto;
   }
 
+  .hero-layout {
+    gap: 20px;
+  }
+
   .hero-mini-stat {
     min-width: 150px;
   }
@@ -1370,12 +1861,25 @@ onBeforeUnmount(() => {
   .bookings-main-row {
     row-gap: 16px;
   }
+
+  .compact-controls-actions {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .compact-active-chip {
+    max-width: calc(100% - 140px);
+  }
 }
 
 @media (max-width: 700px) {
   .bookings-container {
     padding-left: 12px;
     padding-right: 12px;
+  }
+
+  .hero-card {
+    border-radius: 24px;
   }
 
   .hero-actions {
@@ -1402,14 +1906,16 @@ onBeforeUnmount(() => {
   }
 
   .booking-card-inner {
-    padding: 16px;
+    padding: 14px;
+    gap: 14px;
   }
 
   .booking-image-shell {
     width: 100%;
     min-width: 100%;
-    height: 180px;
+    height: 190px;
     margin-right: 0 !important;
+    border-radius: 18px !important;
   }
 
   .booking-image-shell :deep(.v-img) {
@@ -1424,15 +1930,43 @@ onBeforeUnmount(() => {
     width: 100%;
   }
 
+  .booking-meta-row {
+    margin-top: 2px;
+  }
+
+  .booking-meta-item {
+    padding: 12px;
+  }
+
+  .booking-top-meta-strip {
+    gap: 8px;
+  }
+
+  .booking-top-meta-pill {
+    width: calc(50% - 4px);
+    justify-content: space-between;
+  }
+
   .booking-actions {
     width: 100%;
+    margin-left: 0 !important;
+    padding-top: 2px;
   }
 
   .booking-actions .v-btn {
     width: 100%;
   }
 
+  .compact-summary-card {
+    min-width: 200px;
+    flex-basis: 200px;
+  }
+
   .ticket-info-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .quick-status-grid {
     grid-template-columns: 1fr;
   }
 }
@@ -1440,6 +1974,26 @@ onBeforeUnmount(() => {
 @media (max-width: 460px) {
   .hero-actions .v-btn {
     flex: 1 1 100%;
+  }
+
+  .compact-controls-actions {
+    flex-direction: column;
+    align-items: stretch !important;
+  }
+
+  .compact-active-chip,
+  .compact-filter-btn {
+    width: 100%;
+    max-width: 100%;
+  }
+
+  .compact-summary-card {
+    min-width: calc(100vw - 48px);
+    flex-basis: calc(100vw - 48px);
+  }
+
+  .booking-top-meta-pill {
+    width: 100%;
   }
 
   .mobile-friendly-filter-pills .v-chip {

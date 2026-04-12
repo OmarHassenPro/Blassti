@@ -4,10 +4,10 @@
 
     <v-main class="seat-selection-page" :class="browserThemeClass">
       <v-container fluid class="py-6 py-md-8 px-3 px-sm-4 px-md-6 page-shell">
-        <v-row v-if="event && venue" class="ga-0 align-stretch">
+        <v-row v-if="event && venue" class="ga-0 align-stretch responsive-seat-row">
           <!-- LEFT PANEL -->
           <v-col cols="12" lg="4" xl="3" class="pr-lg-4 mb-4 mb-lg-0 panel-column panel-column-left">
-            <v-card rounded="xl" class="glass-card sidebar-card elevated-card">
+            <v-card rounded="xl" class="glass-card sidebar-card elevated-card" :class="{ 'sidebar-card-mobile': isPhone, 'sidebar-card-tablet': isTablet }">
               <v-card-text class="pa-5 pa-md-6">
                 <div class="d-flex align-start justify-space-between mb-4">
                   <div>
@@ -28,7 +28,7 @@
                   </v-chip>
                 </div>
 
-                <v-sheet class="info-panel pa-4 rounded-xl mb-4 elevated-panel">
+                <v-sheet class="info-panel pa-4 rounded-xl mb-4 elevated-panel responsive-panel">
                   <div class="d-flex align-center justify-space-between mb-2">
                     <div class="text-subtitle-1 font-weight-bold">
                       Event info
@@ -54,7 +54,7 @@
                   </div>
                 </v-sheet>
 
-                <v-sheet class="info-panel pa-4 rounded-xl mb-4 elevated-panel">
+                <v-sheet class="info-panel pa-4 rounded-xl mb-4 elevated-panel responsive-panel">
                   <div class="text-subtitle-1 font-weight-bold mb-3">
                     Seat prices
                   </div>
@@ -71,7 +71,7 @@
                   </div>
                 </v-sheet>
 
-                <v-sheet class="info-panel pa-4 rounded-xl mb-4 elevated-panel">
+                <v-sheet class="info-panel pa-4 rounded-xl mb-4 elevated-panel responsive-panel">
                   <div class="text-subtitle-1 font-weight-bold mb-3">
                     {{ hasManualSeatLayout ? "Selected seats" : "Choose tickets" }}
                   </div>
@@ -165,7 +165,7 @@
                   </template>
                 </v-sheet>
 
-                <v-sheet class="info-panel pa-4 rounded-xl mb-4 elevated-panel">
+                <v-sheet class="info-panel pa-4 rounded-xl mb-4 elevated-panel responsive-panel">
                   <div class="d-flex align-center justify-space-between mb-2">
                     <div class="text-subtitle-1 font-weight-bold">
                       Payment summary
@@ -267,6 +267,73 @@
           <v-col cols="12" lg="8" xl="9" class="panel-column panel-column-right">
             <v-card rounded="xl" class="glass-card canvas-card elevated-card">
               <v-card-text class="pa-4 pa-md-5">
+                <div v-if="isPhone" class="mobile-event-hero mb-4">
+                  <div class="d-flex align-start justify-space-between ga-3 mb-3">
+                    <div>
+                      <div class="text-overline mobile-section-kicker">
+                        Seat selection
+                      </div>
+                      <div class="text-h6 font-weight-bold text-white mb-1">
+                        {{ event.title }}
+                      </div>
+                      <div class="text-body-2 text-medium-emphasis">
+                        {{ event.date }} · {{ event.time }}
+                      </div>
+                    </div>
+
+                    <v-chip
+                      color="primary"
+                      variant="tonal"
+                      prepend-icon="mdi-map-marker"
+                      size="small"
+                    >
+                      {{ event.city }}
+                    </v-chip>
+                  </div>
+
+                  <div class="mobile-stats-strip">
+                    <div class="mobile-stat-card">
+                      <div class="text-caption text-medium-emphasis">Venue</div>
+                      <div class="text-body-2 font-weight-bold text-white">
+                        {{ venue.title }}
+                      </div>
+                    </div>
+
+                    <div class="mobile-stat-card">
+                      <div class="text-caption text-medium-emphasis">Available</div>
+                      <div class="text-body-2 font-weight-bold text-white">
+                        {{ accurateRemainingSeats }} seats
+                      </div>
+                    </div>
+
+                    <div class="mobile-stat-card">
+                      <div class="text-caption text-medium-emphasis">Selected</div>
+                      <div class="text-body-2 font-weight-bold text-white">
+                        {{ totalTickets }} ticket<span v-if="totalTickets !== 1">s</span>
+                      </div>
+                    </div>
+
+                    <div class="mobile-stat-card">
+                      <div class="text-caption text-medium-emphasis">Total</div>
+                      <div class="text-body-2 font-weight-bold text-white">
+                        {{ formatPrice(finalTotal) }}
+                      </div>
+                    </div>
+                  </div>
+
+                  <div class="d-flex flex-wrap ga-2 mt-3">
+                    <v-chip
+                      v-for="priceItem in priceLegend"
+                      :key="`mobile-${priceItem.name}`"
+                      :color="getClassColor(priceItem.name)"
+                      variant="tonal"
+                      size="small"
+                    >
+                      {{ priceItem.name }} · {{ formatPrice(priceItem.price) }}
+                    </v-chip>
+                  </div>
+                </div>
+
                 <div class="d-flex flex-column flex-md-row align-md-center justify-space-between mb-4 ga-3">
                   <div>
                     <div class="text-h5 font-weight-bold text-white">
@@ -295,7 +362,7 @@
 
                 <v-sheet
                   v-if="hasManualSeatLayout"
-                  class="canvas-toolbar mb-4 pa-3 rounded-xl"
+                  class="canvas-toolbar mb-4 pa-3 rounded-xl responsive-toolbar"
                 >
                   <div class="d-flex flex-column flex-md-row align-md-center justify-space-between ga-3">
                     <div class="d-flex flex-wrap ga-2">
@@ -515,6 +582,34 @@
         </v-row>
       </v-container>
 
+      <transition name="mobile-cta-slide">
+        <div
+          v-if="event && venue && isPhone"
+          class="mobile-sticky-checkout"
+        >
+          <div class="mobile-sticky-checkout__meta">
+            <div class="text-caption text-medium-emphasis">Booking total</div>
+            <div class="text-subtitle-1 font-weight-bold text-white">
+              {{ formatPrice(finalTotal) }}
+            </div>
+            <div class="text-caption text-medium-emphasis">
+              {{ totalTickets }} ticket<span v-if="totalTickets !== 1">s</span>
+            </div>
+          </div>
+
+          <v-btn
+            color="primary"
+            rounded="lg"
+            size="large"
+            class="primary-cta-btn mobile-sticky-checkout__button"
+            prepend-icon="mdi-credit-card-outline"
+            :disabled="!canProceedToPayment"
+            @click="openPaymentDialog"
+          >
+            Pay now
+          </v-btn>
+        </div>
+      </transition>
 
       <v-menu
         v-model="routeContextMenu.show"
@@ -794,6 +889,8 @@ const paymentForm = reactive({
 const fallbackSelection = reactive({})
 
 const isMobile = computed(() => display.mdAndDown.value)
+const isPhone = computed(() => display.smAndDown.value)
+const isTablet = computed(() => display.md.value)
 
 function applyThemeChoice(themeName) {
   const normalizedTheme = themeName === "light" ? "light" : "dark"
@@ -2098,10 +2195,18 @@ function goBack() {
 .browser-theme-light .qty-pill,
 .browser-theme-light .fallback-qty-display,
 .browser-theme-light .canvas-toolbar,
-.browser-theme-light .route-context-menu-card {
+.browser-theme-light .route-context-menu-card,
+.browser-theme-light .mobile-event-hero,
+.browser-theme-light .mobile-stat-card {
   background: rgba(248, 250, 252, 0.9) !important;
   border-color: rgba(15, 23, 42, 0.08) !important;
   color: #0f172a;
+}
+
+.browser-theme-light .mobile-sticky-checkout {
+  background: rgba(255, 255, 255, 0.94);
+  border-color: rgba(15, 23, 42, 0.08);
+  box-shadow: 0 18px 38px rgba(15, 23, 42, 0.14);
 }
 
 .browser-theme-light .payment-summary {
@@ -2244,6 +2349,75 @@ function goBack() {
   margin: 0 auto;
 }
 
+.mobile-event-hero {
+  padding: 16px;
+  border-radius: 24px;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.055), rgba(255, 255, 255, 0.03)),
+    radial-gradient(circle at top right, rgba(59, 130, 246, 0.18), transparent 38%);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.mobile-section-kicker {
+  letter-spacing: 0.14em;
+  opacity: 0.82;
+}
+
+.mobile-stats-strip {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(138px, 1fr);
+  gap: 12px;
+  overflow-x: auto;
+  padding-bottom: 4px;
+  scrollbar-width: thin;
+}
+
+.mobile-stat-card {
+  padding: 12px 14px;
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.045);
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  min-height: 74px;
+}
+
+.mobile-sticky-checkout {
+  position: fixed;
+  left: 12px;
+  right: 12px;
+  bottom: max(12px, env(safe-area-inset-bottom));
+  z-index: 30;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px;
+  border-radius: 22px;
+  backdrop-filter: blur(16px);
+  background: rgba(8, 14, 25, 0.92);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 0 18px 38px rgba(0, 0, 0, 0.32);
+}
+
+.mobile-sticky-checkout__meta {
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
+.mobile-sticky-checkout__button {
+  flex: 0 0 auto;
+}
+
+.mobile-cta-slide-enter-active,
+.mobile-cta-slide-leave-active {
+  transition: opacity 0.22s ease, transform 0.22s ease;
+}
+
+.mobile-cta-slide-enter-from,
+.mobile-cta-slide-leave-to {
+  opacity: 0;
+  transform: translateY(12px);
+}
+
 .panel-column {
   display: flex;
   flex-direction: column;
@@ -2282,10 +2456,33 @@ function goBack() {
   color: rgba(15, 23, 42, 0.72) !important;
 }
 
+@media (min-width: 1265px) {
+  .panel-column-left .sidebar-card {
+    position: sticky;
+    top: 96px;
+  }
+}
+
 @media (max-width: 1264px) {
   .sidebar-card,
   .canvas-card {
     min-height: auto;
+  }
+
+  .responsive-seat-row {
+    row-gap: 18px;
+  }
+
+  .panel-column-left {
+    order: 2;
+  }
+
+  .panel-column-right {
+    order: 1;
+  }
+
+  .sidebar-card-tablet .v-card-text {
+    padding: 22px !important;
   }
 
   .venue-canvas-wrapper,
@@ -2299,6 +2496,10 @@ function goBack() {
 @media (max-width: 960px) {
   .page-shell {
     padding-top: 20px !important;
+  }
+
+  .responsive-toolbar {
+    border-radius: 20px;
   }
 
   .venue-canvas-wrapper,
@@ -2316,7 +2517,7 @@ function goBack() {
 
 @media (max-width: 600px) {
   .seat-selection-page {
-    padding-bottom: 28px;
+    padding-bottom: 110px;
   }
 
   .page-shell {
@@ -2324,16 +2525,38 @@ function goBack() {
     padding-right: 12px !important;
   }
 
-  .sidebar-card .v-card-text,
+  .sidebar-card-mobile .v-card-text,
   .canvas-card .v-card-text {
     padding: 18px !important;
+  }
+
+  .sidebar-card-mobile {
+    border-radius: 24px !important;
+  }
+
+  .responsive-panel {
+    border-radius: 18px !important;
+  }
+
+  .responsive-toolbar {
+    padding: 14px !important;
+  }
+
+  .responsive-toolbar .d-flex.flex-wrap.ga-2 {
+    display: grid !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px !important;
+  }
+
+  .responsive-toolbar .text-caption {
+    width: 100%;
   }
 
   .venue-canvas-wrapper,
   .venue-canvas-grid,
   .fallback-selector {
-    min-height: 460px;
-    height: 460px;
+    min-height: 480px;
+    height: 480px;
     border-radius: 22px;
   }
 
@@ -2368,8 +2591,9 @@ function goBack() {
     max-width: min(78vw, 210px);
   }
 
-  .canvas-toolbar .text-caption {
-    width: 100%;
+  .mobile-stats-strip {
+    margin-right: -4px;
+    padding-right: 4px;
   }
 }
 </style>

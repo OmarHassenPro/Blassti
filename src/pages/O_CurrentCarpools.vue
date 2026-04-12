@@ -70,6 +70,34 @@
           </div>
         </v-card>
 
+
+        <div
+          v-if="currentUser"
+          class="summary-grid mb-5 mb-sm-6 mb-md-8"
+          :class="{
+            'summary-grid-mobile': isMobile,
+            'summary-grid-tablet': isTablet,
+          }"
+        >
+          <v-card
+            v-for="item in summaryCards"
+            :key="item.label"
+            rounded="xl"
+            class="summary-panel"
+            :class="browserThemeClass"
+          >
+            <div class="summary-panel-icon">
+              <v-icon size="20">{{ item.icon }}</v-icon>
+            </div>
+
+            <div class="summary-panel-copy">
+              <div class="summary-panel-label">{{ item.label }}</div>
+              <div class="summary-panel-value">{{ item.value }}</div>
+              <div class="summary-panel-caption">{{ item.caption }}</div>
+            </div>
+          </v-card>
+        </div>
+
         <v-row v-if="!currentUser" justify="center">
           <v-col cols="12" md="10" lg="8">
             <v-card rounded="xl" class="empty-state-card pa-5 pa-sm-6 pa-md-8" :class="browserThemeClass">
@@ -116,32 +144,283 @@
               </v-chip>
             </div>
 
-            <v-row v-if="currentCarpools.length">
-              <v-col
-                v-for="carpool in currentCarpools"
-                :key="carpool.id"
-                cols="12"
-                md="6"
-                lg="6"
+            <template v-if="currentCarpools.length">
+              <v-row v-if="isDesktop">
+                <v-col
+                  v-for="carpool in currentCarpools"
+                  :key="carpool.id"
+                  cols="12"
+                  md="6"
+                  lg="6"
+                >
+                  <v-card
+                    rounded="xl"
+                    class="pa-4 pa-sm-5 pa-md-6 h-100 glass-card current-carpool-card"
+                    :class="browserThemeClass"
+                  >
+                    <div class="card-top-strip" />
+
+                    <div class="d-flex justify-space-between flex-wrap ga-4">
+                      <div class="min-w-0">
+                        <div class="d-flex flex-wrap align-center ga-2 mb-2">
+                          <v-chip
+                            size="x-small"
+                            variant="tonal"
+                            rounded="pill"
+                            class="micro-chip"
+                          >
+                            <v-icon start size="14">mdi-calendar-blank-outline</v-icon>
+                            Upcoming
+                          </v-chip>
+
+                          <v-chip
+                            size="x-small"
+                            variant="tonal"
+                            rounded="pill"
+                            class="micro-chip"
+                          >
+                            <v-icon start size="14">mdi-account-tie</v-icon>
+                            {{ isDriver(carpool) ? "Driver" : "Participant" }}
+                          </v-chip>
+                        </div>
+
+                        <RouterLink
+                          :to="carpool.event_route"
+                          class="text-decoration-none"
+                        >
+                          <div class="text-h6 font-weight-bold clickable-link title-link">
+                            {{ carpool.event_title }}
+                          </div>
+                        </RouterLink>
+
+                        <div class="text-body-2 meta-line mt-2">
+                          <v-icon size="16" class="me-1">mdi-clock-outline</v-icon>
+                          {{ carpool.event_date }} • {{ carpool.time_of_going }}
+                        </div>
+
+                        <div class="text-body-2 meta-line mt-1">
+                          <v-icon size="16" class="me-1">mdi-map-marker-path</v-icon>
+                          {{ carpool.route }}
+                        </div>
+                      </div>
+
+                      <div class="d-flex align-center ga-2 flex-wrap justify-end status-side">
+                        <v-btn
+                          v-if="isDriver(carpool)"
+                          color="error"
+                          variant="flat"
+                          rounded="pill"
+                          size="small"
+                          class="delete-top-btn touch-target-btn"
+                          prepend-icon="mdi-delete-outline"
+                          @click="openDeleteDialog(carpool)"
+                        >
+                          Delete
+                        </v-btn>
+
+                        <v-chip
+                          :color="statusColor(carpool.status)"
+                          size="small"
+                          rounded="pill"
+                          class="status-chip"
+                        >
+                          <v-icon start size="15">
+                            {{
+                              carpool.status === "Finished"
+                                ? "mdi-flag-checkered"
+                                : carpool.status === "Reserved"
+                                ? "mdi-bookmark-check-outline"
+                                : carpool.status === "Open"
+                                ? "mdi-lock-open-variant-outline"
+                                : carpool.status === "Full"
+                                ? "mdi-account-group"
+                                : "mdi-information-outline"
+                            }}
+                          </v-icon>
+                          {{ carpool.status }}
+                        </v-chip>
+                      </div>
+                    </div>
+
+                    <v-divider class="my-4 divider-light" />
+
+                    <v-row>
+                      <v-col cols="12" md="6">
+                        <div class="section-mini-title mb-3">
+                          <v-icon size="17" class="me-1">mdi-steering</v-icon>
+                          Driver
+                        </div>
+
+                        <div class="profile-spotlight d-flex align-center">
+                          <RouterLink
+                            v-if="carpool.driver"
+                            :to="carpool.driver.route"
+                            class="text-decoration-none"
+                          >
+                            <v-avatar size="56" class="mr-3 clickable-avatar spotlight-avatar">
+                              <v-img
+                                v-if="carpool.driver.avatar"
+                                :src="carpool.driver.avatar"
+                                cover
+                              />
+                              <v-icon v-else size="26">mdi-account</v-icon>
+                            </v-avatar>
+                          </RouterLink>
+
+                          <div class="min-w-0">
+                            <RouterLink
+                              v-if="carpool.driver"
+                              :to="carpool.driver.route"
+                              class="text-decoration-none"
+                            >
+                              <div class="font-weight-bold clickable-link text-truncate">
+                                {{ carpool.driver.name }}
+                              </div>
+                            </RouterLink>
+
+                            <div class="text-body-2 meta-line">
+                              <v-icon size="15" class="me-1">mdi-map-marker-outline</v-icon>
+                              Departure: {{ carpool.departure_location }}
+                            </div>
+                          </div>
+                        </div>
+                      </v-col>
+
+                      <v-col cols="12" md="6">
+                        <div class="section-mini-title mb-3">
+                          <v-icon size="17" class="me-1">mdi-office-building-marker-outline</v-icon>
+                          Venue
+                        </div>
+
+                        <div class="detail-box">
+                          <RouterLink
+                            v-if="carpool.venue_route"
+                            :to="carpool.venue_route"
+                            class="text-decoration-none"
+                          >
+                            <div class="font-weight-medium clickable-link mb-1">
+                              {{ carpool.venue_title }}
+                            </div>
+                          </RouterLink>
+
+                          <div class="text-body-2 meta-line">
+                            <v-icon size="15" class="me-1">mdi-city-variant-outline</v-icon>
+                            {{ carpool.venue_location }}
+                          </div>
+
+                          <div class="text-body-2 meta-line mt-1">
+                            <v-icon size="15" class="me-1">mdi-crosshairs-gps</v-icon>
+                            {{ carpool.venue_exact_address }}
+                          </div>
+                        </div>
+                      </v-col>
+                    </v-row>
+
+                    <v-divider class="my-4 divider-light" />
+
+                    <div class="d-flex flex-wrap justify-space-between align-center ga-3 mb-4">
+                      <div class="stats-strip d-flex flex-wrap ga-2">
+                        <v-chip
+                          size="small"
+                          variant="outlined"
+                          rounded="pill"
+                          class="stat-chip"
+                        >
+                          <v-icon start size="15">mdi-seat-passenger</v-icon>
+                          {{ carpool.spots_left }} spot(s) left
+                        </v-chip>
+
+                        <v-chip
+                          size="small"
+                          variant="outlined"
+                          rounded="pill"
+                          class="stat-chip"
+                        >
+                          <v-icon start size="15">mdi-account-check-outline</v-icon>
+                          You are {{ isDriver(carpool) ? "the driver" : "a participant" }}
+                        </v-chip>
+                      </div>
+
+                      <div class="d-flex ga-2 flex-wrap action-wrap">
+                        <v-btn
+                          :to="carpool.event_route"
+                          variant="outlined"
+                          rounded="pill"
+                          prepend-icon="mdi-open-in-new"
+                          class="action-btn touch-target-btn"
+                        >
+                          Open Event
+                        </v-btn>
+
+                        <v-btn
+                          variant="outlined"
+                          rounded="pill"
+                          prepend-icon="mdi-card-account-details-outline"
+                          class="action-btn touch-target-btn"
+                          @click="openDetails(carpool)"
+                        >
+                          View Details
+                        </v-btn>
+
+                        <v-btn
+                          v-if="!isDriver(carpool)"
+                          color="error"
+                          variant="outlined"
+                          rounded="pill"
+                          prepend-icon="mdi-close-circle-outline"
+                          class="action-btn touch-target-btn"
+                          @click="openCancelDialog(carpool)"
+                        >
+                          Cancel Join
+                        </v-btn>
+                      </div>
+                    </div>
+
+                    <v-card
+                      variant="outlined"
+                      rounded="lg"
+                      class="pa-4 info-card driver-note-card"
+                    >
+                      <div class="d-flex align-center ga-2 text-subtitle-2 font-weight-bold mb-2">
+                        <v-icon size="17">mdi-note-text-outline</v-icon>
+                        Driver note
+                      </div>
+
+                      <div class="font-italic note-text">
+                        “{{ carpool.note }}”
+                      </div>
+                    </v-card>
+                  </v-card>
+                </v-col>
+              </v-row>
+
+              <div
+                v-else
+                class="responsive-current-layout"
+                :class="{
+                  'responsive-current-layout-mobile': isMobile,
+                  'responsive-current-layout-tablet': isTablet,
+                }"
               >
                 <v-card
+                  v-if="featuredCurrentCarpool"
                   rounded="xl"
-                  class="pa-4 pa-sm-5 pa-md-6 h-100 glass-card current-carpool-card"
+                  class="glass-card featured-current-card"
                   :class="browserThemeClass"
                 >
                   <div class="card-top-strip" />
 
-                  <div class="d-flex justify-space-between flex-wrap ga-4">
-                    <div class="min-w-0">
-                      <div class="d-flex flex-wrap align-center ga-2 mb-2">
+                  <div class="featured-current-inner">
+                    <div class="featured-current-top">
+                      <div class="d-flex flex-wrap align-center ga-2 mb-3">
                         <v-chip
                           size="x-small"
                           variant="tonal"
                           rounded="pill"
                           class="micro-chip"
                         >
-                          <v-icon start size="14">mdi-calendar-blank-outline</v-icon>
-                          Upcoming
+                          <v-icon start size="14">mdi-star-four-points-outline</v-icon>
+                          Featured ride
                         </v-chip>
 
                         <v-chip
@@ -151,146 +430,127 @@
                           class="micro-chip"
                         >
                           <v-icon start size="14">mdi-account-tie</v-icon>
-                          {{ isDriver(carpool) ? "Driver" : "Participant" }}
+                          {{ isDriver(featuredCurrentCarpool) ? "Driver" : "Participant" }}
                         </v-chip>
                       </div>
 
-                      <RouterLink
-                        :to="carpool.event_route"
-                        class="text-decoration-none"
-                      >
-                        <div class="text-h6 font-weight-bold clickable-link title-link">
-                          {{ carpool.event_title }}
-                        </div>
-                      </RouterLink>
-
-                      <div class="text-body-2 meta-line mt-2">
-                        <v-icon size="16" class="me-1">mdi-clock-outline</v-icon>
-                        {{ carpool.event_date }} • {{ carpool.time_of_going }}
-                      </div>
-
-                      <div class="text-body-2 meta-line mt-1">
-                        <v-icon size="16" class="me-1">mdi-map-marker-path</v-icon>
-                        {{ carpool.route }}
-                      </div>
-                    </div>
-
-                    <div class="d-flex align-center ga-2 flex-wrap justify-end status-side">
-                      <v-btn
-                        v-if="isDriver(carpool)"
-                        color="error"
-                        variant="flat"
-                        rounded="pill"
-                        size="small"
-                        class="delete-top-btn touch-target-btn"
-                        prepend-icon="mdi-delete-outline"
-                        @click="openDeleteDialog(carpool)"
-                      >
-                        Delete
-                      </v-btn>
-
-                      <v-chip
-                        :color="statusColor(carpool.status)"
-                        size="small"
-                        rounded="pill"
-                        class="status-chip"
-                      >
-                        <v-icon start size="15">
-                          {{
-                            carpool.status === "Finished"
-                              ? "mdi-flag-checkered"
-                              : carpool.status === "Reserved"
-                              ? "mdi-bookmark-check-outline"
-                              : carpool.status === "Open"
-                              ? "mdi-lock-open-variant-outline"
-                              : carpool.status === "Full"
-                              ? "mdi-account-group"
-                              : "mdi-information-outline"
-                          }}
-                        </v-icon>
-                        {{ carpool.status }}
-                      </v-chip>
-                    </div>
-                  </div>
-
-                  <v-divider class="my-4 divider-light" />
-
-                  <v-row>
-                    <v-col cols="12" md="6">
-                      <div class="section-mini-title mb-3">
-                        <v-icon size="17" class="me-1">mdi-steering</v-icon>
-                        Driver
-                      </div>
-
-                      <div class="profile-spotlight d-flex align-center">
-                        <RouterLink
-                          v-if="carpool.driver"
-                          :to="carpool.driver.route"
-                          class="text-decoration-none"
-                        >
-                          <v-avatar size="56" class="mr-3 clickable-avatar spotlight-avatar">
-                            <v-img
-                              v-if="carpool.driver.avatar"
-                              :src="carpool.driver.avatar"
-                              cover
-                            />
-                            <v-icon v-else size="26">mdi-account</v-icon>
-                          </v-avatar>
-                        </RouterLink>
-
+                      <div class="d-flex justify-space-between align-start ga-3 flex-wrap">
                         <div class="min-w-0">
                           <RouterLink
-                            v-if="carpool.driver"
-                            :to="carpool.driver.route"
+                            :to="featuredCurrentCarpool.event_route"
                             class="text-decoration-none"
                           >
-                            <div class="font-weight-bold clickable-link text-truncate">
-                              {{ carpool.driver.name }}
+                            <div class="text-h6 text-sm-h5 font-weight-bold clickable-link title-link featured-current-title">
+                              {{ featuredCurrentCarpool.event_title }}
                             </div>
                           </RouterLink>
 
-                          <div class="text-body-2 meta-line">
-                            <v-icon size="15" class="me-1">mdi-map-marker-outline</v-icon>
-                            Departure: {{ carpool.departure_location }}
+                          <div class="text-body-2 meta-line mt-2">
+                            <v-icon size="16" class="me-1">mdi-clock-outline</v-icon>
+                            {{ featuredCurrentCarpool.event_date }} • {{ featuredCurrentCarpool.time_of_going }}
+                          </div>
+
+                          <div class="text-body-2 meta-line mt-1">
+                            <v-icon size="16" class="me-1">mdi-map-marker-path</v-icon>
+                            {{ featuredCurrentCarpool.route }}
+                          </div>
+                        </div>
+
+                        <v-chip
+                          :color="statusColor(featuredCurrentCarpool.status)"
+                          size="small"
+                          rounded="pill"
+                          class="status-chip"
+                        >
+                          <v-icon start size="15">
+                            {{
+                              featuredCurrentCarpool.status === "Finished"
+                                ? "mdi-flag-checkered"
+                                : featuredCurrentCarpool.status === "Reserved"
+                                ? "mdi-bookmark-check-outline"
+                                : featuredCurrentCarpool.status === "Open"
+                                ? "mdi-lock-open-variant-outline"
+                                : featuredCurrentCarpool.status === "Full"
+                                ? "mdi-account-group"
+                                : "mdi-information-outline"
+                            }}
+                          </v-icon>
+                          {{ featuredCurrentCarpool.status }}
+                        </v-chip>
+                      </div>
+                    </div>
+
+                    <div class="featured-current-grid">
+                      <div class="featured-info-block profile-spotlight">
+                        <div class="section-mini-title mb-2">
+                          <v-icon size="17" class="me-1">mdi-steering</v-icon>
+                          Driver
+                        </div>
+
+                        <div class="d-flex align-center">
+                          <RouterLink
+                            v-if="featuredCurrentCarpool.driver"
+                            :to="featuredCurrentCarpool.driver.route"
+                            class="text-decoration-none"
+                          >
+                            <v-avatar size="52" class="mr-3 clickable-avatar spotlight-avatar">
+                              <v-img
+                                v-if="featuredCurrentCarpool.driver.avatar"
+                                :src="featuredCurrentCarpool.driver.avatar"
+                                cover
+                              />
+                              <v-icon v-else size="24">mdi-account</v-icon>
+                            </v-avatar>
+                          </RouterLink>
+
+                          <div class="min-w-0">
+                            <RouterLink
+                              v-if="featuredCurrentCarpool.driver"
+                              :to="featuredCurrentCarpool.driver.route"
+                              class="text-decoration-none"
+                            >
+                              <div class="font-weight-bold clickable-link text-truncate">
+                                {{ featuredCurrentCarpool.driver.name }}
+                              </div>
+                            </RouterLink>
+
+                            <div class="text-body-2 meta-line">
+                              <v-icon size="15" class="me-1">mdi-map-marker-outline</v-icon>
+                              Departure: {{ featuredCurrentCarpool.departure_location }}
+                            </div>
                           </div>
                         </div>
                       </div>
-                    </v-col>
 
-                    <v-col cols="12" md="6">
-                      <div class="section-mini-title mb-3">
-                        <v-icon size="17" class="me-1">mdi-office-building-marker-outline</v-icon>
-                        Venue
-                      </div>
+                      <div class="featured-info-block detail-box">
+                        <div class="section-mini-title mb-2">
+                          <v-icon size="17" class="me-1">mdi-office-building-marker-outline</v-icon>
+                          Venue
+                        </div>
 
-                      <div class="detail-box">
                         <RouterLink
-                          v-if="carpool.venue_route"
-                          :to="carpool.venue_route"
+                          v-if="featuredCurrentCarpool.venue_route"
+                          :to="featuredCurrentCarpool.venue_route"
                           class="text-decoration-none"
                         >
                           <div class="font-weight-medium clickable-link mb-1">
-                            {{ carpool.venue_title }}
+                            {{ featuredCurrentCarpool.venue_title }}
                           </div>
                         </RouterLink>
 
                         <div class="text-body-2 meta-line">
                           <v-icon size="15" class="me-1">mdi-city-variant-outline</v-icon>
-                          {{ carpool.venue_location }}
+                          {{ featuredCurrentCarpool.venue_location }}
                         </div>
 
                         <div class="text-body-2 meta-line mt-1">
                           <v-icon size="15" class="me-1">mdi-crosshairs-gps</v-icon>
-                          {{ carpool.venue_exact_address }}
+                          {{ featuredCurrentCarpool.venue_exact_address }}
                         </div>
                       </div>
-                    </v-col>
-                  </v-row>
+                    </div>
 
-                  <v-divider class="my-4 divider-light" />
-
-                  <div class="d-flex flex-wrap justify-space-between align-center ga-3 mb-4">
-                    <div class="stats-strip d-flex flex-wrap ga-2">
+                    <div class="featured-stat-row">
                       <v-chip
                         size="small"
                         variant="outlined"
@@ -298,7 +558,7 @@
                         class="stat-chip"
                       >
                         <v-icon start size="15">mdi-seat-passenger</v-icon>
-                        {{ carpool.spots_left }} spot(s) left
+                        {{ featuredCurrentCarpool.spots_left }} spot(s) left
                       </v-chip>
 
                       <v-chip
@@ -308,13 +568,28 @@
                         class="stat-chip"
                       >
                         <v-icon start size="15">mdi-account-check-outline</v-icon>
-                        You are {{ isDriver(carpool) ? "the driver" : "a participant" }}
+                        You are {{ isDriver(featuredCurrentCarpool) ? "the driver" : "a participant" }}
                       </v-chip>
                     </div>
 
-                    <div class="d-flex ga-2 flex-wrap action-wrap">
+                    <v-card
+                      variant="outlined"
+                      rounded="lg"
+                      class="pa-4 info-card driver-note-card"
+                    >
+                      <div class="d-flex align-center ga-2 text-subtitle-2 font-weight-bold mb-2">
+                        <v-icon size="17">mdi-note-text-outline</v-icon>
+                        Driver note
+                      </div>
+
+                      <div class="font-italic note-text">
+                        “{{ featuredCurrentCarpool.note }}”
+                      </div>
+                    </v-card>
+
+                    <div class="featured-current-actions">
                       <v-btn
-                        :to="carpool.event_route"
+                        :to="featuredCurrentCarpool.event_route"
                         variant="outlined"
                         rounded="pill"
                         prepend-icon="mdi-open-in-new"
@@ -328,43 +603,220 @@
                         rounded="pill"
                         prepend-icon="mdi-card-account-details-outline"
                         class="action-btn touch-target-btn"
-                        @click="openDetails(carpool)"
+                        @click="openDetails(featuredCurrentCarpool)"
                       >
                         View Details
                       </v-btn>
 
                       <v-btn
-                        v-if="!isDriver(carpool)"
+                        v-if="!isDriver(featuredCurrentCarpool)"
                         color="error"
                         variant="outlined"
                         rounded="pill"
                         prepend-icon="mdi-close-circle-outline"
                         class="action-btn touch-target-btn"
-                        @click="openCancelDialog(carpool)"
+                        @click="openCancelDialog(featuredCurrentCarpool)"
                       >
                         Cancel Join
                       </v-btn>
+
+                      <v-btn
+                        v-if="isDriver(featuredCurrentCarpool)"
+                        color="error"
+                        variant="flat"
+                        rounded="pill"
+                        prepend-icon="mdi-delete-outline"
+                        class="action-btn touch-target-btn"
+                        @click="openDeleteDialog(featuredCurrentCarpool)"
+                      >
+                        Delete
+                      </v-btn>
+                    </div>
+                  </div>
+                </v-card>
+
+                <div
+                  v-if="remainingCurrentCarpools.length"
+                  class="current-secondary-shell"
+                >
+                  <div class="compact-section-header">
+                    <div>
+                      <div class="compact-section-title">More upcoming rides</div>
+                      <div class="compact-section-subtitle">
+                        Faster browsing for the rest of your active carpools.
+                      </div>
                     </div>
                   </div>
 
-                  <v-card
-                    variant="outlined"
-                    rounded="lg"
-                    class="pa-4 info-card driver-note-card"
+                  <div
+                    v-if="isMobile"
+                    class="current-secondary-scroll"
                   >
-                    <div class="d-flex align-center ga-2 text-subtitle-2 font-weight-bold mb-2">
-                      <v-icon size="17">mdi-note-text-outline</v-icon>
-                      Driver note
-                    </div>
+                    <v-card
+                      v-for="carpool in remainingCurrentCarpools"
+                      :key="carpool.id"
+                      rounded="xl"
+                      class="glass-card compact-current-card"
+                      :class="browserThemeClass"
+                    >
+                      <div class="compact-card-inner">
+                        <div class="d-flex justify-space-between align-start ga-2 mb-3">
+                          <div class="min-w-0">
+                            <RouterLink
+                              :to="carpool.event_route"
+                              class="text-decoration-none"
+                            >
+                              <div class="font-weight-bold clickable-link compact-card-title">
+                                {{ carpool.event_title }}
+                              </div>
+                            </RouterLink>
 
-                    <div class="font-italic note-text">
-                      “{{ carpool.note }}”
-                    </div>
-                  </v-card>
-                </v-card>
-              </v-col>
-            </v-row>
+                            <div class="text-body-2 meta-line mt-2">
+                              <v-icon size="15" class="me-1">mdi-clock-outline</v-icon>
+                              {{ carpool.event_date }}
+                            </div>
+                          </div>
 
+                          <v-chip
+                            size="x-small"
+                            variant="tonal"
+                            rounded="pill"
+                            class="micro-chip"
+                          >
+                            {{ isDriver(carpool) ? "Driver" : "Joined" }}
+                          </v-chip>
+                        </div>
+
+                        <div class="text-body-2 meta-line mb-2">
+                          <v-icon size="15" class="me-1">mdi-map-marker-path</v-icon>
+                          {{ carpool.route }}
+                        </div>
+
+                        <div class="compact-card-footer">
+                          <v-chip
+                            :color="statusColor(carpool.status)"
+                            size="x-small"
+                            rounded="pill"
+                            class="status-chip"
+                          >
+                            {{ carpool.status }}
+                          </v-chip>
+
+                          <v-btn
+                            size="small"
+                            variant="text"
+                            rounded="pill"
+                            class="past-action-btn"
+                            @click="openDetails(carpool)"
+                          >
+                            Details
+                          </v-btn>
+                        </div>
+                      </div>
+                    </v-card>
+                  </div>
+
+                  <div
+                    v-else
+                    class="current-secondary-grid"
+                  >
+                    <v-card
+                      v-for="carpool in remainingCurrentCarpools"
+                      :key="carpool.id"
+                      rounded="xl"
+                      class="glass-card compact-current-card compact-current-card-tablet"
+                      :class="browserThemeClass"
+                    >
+                      <div class="compact-card-inner">
+                        <div class="d-flex justify-space-between align-start ga-2 mb-3">
+                          <div class="min-w-0">
+                            <RouterLink
+                              :to="carpool.event_route"
+                              class="text-decoration-none"
+                            >
+                              <div class="font-weight-bold clickable-link compact-card-title">
+                                {{ carpool.event_title }}
+                              </div>
+                            </RouterLink>
+
+                            <div class="text-body-2 meta-line mt-2">
+                              <v-icon size="15" class="me-1">mdi-clock-outline</v-icon>
+                              {{ carpool.event_date }} • {{ carpool.time_of_going }}
+                            </div>
+                          </div>
+
+                          <v-chip
+                            size="x-small"
+                            variant="tonal"
+                            rounded="pill"
+                            class="micro-chip"
+                          >
+                            {{ isDriver(carpool) ? "Driver" : "Joined" }}
+                          </v-chip>
+                        </div>
+
+                        <div class="text-body-2 meta-line mb-2">
+                          <v-icon size="15" class="me-1">mdi-map-marker-path</v-icon>
+                          {{ carpool.route }}
+                        </div>
+
+                        <div class="text-body-2 meta-line mb-3">
+                          <v-icon size="15" class="me-1">mdi-seat-passenger</v-icon>
+                          {{ carpool.spots_left }} spot(s) left
+                        </div>
+
+                        <div class="compact-card-footer">
+                          <v-chip
+                            :color="statusColor(carpool.status)"
+                            size="x-small"
+                            rounded="pill"
+                            class="status-chip"
+                          >
+                            {{ carpool.status }}
+                          </v-chip>
+
+                          <div class="d-flex ga-1 flex-wrap">
+                            <v-btn
+                              size="small"
+                              variant="text"
+                              rounded="pill"
+                              class="past-action-btn"
+                              @click="openDetails(carpool)"
+                            >
+                              Details
+                            </v-btn>
+
+                            <v-btn
+                              v-if="!isDriver(carpool)"
+                              size="small"
+                              color="error"
+                              variant="text"
+                              rounded="pill"
+                              class="past-action-btn"
+                              @click="openCancelDialog(carpool)"
+                            >
+                              Leave
+                            </v-btn>
+
+                            <v-btn
+                              v-if="isDriver(carpool)"
+                              size="small"
+                              color="error"
+                              variant="text"
+                              rounded="pill"
+                              class="past-action-btn"
+                              @click="openDeleteDialog(carpool)"
+                            >
+                              Delete
+                            </v-btn>
+                          </div>
+                        </div>
+                      </div>
+                    </v-card>
+                  </div>
+                </div>
+              </div>
+            </template>
             <v-row v-else>
               <v-col cols="12">
                 <v-card rounded="xl" class="empty-state-card pa-5 pa-sm-6 pa-md-8" :class="browserThemeClass">
@@ -411,139 +863,294 @@
               </v-chip>
             </div>
 
-            <v-row v-if="pastCarpools.length">
-              <v-col
-                v-for="carpool in pastCarpools"
-                :key="carpool.id"
-                cols="12"
-                md="6"
-                lg="4"
-              >
-                <v-card
-                  rounded="xl"
-                  class="pa-4 pa-sm-5 pa-md-6 h-100 d-flex flex-column glass-card past-carpool-card"
-                  :class="browserThemeClass"
+            <template v-if="pastCarpools.length">
+              <v-row v-if="isDesktop">
+                <v-col
+                  v-for="carpool in pastCarpools"
+                  :key="carpool.id"
+                  cols="12"
+                  md="6"
+                  lg="4"
                 >
-                  <div class="d-flex justify-space-between align-start ga-3">
-                    <div class="min-w-0">
-                      <RouterLink
-                        :to="carpool.event_route"
-                        class="text-decoration-none"
-                      >
-                        <div class="text-h6 font-weight-bold clickable-link title-link">
-                          {{ carpool.event_title }}
-                        </div>
-                      </RouterLink>
+                  <v-card
+                    rounded="xl"
+                    class="pa-4 pa-sm-5 pa-md-6 h-100 d-flex flex-column glass-card past-carpool-card"
+                    :class="browserThemeClass"
+                  >
+                    <div class="d-flex justify-space-between align-start ga-3">
+                      <div class="min-w-0">
+                        <RouterLink
+                          :to="carpool.event_route"
+                          class="text-decoration-none"
+                        >
+                          <div class="text-h6 font-weight-bold clickable-link title-link">
+                            {{ carpool.event_title }}
+                          </div>
+                        </RouterLink>
 
-                      <div class="text-body-2 meta-line mt-2">
-                        <v-icon size="16" class="me-1">mdi-clock-outline</v-icon>
-                        {{ carpool.event_date }} • {{ carpool.time_of_going }}
+                        <div class="text-body-2 meta-line mt-2">
+                          <v-icon size="16" class="me-1">mdi-clock-outline</v-icon>
+                          {{ carpool.event_date }} • {{ carpool.time_of_going }}
+                        </div>
                       </div>
+
+                      <v-chip
+                        size="small"
+                        :color="statusColor(carpool.status)"
+                        rounded="pill"
+                        class="status-chip"
+                      >
+                        <v-icon start size="15">
+                          {{
+                            carpool.status === "Finished"
+                              ? "mdi-flag-checkered"
+                              : carpool.status === "Reserved"
+                              ? "mdi-bookmark-check-outline"
+                              : carpool.status === "Open"
+                              ? "mdi-lock-open-variant-outline"
+                              : carpool.status === "Full"
+                              ? "mdi-account-group"
+                              : "mdi-information-outline"
+                          }}
+                        </v-icon>
+                        {{ carpool.status }}
+                      </v-chip>
                     </div>
 
-                    <v-chip
-                      size="small"
-                      :color="statusColor(carpool.status)"
-                      rounded="pill"
-                      class="status-chip"
-                    >
-                      <v-icon start size="15">
-                        {{
-                          carpool.status === "Finished"
-                            ? "mdi-flag-checkered"
-                            : carpool.status === "Reserved"
-                            ? "mdi-bookmark-check-outline"
-                            : carpool.status === "Open"
-                            ? "mdi-lock-open-variant-outline"
-                            : carpool.status === "Full"
-                            ? "mdi-account-group"
-                            : "mdi-information-outline"
-                        }}
-                      </v-icon>
-                      {{ carpool.status }}
-                    </v-chip>
-                  </div>
+                    <v-divider class="my-4 divider-light" />
 
-                  <v-divider class="my-4 divider-light" />
+                    <div class="archive-line mb-3">
+                      <span class="archive-label">
+                        <v-icon size="15" class="me-1">mdi-map-marker-path</v-icon>
+                        Route:
+                      </span>
+                      <span class="archive-value">{{ carpool.route }}</span>
+                    </div>
 
-                  <div class="archive-line mb-3">
-                    <span class="archive-label">
-                      <v-icon size="15" class="me-1">mdi-map-marker-path</v-icon>
-                      Route:
-                    </span>
-                    <span class="archive-value">{{ carpool.route }}</span>
-                  </div>
+                    <div class="archive-line mb-3">
+                      <span class="archive-label">
+                        <v-icon size="15" class="me-1">mdi-office-building-marker-outline</v-icon>
+                        Venue:
+                      </span>
+                      <RouterLink
+                        v-if="carpool.venue_route"
+                        :to="carpool.venue_route"
+                        class="text-decoration-none clickable-link archive-link ms-1"
+                      >
+                        {{ carpool.venue_title }}
+                      </RouterLink>
+                    </div>
 
-                  <div class="archive-line mb-3">
-                    <span class="archive-label">
-                      <v-icon size="15" class="me-1">mdi-office-building-marker-outline</v-icon>
-                      Venue:
-                    </span>
-                    <RouterLink
-                      v-if="carpool.venue_route"
-                      :to="carpool.venue_route"
-                      class="text-decoration-none clickable-link archive-link ms-1"
-                    >
-                      {{ carpool.venue_title }}
-                    </RouterLink>
-                  </div>
+                    <div class="text-body-2 meta-line mb-3">
+                      <v-icon size="15" class="me-1">mdi-crosshairs-gps</v-icon>
+                      {{ carpool.venue_exact_address }}
+                    </div>
 
-                  <div class="text-body-2 meta-line mb-3">
-                    <v-icon size="15" class="me-1">mdi-crosshairs-gps</v-icon>
-                    {{ carpool.venue_exact_address }}
-                  </div>
+                    <div class="archive-line mb-3">
+                      <span class="archive-label">
+                        <v-icon size="15" class="me-1">mdi-account-tie</v-icon>
+                        Driver:
+                      </span>
+                      <RouterLink
+                        v-if="carpool.driver"
+                        :to="carpool.driver.route"
+                        class="text-decoration-none clickable-link archive-link ms-1"
+                      >
+                        {{ carpool.driver.name }}
+                      </RouterLink>
+                    </div>
 
-                  <div class="archive-line mb-3">
-                    <span class="archive-label">
-                      <v-icon size="15" class="me-1">mdi-account-tie</v-icon>
-                      Driver:
-                    </span>
-                    <RouterLink
-                      v-if="carpool.driver"
-                      :to="carpool.driver.route"
-                      class="text-decoration-none clickable-link archive-link ms-1"
-                    >
-                      {{ carpool.driver.name }}
-                    </RouterLink>
-                  </div>
+                    <div class="archive-line mb-5">
+                      <span class="archive-label">
+                        <v-icon size="15" class="me-1">mdi-badge-account-outline</v-icon>
+                        Your role:
+                      </span>
+                      <span class="archive-value">
+                        {{ isDriver(carpool) ? "Driver" : "Participant" }}
+                      </span>
+                    </div>
 
-                  <div class="archive-line mb-5">
-                    <span class="archive-label">
-                      <v-icon size="15" class="me-1">mdi-badge-account-outline</v-icon>
-                      Your role:
-                    </span>
-                    <span class="archive-value">
-                      {{ isDriver(carpool) ? "Driver" : "Participant" }}
-                    </span>
-                  </div>
+                    <v-spacer />
 
-                  <v-spacer />
+                    <div class="d-flex ga-2 flex-wrap">
+                      <v-btn
+                        :to="carpool.event_route"
+                        variant="text"
+                        rounded="pill"
+                        prepend-icon="mdi-open-in-new"
+                        class="past-action-btn touch-target-btn"
+                      >
+                        Open Event
+                      </v-btn>
 
-                  <div class="d-flex ga-2 flex-wrap">
-                    <v-btn
-                      :to="carpool.event_route"
-                      variant="text"
-                      rounded="pill"
-                      prepend-icon="mdi-open-in-new"
-                      class="past-action-btn touch-target-btn"
-                    >
-                      Open Event
-                    </v-btn>
+                      <v-btn
+                        variant="text"
+                        rounded="pill"
+                        prepend-icon="mdi-card-account-details-outline"
+                        class="past-action-btn touch-target-btn"
+                        @click="openDetails(carpool)"
+                      >
+                        View Details
+                      </v-btn>
+                    </div>
+                  </v-card>
+                </v-col>
+              </v-row>
 
-                    <v-btn
-                      variant="text"
-                      rounded="pill"
-                      prepend-icon="mdi-card-account-details-outline"
-                      class="past-action-btn touch-target-btn"
-                      @click="openDetails(carpool)"
-                    >
-                      View Details
-                    </v-btn>
-                  </div>
-                </v-card>
-              </v-col>
-            </v-row>
+              <div
+                v-else
+                class="past-responsive-shell"
+                :class="{
+                  'past-responsive-shell-mobile': isMobile,
+                  'past-responsive-shell-tablet': isTablet,
+                }"
+              >
+                <div
+                  v-if="isMobile"
+                  class="past-scroll-track"
+                >
+                  <v-card
+                    v-for="carpool in pastCarpools"
+                    :key="carpool.id"
+                    rounded="xl"
+                    class="glass-card compact-past-card"
+                    :class="browserThemeClass"
+                  >
+                    <div class="compact-card-inner">
+                      <div class="d-flex justify-space-between align-start ga-2 mb-3">
+                        <div class="min-w-0">
+                          <RouterLink
+                            :to="carpool.event_route"
+                            class="text-decoration-none"
+                          >
+                            <div class="font-weight-bold clickable-link compact-card-title">
+                              {{ carpool.event_title }}
+                            </div>
+                          </RouterLink>
 
+                          <div class="text-body-2 meta-line mt-2">
+                            <v-icon size="15" class="me-1">mdi-clock-outline</v-icon>
+                            {{ carpool.event_date }}
+                          </div>
+                        </div>
+
+                        <v-chip
+                          size="x-small"
+                          :color="statusColor(carpool.status)"
+                          rounded="pill"
+                          class="status-chip"
+                        >
+                          {{ carpool.status }}
+                        </v-chip>
+                      </div>
+
+                      <div class="text-body-2 meta-line mb-2">
+                        <v-icon size="15" class="me-1">mdi-account-tie</v-icon>
+                        {{ carpool.driver?.name }}
+                      </div>
+
+                      <div class="text-body-2 meta-line mb-2">
+                        <v-icon size="15" class="me-1">mdi-map-marker-path</v-icon>
+                        {{ carpool.route }}
+                      </div>
+
+                      <div class="compact-card-footer">
+                        <span class="archive-value">{{ isDriver(carpool) ? "Driver" : "Participant" }}</span>
+
+                        <v-btn
+                          size="small"
+                          variant="text"
+                          rounded="pill"
+                          class="past-action-btn"
+                          @click="openDetails(carpool)"
+                        >
+                          Details
+                        </v-btn>
+                      </div>
+                    </div>
+                  </v-card>
+                </div>
+
+                <div
+                  v-else
+                  class="past-tablet-grid"
+                >
+                  <v-card
+                    v-for="carpool in pastCarpools"
+                    :key="carpool.id"
+                    rounded="xl"
+                    class="glass-card compact-past-card compact-past-card-tablet"
+                    :class="browserThemeClass"
+                  >
+                    <div class="compact-card-inner">
+                      <div class="d-flex justify-space-between align-start ga-2 mb-3">
+                        <div class="min-w-0">
+                          <RouterLink
+                            :to="carpool.event_route"
+                            class="text-decoration-none"
+                          >
+                            <div class="font-weight-bold clickable-link compact-card-title">
+                              {{ carpool.event_title }}
+                            </div>
+                          </RouterLink>
+
+                          <div class="text-body-2 meta-line mt-2">
+                            <v-icon size="15" class="me-1">mdi-clock-outline</v-icon>
+                            {{ carpool.event_date }} • {{ carpool.time_of_going }}
+                          </div>
+                        </div>
+
+                        <v-chip
+                          size="x-small"
+                          :color="statusColor(carpool.status)"
+                          rounded="pill"
+                          class="status-chip"
+                        >
+                          {{ carpool.status }}
+                        </v-chip>
+                      </div>
+
+                      <div class="text-body-2 meta-line mb-2">
+                        <v-icon size="15" class="me-1">mdi-map-marker-path</v-icon>
+                        {{ carpool.route }}
+                      </div>
+
+                      <div class="text-body-2 meta-line mb-2">
+                        <v-icon size="15" class="me-1">mdi-office-building-marker-outline</v-icon>
+                        {{ carpool.venue_title }}
+                      </div>
+
+                      <div class="text-body-2 meta-line mb-3">
+                        <v-icon size="15" class="me-1">mdi-account-tie</v-icon>
+                        {{ carpool.driver?.name }} • {{ isDriver(carpool) ? "Driver" : "Participant" }}
+                      </div>
+
+                      <div class="d-flex ga-2 flex-wrap">
+                        <v-btn
+                          :to="carpool.event_route"
+                          size="small"
+                          variant="text"
+                          rounded="pill"
+                          class="past-action-btn"
+                        >
+                          Open Event
+                        </v-btn>
+
+                        <v-btn
+                          size="small"
+                          variant="text"
+                          rounded="pill"
+                          class="past-action-btn"
+                          @click="openDetails(carpool)"
+                        >
+                          Details
+                        </v-btn>
+                      </div>
+                    </div>
+                  </v-card>
+                </div>
+              </div>
+            </template>
             <v-row v-else>
               <v-col cols="12">
                 <v-card rounded="xl" class="empty-state-card pa-5 pa-sm-6 pa-md-8" :class="browserThemeClass">
@@ -1054,6 +1661,32 @@ const display = useDisplay()
 const THEME_STORAGE_KEY = "blassti-theme"
 
 const isMobile = computed(() => display.smAndDown.value)
+const isTablet = computed(() => display.md.value)
+const isDesktop = computed(() => display.lgAndUp.value)
+const featuredCurrentCarpool = computed(() => currentCarpools.value[0] || null)
+const remainingCurrentCarpools = computed(() => currentCarpools.value.slice(1))
+const summaryCards = computed(() => [
+  {
+    label: "Current rides",
+    value: currentCarpools.value.length,
+    caption: currentCarpools.value.length ? "Upcoming carpools you can still act on" : "Nothing active yet",
+    icon: "mdi-lightning-bolt-outline",
+  },
+  {
+    label: "Past rides",
+    value: pastCarpools.value.length,
+    caption: pastCarpools.value.length ? "Archived rides kept for reference" : "Archive is empty",
+    icon: "mdi-history",
+  },
+  {
+    label: "Your role",
+    value: currentCarpools.value.some((carpool) => isDriver(carpool)) ? "Driver" : "Rider",
+    caption: currentCarpools.value.some((carpool) => isDriver(carpool))
+      ? "You currently manage at least one ride"
+      : "You are currently joining other rides",
+    icon: "mdi-account-switch-outline",
+  },
+])
 const currentTheme = computed(() => {
   return theme.global.name.value === "light" ? "light" : "dark"
 })
@@ -1374,6 +2007,199 @@ function statusColor(status) {
 
 .summary-chip {
   backdrop-filter: blur(10px);
+}
+
+.summary-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.summary-panel {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 18px 18px;
+  border: 1px solid transparent;
+  backdrop-filter: blur(10px);
+  transition: transform 0.22s ease, box-shadow 0.22s ease, border-color 0.22s ease, background 0.22s ease;
+}
+
+.summary-panel:hover {
+  transform: translateY(-2px);
+}
+
+.browser-dark .summary-panel {
+  background: rgba(15, 23, 42, 0.72);
+  border-color: rgba(255, 255, 255, 0.07);
+  box-shadow: 0 14px 28px rgba(0, 0, 0, 0.18);
+}
+
+.browser-light .summary-panel {
+  background: rgba(255, 255, 255, 0.86);
+  border-color: rgba(15, 23, 42, 0.08);
+  box-shadow: 0 14px 24px rgba(15, 23, 42, 0.08);
+}
+
+.summary-panel-icon {
+  width: 46px;
+  height: 46px;
+  border-radius: 16px;
+  display: grid;
+  place-items: center;
+  flex: 0 0 auto;
+}
+
+.browser-dark .summary-panel-icon {
+  background: rgba(59, 130, 246, 0.14);
+  color: #bfdbfe;
+}
+
+.browser-light .summary-panel-icon {
+  background: rgba(37, 99, 235, 0.09);
+  color: #1d4ed8;
+}
+
+.summary-panel-copy {
+  min-width: 0;
+}
+
+.summary-panel-label {
+  font-size: 0.82rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  opacity: 0.8;
+}
+
+.summary-panel-value {
+  margin-top: 2px;
+  font-size: 1.2rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+
+.summary-panel-caption {
+  margin-top: 4px;
+  font-size: 0.88rem;
+  line-height: 1.45;
+  opacity: 0.8;
+}
+
+.responsive-current-layout,
+.past-responsive-shell {
+  display: grid;
+  gap: 18px;
+}
+
+.featured-current-card {
+  overflow: hidden;
+}
+
+.featured-current-inner {
+  position: relative;
+  padding: 22px;
+  display: grid;
+  gap: 18px;
+}
+
+.featured-current-title {
+  max-width: 720px;
+}
+
+.featured-current-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.featured-info-block {
+  min-width: 0;
+}
+
+.featured-stat-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.featured-current-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.current-secondary-shell {
+  display: grid;
+  gap: 12px;
+}
+
+.compact-section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+}
+
+.compact-section-title {
+  font-size: 0.98rem;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+}
+
+.compact-section-subtitle {
+  margin-top: 4px;
+  font-size: 0.88rem;
+  line-height: 1.45;
+  opacity: 0.75;
+}
+
+.current-secondary-scroll,
+.past-scroll-track {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(280px, 84vw);
+  gap: 14px;
+  overflow-x: auto;
+  padding-bottom: 6px;
+  scroll-snap-type: x proximity;
+}
+
+.current-secondary-scroll::-webkit-scrollbar,
+.past-scroll-track::-webkit-scrollbar {
+  height: 8px;
+}
+
+.current-secondary-grid,
+.past-tablet-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.compact-current-card,
+.compact-past-card {
+  overflow: hidden;
+}
+
+.compact-card-inner {
+  padding: 18px;
+  height: 100%;
+}
+
+.compact-card-title {
+  font-size: 1rem;
+  line-height: 1.35;
+  letter-spacing: -0.01em;
+}
+
+.compact-card-footer {
+  margin-top: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
 }
 
 .section-shell {
@@ -1811,6 +2637,16 @@ function statusColor(status) {
   text-overflow: ellipsis;
 }
 
+@media (max-width: 1279px) {
+  .summary-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .featured-current-actions .action-btn {
+    flex: 1 1 calc(50% - 6px);
+  }
+}
+
 @media (max-width: 959px) {
   .status-side {
     width: 100%;
@@ -1819,6 +2655,27 @@ function statusColor(status) {
 
   .action-wrap {
     justify-content: flex-start;
+  }
+
+  .summary-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .hero-content {
+    padding: 24px;
+  }
+
+  .featured-current-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .featured-current-inner {
+    padding: 20px;
+  }
+
+  .current-secondary-grid,
+  .past-tablet-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
 
@@ -1835,9 +2692,37 @@ function statusColor(status) {
     max-width: 100%;
   }
 
+  .summary-grid {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+
+  .summary-panel {
+    padding: 16px;
+    border-radius: 22px;
+  }
+
+  .featured-current-inner {
+    padding: 18px;
+  }
+
+  .featured-current-actions {
+    display: grid;
+    grid-template-columns: 1fr;
+  }
+
   .action-btn,
   .past-action-btn {
     width: 100%;
+  }
+
+  .compact-card-inner {
+    padding: 16px;
+  }
+
+  .current-secondary-scroll,
+  .past-scroll-track {
+    grid-auto-columns: minmax(262px, 84vw);
   }
 }
 </style>

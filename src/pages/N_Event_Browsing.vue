@@ -92,8 +92,74 @@
           </v-col>
         </v-row>
 
+        <v-row v-if="isBelowDesktop" class="mb-4">
+          <v-col cols="12">
+            <v-card class="pa-3 pa-sm-4 rounded-xl rounded-xxl mobile-browse-toolbar" elevation="0">
+              <div class="d-flex align-center justify-space-between ga-3 flex-wrap mb-3">
+                <div>
+                  <div class="text-subtitle-1 font-weight-bold">Browse smarter on smaller screens</div>
+                  <div class="text-caption text-medium-emphasis">
+                    Filters move into a touch-friendly panel and cards rebalance for phone and tablet.
+                  </div>
+                </div>
+
+                <div class="d-flex ga-2 flex-wrap mobile-toolbar-actions">
+                  <v-btn
+                    color="primary"
+                    rounded="xl"
+                    class="mobile-toolbar-btn"
+                    @click="mobileFiltersOpen = true"
+                  >
+                    <v-icon start size="18">mdi-tune-variant</v-icon>
+                    Filters
+                    <v-badge
+                      v-if="mobileActiveFilterCount"
+                      :content="mobileActiveFilterCount"
+                      color="primary"
+                      inline
+                      class="ms-2"
+                    />
+                  </v-btn>
+
+                  <v-btn
+                    variant="tonal"
+                    rounded="xl"
+                    class="mobile-toolbar-btn"
+                    @click="resetAllFilters"
+                  >
+                    <v-icon start size="18">mdi-filter-remove-outline</v-icon>
+                    Reset
+                  </v-btn>
+                </div>
+              </div>
+
+              <div class="mobile-summary-strip">
+                <v-chip size="small" variant="tonal" class="summary-chip">
+                  <v-icon start size="16">mdi-ticket-confirmation-outline</v-icon>
+                  {{ filteredEvents.length }} results
+                </v-chip>
+
+                <v-chip size="small" variant="tonal" class="summary-chip">
+                  <v-icon start size="16">mdi-sort</v-icon>
+                  {{ currentSortLabel }}
+                </v-chip>
+
+                <v-chip size="small" variant="tonal" class="summary-chip">
+                  <v-icon start size="16">mdi-map-marker</v-icon>
+                  {{ locationCity || "All cities" }}
+                </v-chip>
+
+                <v-chip size="small" variant="tonal" class="summary-chip">
+                  <v-icon start size="16">mdi-shape-outline</v-icon>
+                  {{ selectedCategories.length ? selectedCategories.length + " selected" : "All categories" }}
+                </v-chip>
+              </div>
+            </v-card>
+          </v-col>
+        </v-row>
+
         <v-row class="ga-md-0">
-          <v-col cols="12" lg="3" xl="3" class="filter-column">
+          <v-col v-if="!isBelowDesktop" cols="12" lg="3" xl="3" class="filter-column">
             <v-card class="pa-4 pa-md-5 rounded-xl rounded-xxl filter-card" elevation="0">
               <div class="d-flex align-center justify-space-between mb-4">
                 <div class="d-flex align-center">
@@ -416,12 +482,16 @@
                   v-for="event in filteredEvents"
                   :key="event.id"
                   cols="12"
+                  :md="isTablet ? 6 : 12"
+                  :lg="12"
                 >
                   <v-card
                     class="rounded-xl rounded-xxl pa-3 pa-md-4 event-card"
                     :class="{
                       'event-card-muted': isPastEvent(event) || event.seats_left === 0,
-                      'event-card-mobile': isMobile
+                      'event-card-mobile': isMobile,
+                      'event-card-tablet': isTablet,
+                      'event-card-phone': isPhone
                     }"
                     elevation="0"
                     @touchstart.passive="handleCardTouchStart($event, event)"
@@ -430,7 +500,7 @@
                     @touchcancel="clearLongPress"
                   >
                     <v-row class="align-stretch">
-                      <v-col cols="12" md="4">
+                      <v-col cols="12" :md="isTablet ? 12 : 4" lg="4">
                         <div class="event-image-wrap">
                           <v-img
                             :src="event.image"
@@ -449,7 +519,7 @@
                         </div>
                       </v-col>
 
-                      <v-col cols="12" md="8">
+                      <v-col cols="12" :md="isTablet ? 12 : 8" lg="8">
                         <div class="d-flex align-start justify-space-between flex-wrap ga-3 mb-2">
                           <div class="title-stack">
                             <div class="text-h5 font-weight-bold event-title">
@@ -595,6 +665,300 @@
     </v-main>
   </v-app>
 
+  <v-dialog
+    v-model="mobileFiltersOpen"
+    :fullscreen="isPhone"
+    :max-width="isTablet ? 860 : 640"
+    scrollable
+  >
+    <v-card class="rounded-0 rounded-md-xl rounded-lg-xxl mobile-filter-dialog">
+      <div class="mobile-filter-dialog__header pa-4 pa-sm-5">
+        <div class="d-flex align-start justify-space-between ga-3">
+          <div>
+            <div class="text-overline page-kicker mb-1">BLASSTI FILTERS</div>
+            <div class="text-h5 font-weight-bold">Refine your event feed</div>
+            <div class="text-body-2 text-medium-emphasis mt-1">
+              Your filters update live while keeping the desktop layout untouched.
+            </div>
+          </div>
+
+          <v-btn
+            icon
+            variant="text"
+            @click="mobileFiltersOpen = false"
+          >
+            <v-icon>mdi-close</v-icon>
+          </v-btn>
+        </div>
+
+        <div class="d-flex flex-wrap ga-2 mt-4">
+          <v-chip size="small" variant="tonal" class="filter-count-chip">
+            <v-icon start size="16">mdi-filter-check-outline</v-icon>
+            {{ mobileActiveFilterCount }} active
+          </v-chip>
+
+          <v-chip size="small" variant="tonal" class="filter-count-chip">
+            <v-icon start size="16">mdi-ticket-confirmation-outline</v-icon>
+            {{ filteredEvents.length }} matches
+          </v-chip>
+        </div>
+      </div>
+
+      <v-divider />
+
+      <v-card-text class="pa-4 pa-sm-5 mobile-filter-dialog__body">
+        <div class="filter-toolbar mb-4">
+          <v-select
+            v-model="sortBy"
+            :items="sortOptions"
+            item-title="label"
+            item-value="value"
+            label="Sort by"
+            variant="outlined"
+            density="comfortable"
+            class="enhanced-field"
+          />
+
+          <div class="toggle-stack mt-1">
+            <v-switch
+              v-model="showSoldOutEvents"
+              label="Show sold out events"
+              hide-details
+              inset
+              color="error"
+              density="comfortable"
+              class="enhanced-switch"
+            />
+            <v-switch
+              v-model="showPastEvents"
+              label="Show past events"
+              hide-details
+              inset
+              color="grey-darken-1"
+              density="comfortable"
+              class="enhanced-switch"
+            />
+          </div>
+
+          <v-btn
+            block
+            variant="tonal"
+            color="primary"
+            class="mt-3 reset-filter-btn"
+            @click="resetAllFilters"
+          >
+            <v-icon start size="18">mdi-filter-remove-outline</v-icon>
+            Clear filters
+          </v-btn>
+        </div>
+
+        <div class="mobile-filter-grid">
+          <div class="filter-group mobile-filter-section">
+            <div class="filter-label">
+              <v-icon size="16" class="me-2">mdi-shape-outline</v-icon>
+              Categories
+            </div>
+
+            <v-chip-group
+              v-model="selectedCategories"
+              multiple
+              column
+              class="filter-chip-group"
+            >
+              <v-chip
+                v-for="label in labels"
+                :key="label"
+                :value="label"
+                filter
+                variant="outlined"
+                class="filter-chip"
+              >
+                {{ label }}
+              </v-chip>
+            </v-chip-group>
+          </div>
+
+          <div class="filter-group mobile-filter-section">
+            <div class="filter-label">
+              <v-icon size="16" class="me-2">mdi-calendar-range</v-icon>
+              Date range
+            </div>
+
+            <v-menu
+              v-model="fromMenu"
+              :close-on-content-click="false"
+              transition="scale-transition"
+            >
+              <template #activator="{ props }">
+                <v-text-field
+                  v-bind="props"
+                  :model-value="fromDateDisplay"
+                  label="From"
+                  readonly
+                  variant="outlined"
+                  density="comfortable"
+                  class="mb-3 enhanced-field"
+                  prepend-inner-icon="mdi-calendar-month-outline"
+                />
+              </template>
+
+              <v-card class="date-picker-card">
+                <v-date-picker v-model="fromDate" />
+                <v-card-actions class="justify-end">
+                  <v-btn variant="text" @click="fromMenu = false">OK</v-btn>
+                </v-card-actions>
+              </v-card>
+            </v-menu>
+
+            <v-menu
+              v-model="toMenu"
+              :close-on-content-click="false"
+              transition="scale-transition"
+            >
+              <template #activator="{ props }">
+                <v-text-field
+                  v-bind="props"
+                  :model-value="toDateDisplay"
+                  label="To"
+                  readonly
+                  variant="outlined"
+                  density="comfortable"
+                  class="enhanced-field"
+                  prepend-inner-icon="mdi-calendar-end-outline"
+                />
+              </template>
+
+              <v-card class="date-picker-card">
+                <v-date-picker v-model="toDate" />
+                <v-card-actions class="justify-end">
+                  <v-btn variant="text" @click="toMenu = false">OK</v-btn>
+                </v-card-actions>
+              </v-card>
+            </v-menu>
+          </div>
+
+          <div class="filter-group mobile-filter-section">
+            <div class="filter-label">
+              <v-icon size="16" class="me-2">mdi-map-marker-outline</v-icon>
+              City
+            </div>
+            <v-select
+              v-model="locationCity"
+              :items="cities"
+              label="Select city"
+              variant="outlined"
+              density="comfortable"
+              clearable
+              class="enhanced-field"
+              prepend-inner-icon="mdi-city-variant-outline"
+            />
+          </div>
+
+          <div class="filter-group mobile-filter-section">
+            <div class="filter-label">
+              <v-icon size="16" class="me-2">mdi-seat-outline</v-icon>
+              Availability
+            </div>
+            <div class="checkbox-stack">
+              <v-checkbox
+                v-model="availability.available"
+                label="Available"
+                hide-details
+                density="comfortable"
+                color="success"
+                class="enhanced-checkbox"
+              />
+              <v-checkbox
+                v-model="availability.almostSold"
+                label="Almost sold out"
+                hide-details
+                density="comfortable"
+                color="warning"
+                class="enhanced-checkbox"
+              />
+              <v-checkbox
+                v-model="availability.soldOut"
+                label="Sold out"
+                hide-details
+                density="comfortable"
+                color="error"
+                class="enhanced-checkbox"
+              />
+            </div>
+          </div>
+
+          <div class="filter-group mobile-filter-section">
+            <div class="filter-label">
+              <v-icon size="16" class="me-2">mdi-account-music-outline</v-icon>
+              Artist
+            </div>
+            <v-select
+              v-model="artist"
+              :items="artistOptions"
+              item-title="label"
+              item-value="value"
+              label="Select artist"
+              variant="outlined"
+              density="comfortable"
+              clearable
+              class="enhanced-field"
+              prepend-inner-icon="mdi-microphone-outline"
+            />
+          </div>
+
+          <div class="filter-group mobile-filter-section">
+            <div class="filter-label">
+              <v-icon size="16" class="me-2">mdi-badge-account-outline</v-icon>
+              Age restriction
+            </div>
+            <div class="checkbox-stack">
+              <v-checkbox
+                v-model="ageRestrictions.allAges"
+                label="All ages"
+                hide-details
+                density="comfortable"
+                class="enhanced-checkbox"
+              />
+              <v-checkbox
+                v-model="ageRestrictions.fifteenPlus"
+                label="15+"
+                hide-details
+                density="comfortable"
+                class="enhanced-checkbox"
+              />
+              <v-checkbox
+                v-model="ageRestrictions.eighteenPlus"
+                label="18+"
+                hide-details
+                density="comfortable"
+                class="enhanced-checkbox"
+              />
+            </div>
+          </div>
+        </div>
+      </v-card-text>
+
+      <v-divider />
+
+      <v-card-actions class="pa-4 pa-sm-5 justify-space-between mobile-filter-dialog__actions">
+        <v-btn
+          variant="text"
+          @click="resetAllFilters"
+        >
+          Reset all
+        </v-btn>
+
+        <v-btn
+          color="primary"
+          rounded="xl"
+          @click="mobileFiltersOpen = false"
+        >
+          View {{ filteredEvents.length }} result<span v-if="filteredEvents.length !== 1">s</span>
+        </v-btn>
+      </v-card-actions>
+    </v-card>
+  </v-dialog>
+
   <!-- Link Context Menu -->
   <v-menu
     v-model="linkContextMenu.show"
@@ -693,6 +1057,10 @@ const availability = ref({
 const artist = ref(null)
 
 const isMobile = computed(() => display.mdAndDown.value)
+const isBelowDesktop = computed(() => display.mdAndDown.value)
+const isPhone = computed(() => display.smAndDown.value)
+const isTablet = computed(() => display.md.value)
+const mobileFiltersOpen = ref(false)
 
 const currentTheme = computed(() => {
   return theme.global.name.value === "light" ? "light" : "dark"
@@ -1140,6 +1508,8 @@ const activeFilterChips = computed(() => {
 
   return chips
 })
+
+const mobileActiveFilterCount = computed(() => activeFilterChips.value.length)
 
 const resultsAnimationKey = computed(() => JSON.stringify({
   search: searchQuery.value,
@@ -2006,6 +2376,97 @@ const filteredEvents = computed(() => {
   overflow-wrap: anywhere;
 }
 
+.mobile-browse-toolbar {
+  animation: subtlePageIn 0.3s ease-out 0.04s both;
+}
+
+.mobile-toolbar-actions {
+  width: 100%;
+  justify-content: flex-end;
+}
+
+.mobile-toolbar-btn {
+  min-height: 42px;
+  text-transform: none;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+}
+
+.mobile-summary-strip {
+  display: flex;
+  gap: 10px;
+  overflow-x: auto;
+  padding-bottom: 2px;
+  scrollbar-width: none;
+}
+
+.mobile-summary-strip::-webkit-scrollbar {
+  display: none;
+}
+
+.mobile-summary-strip .summary-chip {
+  flex: 0 0 auto;
+}
+
+.mobile-filter-dialog {
+  transition: background 0.35s ease, border-color 0.35s ease, color 0.35s ease;
+}
+
+.browser-light .mobile-filter-dialog {
+  background: rgba(255, 255, 255, 0.98);
+  color: #162033;
+}
+
+.browser-dark .mobile-filter-dialog {
+  background: rgba(11, 18, 32, 0.98);
+  color: #ecf2ff;
+}
+
+.mobile-filter-dialog__header,
+.mobile-filter-dialog__actions {
+  position: relative;
+  z-index: 1;
+}
+
+.mobile-filter-dialog__body {
+  max-height: min(72vh, 780px);
+}
+
+.mobile-filter-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 18px;
+}
+
+.mobile-filter-section {
+  padding: 16px;
+  border-radius: 20px;
+  transition: background 0.35s ease, border-color 0.35s ease;
+}
+
+.browser-light .mobile-filter-section {
+  background: rgba(247, 250, 255, 0.92);
+  border: 1px solid rgba(37, 59, 102, 0.08);
+}
+
+.browser-dark .mobile-filter-section {
+  background: rgba(16, 24, 38, 0.82);
+  border: 1px solid rgba(145, 170, 220, 0.12);
+}
+
+.event-card-tablet .event-image-wrap {
+  min-height: 188px;
+}
+
+.event-card-phone .event-image-wrap {
+  min-height: 200px;
+}
+
+.quick-filter-chip,
+.filter-chip {
+  white-space: nowrap;
+}
+
 .action-btn + .action-btn {
   margin-left: 8px;
 }
@@ -2023,6 +2484,18 @@ const filteredEvents = computed(() => {
 @media (max-width: 959px) {
   .page-container {
     padding-top: 4px;
+  }
+
+  .mobile-filter-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .mobile-toolbar-actions {
+    justify-content: stretch;
+  }
+
+  .mobile-toolbar-actions > * {
+    flex: 1 1 0;
   }
 
   .page-header {
@@ -2082,6 +2555,14 @@ const filteredEvents = computed(() => {
     overflow-x: hidden;
   }
 
+  .mobile-browse-toolbar {
+    padding: 14px !important;
+  }
+
+  .mobile-filter-dialog__body {
+    max-height: none;
+  }
+
   .page-container {
     padding-left: 10px !important;
     padding-right: 10px !important;
@@ -2109,6 +2590,17 @@ const filteredEvents = computed(() => {
   .event-info-pills,
   .status-chip-group {
     gap: 8px;
+  }
+
+  .hero-search-wrap .d-flex.flex-wrap.ga-2.mt-3 {
+    flex-wrap: nowrap !important;
+    overflow-x: auto;
+    padding-bottom: 4px;
+    scrollbar-width: none;
+  }
+
+  .hero-search-wrap .d-flex.flex-wrap.ga-2.mt-3::-webkit-scrollbar {
+    display: none;
   }
 
   .filter-toolbar,

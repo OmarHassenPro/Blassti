@@ -136,7 +136,184 @@
               </v-row>
             </div>
 
-            <div class="request-table-shell">
+            <div v-if="isTabletAndDown" class="request-mobile-shell">
+              <div class="request-mobile-summary mb-4">
+                <div class="summary-scroll">
+                  <div class="summary-pill summary-pill-pending">
+                    <span class="summary-pill-label">Pending</span>
+                    <strong>{{ pendingRequests.length }}</strong>
+                  </div>
+                  <div class="summary-pill summary-pill-approved">
+                    <span class="summary-pill-label">Approved</span>
+                    <strong>{{ approvedRequests.length }}</strong>
+                  </div>
+                  <div class="summary-pill summary-pill-denied">
+                    <span class="summary-pill-label">Denied</span>
+                    <strong>{{ deniedRequests.length }}</strong>
+                  </div>
+                  <div class="summary-pill summary-pill-total">
+                    <span class="summary-pill-label">Visible</span>
+                    <strong>{{ filteredRequests.length }}</strong>
+                  </div>
+                </div>
+              </div>
+
+              <div v-if="filteredRequests.length" class="request-mobile-board">
+                <v-row dense class="request-mobile-grid">
+                  <v-col
+                    v-for="request in filteredRequests"
+                    :key="request.id"
+                    cols="12"
+                    :sm="isTablet ? 6 : 12"
+                  >
+                    <v-card
+                      rounded="xl"
+                      variant="flat"
+                      class="request-mobile-card"
+                      :class="[
+                        request.status === 'Approved'
+                          ? 'mobile-card-approved'
+                          : request.status === 'Denied'
+                            ? 'mobile-card-denied'
+                            : 'mobile-card-pending'
+                      ]"
+                    >
+                      <div class="request-mobile-cover">
+                        <v-img
+                          :src="request.cover_image || fallbackImage"
+                          cover
+                          height="168"
+                        />
+                        <div class="request-mobile-overlay"></div>
+
+                        <div class="request-mobile-topbar">
+                          <v-chip
+                            size="small"
+                            :color="getStatusColor(request.status)"
+                            variant="tonal"
+                            rounded="lg"
+                            class="status-chip"
+                          >
+                            <v-icon start size="14">
+                              {{
+                                request.status === "Approved"
+                                  ? "mdi-check-circle"
+                                  : request.status === "Denied"
+                                    ? "mdi-close-circle"
+                                    : "mdi-progress-clock"
+                              }}
+                            </v-icon>
+                            {{ request.status }}
+                          </v-chip>
+
+                          <div class="request-mobile-date">
+                            {{ formatDate(request.submitted_at) }}
+                          </div>
+                        </div>
+
+                        <div class="request-mobile-title-wrap">
+                          <div class="request-mobile-kicker">
+                            {{ request.category }} · {{ request.type }}
+                          </div>
+                          <div class="request-mobile-title">
+                            {{ request.title }}
+                          </div>
+                          <div class="request-mobile-location">
+                            <v-icon size="15" class="me-1">mdi-map-marker-outline</v-icon>
+                            {{ request.location }}
+                          </div>
+                        </div>
+                      </div>
+
+                      <div class="request-mobile-body">
+                        <div class="request-mobile-owner mb-3">
+                          <div class="request-mobile-section-label">Created by</div>
+                          <div class="font-weight-bold text-body-2">
+                            {{ getOwnerName(request.owner_user_id) }}
+                          </div>
+                          <div class="text-caption text-medium-emphasis">
+                            {{ getOwnerEmail(request.owner_user_id) }}
+                          </div>
+                        </div>
+
+                        <div class="request-mobile-meta">
+                          <div class="request-mobile-meta-item">
+                            <span class="request-mobile-meta-label">City</span>
+                            <span class="request-mobile-meta-value">{{ request.location }}</span>
+                          </div>
+                          <div class="request-mobile-meta-item">
+                            <span class="request-mobile-meta-label">Category</span>
+                            <span class="request-mobile-meta-value">{{ request.category }}</span>
+                          </div>
+                        </div>
+
+                        <div class="request-mobile-actions">
+                          <v-btn
+                            variant="outlined"
+                            rounded="lg"
+                            prepend-icon="mdi-file-document-outline"
+                            class="request-mobile-btn request-mobile-btn-primary"
+                            @click="openDetails(request)"
+                          >
+                            Details
+                          </v-btn>
+
+                          <template v-if="request.status === 'Pending'">
+                            <v-btn
+                              color="success"
+                              rounded="lg"
+                              prepend-icon="mdi-check"
+                              class="request-mobile-btn"
+                              @click="approveRequest(request)"
+                            >
+                              Approve
+                            </v-btn>
+
+                            <v-btn
+                              color="error"
+                              variant="outlined"
+                              rounded="lg"
+                              prepend-icon="mdi-close"
+                              class="request-mobile-btn"
+                              @click="openDenyDialog(request)"
+                            >
+                              Deny
+                            </v-btn>
+                          </template>
+
+                          <template v-else>
+                            <v-btn
+                              color="error"
+                              variant="outlined"
+                              rounded="lg"
+                              prepend-icon="mdi-delete-outline"
+                              class="request-mobile-btn"
+                              @click="clearSingleProcessedRequest(request)"
+                            >
+                              Clear
+                            </v-btn>
+                          </template>
+                        </div>
+                      </div>
+                    </v-card>
+                  </v-col>
+                </v-row>
+              </div>
+
+              <div v-else class="request-mobile-empty">
+                <div class="empty-state">
+                  <v-icon size="34" class="mb-3">mdi-inbox-search-outline</v-icon>
+                  <div class="text-subtitle-1 font-weight-bold mb-1">
+                    No venue requests found
+                  </div>
+                  <div class="text-body-2 text-medium-emphasis">
+                    Try another search term or clear the current search field.
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div v-else class="request-table-shell">
               <v-table class="rounded-xl request-table">
                 <thead>
                   <tr>
@@ -797,6 +974,8 @@ const snackbar = reactive({
 })
 
 const isMobile = computed(() => display.smAndDown.value)
+const isTablet = computed(() => display.md.value)
+const isTabletAndDown = computed(() => display.mdAndDown.value)
 const isDarkTheme = computed(() => theme.global.name.value === "dark")
 const pageThemeClass = computed(() =>
   isDarkTheme.value ? "browser-dark" : "browser-light"
@@ -1667,6 +1846,237 @@ onBeforeUnmount(() => {
   backdrop-filter: blur(10px);
 }
 
+
+.request-mobile-shell {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.request-mobile-summary {
+  overflow: hidden;
+}
+
+.summary-scroll {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(148px, 1fr);
+  gap: 12px;
+  overflow-x: auto;
+  padding-bottom: 4px;
+  scroll-snap-type: x proximity;
+  -webkit-overflow-scrolling: touch;
+}
+
+.summary-pill {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 14px 16px;
+  border-radius: 18px;
+  scroll-snap-align: start;
+  border: 1px solid transparent;
+}
+
+.summary-pill strong {
+  font-size: 1.15rem;
+  line-height: 1;
+}
+
+.summary-pill-label {
+  font-size: 0.74rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  opacity: 0.8;
+}
+
+.browser-dark .summary-pill,
+.browser-dark .request-mobile-card,
+.browser-dark .request-mobile-empty {
+  background: rgba(255, 255, 255, 0.035);
+  border: 1px solid rgba(255, 255, 255, 0.07);
+}
+
+.browser-light .summary-pill,
+.browser-light .request-mobile-card,
+.browser-light .request-mobile-empty {
+  background: rgba(255, 255, 255, 0.82);
+  border: 1px solid rgba(17, 24, 39, 0.08);
+}
+
+.summary-pill-pending {
+  box-shadow: inset 0 0 0 1px rgba(251, 140, 0, 0.18);
+}
+
+.summary-pill-approved {
+  box-shadow: inset 0 0 0 1px rgba(46, 125, 50, 0.18);
+}
+
+.summary-pill-denied {
+  box-shadow: inset 0 0 0 1px rgba(198, 40, 40, 0.18);
+}
+
+.summary-pill-total {
+  box-shadow: inset 0 0 0 1px rgba(33, 150, 243, 0.18);
+}
+
+.request-mobile-grid {
+  row-gap: 14px;
+}
+
+.request-mobile-card {
+  overflow: hidden;
+  height: 100%;
+  transition: transform 0.22s ease, box-shadow 0.22s ease, border-color 0.22s ease;
+}
+
+.request-mobile-card:hover {
+  transform: translateY(-2px);
+}
+
+.mobile-card-pending {
+  box-shadow: inset 0 0 0 1px rgba(251, 140, 0, 0.16);
+}
+
+.mobile-card-approved {
+  box-shadow: inset 0 0 0 1px rgba(46, 125, 50, 0.18);
+}
+
+.mobile-card-denied {
+  box-shadow: inset 0 0 0 1px rgba(198, 40, 40, 0.18);
+}
+
+.request-mobile-cover {
+  position: relative;
+}
+
+.request-mobile-overlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, rgba(7, 10, 18, 0.1) 0%, rgba(7, 10, 18, 0.7) 100%);
+}
+
+.request-mobile-topbar,
+.request-mobile-title-wrap {
+  position: absolute;
+  left: 0;
+  right: 0;
+  z-index: 1;
+  padding-left: 16px;
+  padding-right: 16px;
+}
+
+.request-mobile-topbar {
+  top: 14px;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.request-mobile-date {
+  color: rgba(255, 255, 255, 0.9);
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-align: right;
+  max-width: 112px;
+}
+
+.request-mobile-title-wrap {
+  bottom: 14px;
+  color: white;
+}
+
+.request-mobile-kicker {
+  font-size: 0.74rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  opacity: 0.9;
+  margin-bottom: 6px;
+}
+
+.request-mobile-title {
+  font-size: 1.08rem;
+  font-weight: 800;
+  line-height: 1.2;
+  margin-bottom: 6px;
+}
+
+.request-mobile-location {
+  display: inline-flex;
+  align-items: center;
+  font-size: 0.86rem;
+  opacity: 0.92;
+}
+
+.request-mobile-body {
+  padding: 16px;
+}
+
+.request-mobile-section-label {
+  font-size: 0.74rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  opacity: 0.72;
+  margin-bottom: 6px;
+}
+
+.request-mobile-meta {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  margin-bottom: 16px;
+}
+
+.request-mobile-meta-item {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 12px;
+  border-radius: 16px;
+}
+
+.browser-dark .request-mobile-meta-item {
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.browser-light .request-mobile-meta-item {
+  background: rgba(17, 24, 39, 0.04);
+}
+
+.request-mobile-meta-label {
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  opacity: 0.68;
+}
+
+.request-mobile-meta-value {
+  font-size: 0.92rem;
+  font-weight: 700;
+}
+
+.request-mobile-actions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.request-mobile-btn {
+  min-width: 0;
+}
+
+.request-mobile-btn-primary {
+  grid-column: 1 / -1;
+}
+
+.request-mobile-empty {
+  border-radius: 22px;
+  padding: 28px 18px;
+}
 :deep(.v-table .v-table__wrapper > table) {
   background: transparent;
 }
@@ -1735,6 +2145,26 @@ onBeforeUnmount(() => {
   }
 }
 
+
+@media (min-width: 601px) and (max-width: 960px) {
+  .request-main-card {
+    padding: 22px !important;
+  }
+
+  .toolbar-chip {
+    justify-content: center;
+  }
+
+  .request-mobile-cover :deep(.v-img) {
+    border-bottom-left-radius: 0;
+    border-bottom-right-radius: 0;
+  }
+
+  .request-mobile-actions {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
 :deep(.v-overlay__content > .details-dialog-card),
 :deep(.v-overlay__content > .action-dialog-card),
 :deep(.v-overlay__content > .link-context-card) {
@@ -1774,11 +2204,17 @@ onBeforeUnmount(() => {
 
   .hero-side {
     width: 100%;
+    display: grid !important;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 
   .toolbar-action-btn,
   .action-btn {
     min-width: unset;
+  }
+
+  .toolbar-wrap .d-flex.flex-column.flex-md-row.align-md-center.justify-space-between.ga-4.mb-4 {
+    align-items: flex-start !important;
   }
 
   .request-table-shell {
@@ -1813,12 +2249,20 @@ onBeforeUnmount(() => {
   }
 
   .hero-side {
-    flex-direction: column;
+    display: flex !important;
+    flex-direction: row;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    width: calc(100% + 4px);
+    padding-bottom: 4px;
+    margin-right: -4px;
+    scroll-snap-type: x proximity;
   }
 
   .stat-card {
-    width: 100%;
-    min-width: 100%;
+    width: 84%;
+    min-width: 84%;
+    scroll-snap-align: start;
   }
 
   .toolbar-wrap .d-flex.ga-2.flex-wrap.align-center {
@@ -1839,8 +2283,24 @@ onBeforeUnmount(() => {
     width: 100%;
   }
 
-  .request-table {
-    min-width: 720px;
+  .request-mobile-meta,
+  .request-mobile-actions {
+    grid-template-columns: 1fr;
+  }
+
+  .request-mobile-btn-primary {
+    grid-column: auto;
+  }
+
+  .request-mobile-topbar,
+  .request-mobile-title-wrap {
+    padding-left: 14px;
+    padding-right: 14px;
+  }
+
+  .request-mobile-date {
+    max-width: 92px;
+    font-size: 0.68rem;
   }
 
   .details-header-content {

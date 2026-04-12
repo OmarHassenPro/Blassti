@@ -7,6 +7,7 @@
         <v-col cols="12" xxl="10" xl="11">
           <v-card rounded="xl" class="pa-4 pa-md-6 venue-main-card">
             <div class="d-flex flex-column flex-lg-row align-lg-center justify-space-between ga-4 mb-6 page-hero">
+              <div v-if="isMobile" class="mobile-hero-glow"></div>
               <div class="hero-copy">
                 <div class="hero-badge mb-3">
                   <v-icon size="18" class="me-2">mdi-home-city-outline</v-icon>
@@ -42,22 +43,54 @@
               </div>
             </div>
 
-            <v-stepper v-model="step" alt-labels flat class="bg-transparent clean-stepper">
-              <v-stepper-header>
-                <v-stepper-item :value="1" title="Venue info" />
-                <v-divider />
-                <v-stepper-item :value="2" title="Dimensions" />
-                <v-divider />
-                <v-stepper-item :value="3" title="Design" />
-                <v-divider />
-                <v-stepper-item :value="4" title="Review" />
-              </v-stepper-header>
-            </v-stepper>
+            <div v-if="!isMobile" class="stepper-shell">
+              <v-stepper v-model="step" alt-labels flat class="bg-transparent clean-stepper">
+                <v-stepper-header>
+                  <v-stepper-item :value="1" title="Venue info" />
+                  <v-divider />
+                  <v-stepper-item :value="2" title="Dimensions" />
+                  <v-divider />
+                  <v-stepper-item :value="3" title="Design" />
+                  <v-divider />
+                  <v-stepper-item :value="4" title="Review" />
+                </v-stepper-header>
+              </v-stepper>
+            </div>
+
+            <div v-else class="mobile-stepper-shell mb-6">
+              <div class="mobile-stepper-top">
+                <div>
+                  <div class="mobile-stepper-label">Current step</div>
+                  <div class="mobile-stepper-title">{{ currentStepMeta.title }}</div>
+                </div>
+                <v-chip color="primary" variant="tonal" size="small">
+                  {{ step }} / {{ stepItems.length }}
+                </v-chip>
+              </div>
+
+              <div class="mobile-stepper-progress">
+                <div class="mobile-stepper-progress-bar" :style="mobileProgressStyle"></div>
+              </div>
+
+              <div class="mobile-stepper-cards">
+                <button
+                  v-for="item in stepItems"
+                  :key="item.value"
+                  type="button"
+                  class="mobile-step-card"
+                  :class="{ active: step === item.value, done: step > item.value }"
+                  @click="step = item.value"
+                >
+                  <span class="mobile-step-card-index">0{{ item.value }}</span>
+                  <span class="mobile-step-card-title">{{ item.short }}</span>
+                </button>
+              </div>
+            </div>
 
             <!-- STEP 1 -->
             <div v-show="step === 1" class="mt-8">
               <v-row class="ga-md-0 ga-2">
-                <v-col cols="12" md="8">
+                <v-col cols="12" md="8" class="step-one-main-col">
                   <v-card rounded="xl" variant="outlined" class="pa-4 pa-md-6 clean-section-card">
                     <div class="section-title mb-4">Basic venue details</div>
 
@@ -284,8 +317,8 @@
                   </v-card>
                 </v-col>
 
-                <v-col cols="12" md="4">
-                  <v-card rounded="xl" variant="outlined" class="pa-4 pa-md-6 clean-section-card">
+                <v-col cols="12" md="4" class="step-one-media-col">
+                  <v-card rounded="xl" variant="outlined" class="pa-4 pa-md-6 clean-section-card media-upload-card">
                     <div class="section-title mb-4">Images</div>
 
                     <v-file-input
@@ -348,7 +381,7 @@
             <!-- STEP 2 -->
             <div v-show="step === 2" class="mt-8">
               <v-row>
-                <v-col cols="12" md="7">
+                <v-col cols="12" md="7" class="step-two-dimensions-col">
                   <v-card rounded="xl" variant="outlined" class="pa-4 pa-md-6 clean-section-card">
                     <div class="section-title mb-4">Venue dimensions</div>
                     <div class="section-caption mb-4">Set the real-world footprint first so the designer keeps the correct visual ratio.</div>
@@ -441,8 +474,8 @@
                   </v-card>
                 </v-col>
 
-                <v-col cols="12" md="5">
-                  <v-card rounded="xl" variant="outlined" class="pa-4 pa-md-6 clean-section-card">
+                <v-col cols="12" md="5" class="step-two-preview-col">
+                  <v-card rounded="xl" variant="outlined" class="pa-4 pa-md-6 clean-section-card ratio-preview-card">
                     <div class="section-title mb-4">Live ratio preview</div>
                     <div class="section-caption mb-4">This updates instantly to reflect the venue shape and layout proportions.</div>
 
@@ -469,7 +502,7 @@
             <!-- STEP 3 -->
             <div v-show="step === 3" class="mt-8">
               <v-row>
-                <v-col cols="12" md="3" v-if="form.use_designer">
+                <v-col cols="12" md="3" v-if="form.use_designer && !isMobile">
                   <v-card rounded="xl" variant="outlined" class="pa-4 designer-sidebar sticky-panel clean-section-card">
                     <div class="section-title mb-4">Designer tools</div>
                     <div class="section-caption mb-4">Paint seats, add venue blocks, and keep everything aligned with grid snapping.</div>
@@ -634,6 +667,127 @@
                     <div v-else class="text-body-2 text-medium-emphasis">
                       Click one item to edit it, drag a selection box to select many items, or right-click for quick actions.
                     </div>
+                  </v-card>
+                </v-col>
+
+                <v-col cols="12" v-if="form.use_designer && isMobile">
+                  <v-card rounded="xl" variant="outlined" class="pa-4 clean-section-card mobile-designer-studio">
+                    <div class="d-flex align-center justify-space-between ga-3 mb-3">
+                      <div>
+                        <div class="section-title">Mobile designer studio</div>
+                        <div class="section-caption mt-1">Tools are grouped into compact touch-friendly panels so the canvas stays the star.</div>
+                      </div>
+                      <v-chip size="small" color="primary" variant="tonal">{{ selectedItems.length }} selected</v-chip>
+                    </div>
+
+                    <div class="mobile-tool-toggles mb-4">
+                      <v-select
+                        v-model="paintMode"
+                        :items="paintModes"
+                        label="Paint mode"
+                        variant="outlined"
+                        density="comfortable"
+                        rounded="lg"
+                        hide-details
+                      />
+
+                      <div class="mobile-switch-grid">
+                        <v-switch
+                          v-model="snapToGrid"
+                          label="Snap"
+                          color="primary"
+                          inset
+                          hide-details
+                        />
+                        <v-switch
+                          v-model="showGridAddresses"
+                          label="Labels"
+                          color="secondary"
+                          inset
+                          hide-details
+                        />
+                      </div>
+                    </div>
+
+                    <v-expansion-panels variant="accordion" class="mobile-tool-panels">
+                      <v-expansion-panel>
+                        <v-expansion-panel-title>Quick seat paint</v-expansion-panel-title>
+                        <v-expansion-panel-text>
+                          <div class="mobile-pill-grid">
+                            <v-btn rounded="xl" prepend-icon="mdi-seat" @click="addSeatButton('Regular')">Regular</v-btn>
+                            <v-btn rounded="xl" color="error" variant="outlined" prepend-icon="mdi-seat" @click="addSeatButton('Special')">Special</v-btn>
+                            <v-btn rounded="xl" color="warning" variant="outlined" prepend-icon="mdi-seat" @click="addSeatButton('VIP')">VIP</v-btn>
+                            <v-btn rounded="xl" variant="outlined" prepend-icon="mdi-format-horizontal-align-center" @click="addSeatRow(20, 'Regular')">+20 Regular</v-btn>
+                            <v-btn rounded="xl" color="error" variant="outlined" prepend-icon="mdi-format-horizontal-align-center" @click="addSeatRow(20, 'Special')">+20 Special</v-btn>
+                            <v-btn rounded="xl" color="warning" variant="outlined" prepend-icon="mdi-format-horizontal-align-center" @click="addSeatRow(20, 'VIP')">+20 VIP</v-btn>
+                          </div>
+                        </v-expansion-panel-text>
+                      </v-expansion-panel>
+
+                      <v-expansion-panel>
+                        <v-expansion-panel-title>Venue elements</v-expansion-panel-title>
+                        <v-expansion-panel-text>
+                          <div class="mobile-pill-grid">
+                            <v-btn rounded="xl" prepend-icon="mdi-podium-gold" @click="addStage">Stage</v-btn>
+                            <v-btn rounded="xl" prepend-icon="mdi-television-play" @click="addScreen">Screen</v-btn>
+                            <v-btn rounded="xl" prepend-icon="mdi-speaker" @click="addAudioSource">Audio</v-btn>
+                            <v-btn rounded="xl" prepend-icon="mdi-table-furniture" @click="addTable4">Table + 4</v-btn>
+                            <v-btn rounded="xl" prepend-icon="mdi-table-chair" @click="addTable2">Table + 2</v-btn>
+                            <v-btn rounded="xl" prepend-icon="mdi-barley" @click="addBarCounter">Bar</v-btn>
+                            <v-btn rounded="xl" prepend-icon="mdi-door" @click="addEntrance">Entrance</v-btn>
+                            <v-btn rounded="xl" prepend-icon="mdi-emergency-exit" @click="addExit">Exit</v-btn>
+                            <v-btn rounded="xl" prepend-icon="mdi-food" @click="addBuffet">Buffet</v-btn>
+                            <v-btn rounded="xl" prepend-icon="mdi-ticket-confirmation" @click="addTicketDesk">Ticket desk</v-btn>
+                            <v-btn rounded="xl" prepend-icon="mdi-human-male-board-poll" @click="addPodium">Podium</v-btn>
+                          </div>
+                        </v-expansion-panel-text>
+                      </v-expansion-panel>
+
+                      <v-expansion-panel>
+                        <v-expansion-panel-title>Auto layouts</v-expansion-panel-title>
+                        <v-expansion-panel-text>
+                          <div class="mobile-pill-grid compact">
+                            <v-btn rounded="xl" variant="outlined" @click="applyCinemaPreset">Cinema</v-btn>
+                            <v-btn rounded="xl" variant="outlined" @click="applyTheatrePreset">Theatre</v-btn>
+                            <v-btn rounded="xl" variant="outlined" @click="applyBarPreset">Bar</v-btn>
+                            <v-btn rounded="xl" variant="outlined" @click="applyConferencePreset">Conference</v-btn>
+                          </div>
+                        </v-expansion-panel-text>
+                      </v-expansion-panel>
+
+                      <v-expansion-panel>
+                        <v-expansion-panel-title>Selected item</v-expansion-panel-title>
+                        <v-expansion-panel-text>
+                          <div v-if="selectedItems.length === 1">
+                            <v-text-field
+                              v-model="singleSelectedTitle"
+                              label="Label"
+                              density="comfortable"
+                              variant="outlined"
+                              rounded="lg"
+                              @update:model-value="updateSingleSelectedTitle"
+                            />
+
+                            <v-select
+                              v-if="singleSelectedItem?.kind === 'seat'"
+                              v-model="singleSelectedItem.seat_class"
+                              :items="seatClassOptions"
+                              label="Seat class"
+                              density="comfortable"
+                              variant="outlined"
+                              rounded="lg"
+                              @update:model-value="syncSelectedSeatColor"
+                            />
+                          </div>
+                          <div v-else-if="selectedItems.length > 1" class="text-body-2">
+                            {{ selectedItems.length }} items selected
+                          </div>
+                          <div v-else class="text-body-2 text-medium-emphasis">
+                            Tap an item to edit it or long-press the canvas for quick actions.
+                          </div>
+                        </v-expansion-panel-text>
+                      </v-expansion-panel>
+                    </v-expansion-panels>
                   </v-card>
                 </v-col>
 
@@ -908,7 +1062,7 @@
 
             <v-divider class="my-6" />
 
-            <div class="d-flex justify-space-between flex-wrap ga-3 action-bar">
+            <div class="d-flex justify-space-between flex-wrap ga-3 action-bar" :class="{ 'action-bar-mobile': isMobile }">
               <v-btn
                 variant="outlined"
                 rounded="lg"
@@ -1056,6 +1210,17 @@ const snackbar = reactive({
 
 const historyStack = ref([])
 const isMobile = computed(() => display.smAndDown.value)
+const isTablet = computed(() => display.md.value)
+
+const stepItems = [
+  { value: 1, title: "Venue info", short: "Info" },
+  { value: 2, title: "Dimensions", short: "Size" },
+  { value: 3, title: "Design", short: "Design" },
+  { value: 4, title: "Review", short: "Review" },
+]
+
+const currentStepMeta = computed(() => stepItems.find(item => item.value === step.value) || stepItems[0])
+const mobileProgressStyle = computed(() => ({ width: `${(step.value / stepItems.length) * 100}%` }))
 const isDarkTheme = computed(() => theme.global.name.value === "dark")
 
 const browserThemeClass = computed(() =>
@@ -3559,6 +3724,307 @@ onBeforeUnmount(() => {
 @keyframes successBounce {
   0% { transform: translateY(10px) scale(0.96); opacity: 0; }
   100% { transform: translateY(0) scale(1); opacity: 1; }
+}
+
+
+.mobile-hero-glow {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.stepper-shell {
+  margin-bottom: 8px;
+}
+
+.mobile-stepper-shell {
+  border: 1px solid var(--card-border);
+  background: linear-gradient(180deg, rgba(255,255,255,0.045), rgba(255,255,255,0.02));
+  border-radius: 24px;
+  padding: 16px;
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,0.02);
+}
+
+.mobile-stepper-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.mobile-stepper-label {
+  font-size: 0.74rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-muted);
+  margin-bottom: 4px;
+}
+
+.mobile-stepper-title {
+  font-size: 1.02rem;
+  font-weight: 800;
+  color: var(--text-main);
+}
+
+.mobile-stepper-progress {
+  position: relative;
+  height: 8px;
+  border-radius: 999px;
+  background: rgba(148, 163, 184, 0.18);
+  overflow: hidden;
+  margin-bottom: 14px;
+}
+
+.mobile-stepper-progress-bar {
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, rgba(25,118,210,0.95), rgba(99,102,241,0.95));
+  transition: width 0.24s ease;
+}
+
+.mobile-stepper-cards {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.mobile-step-card {
+  appearance: none;
+  border: 1px solid var(--card-border);
+  background: rgba(255,255,255,0.035);
+  border-radius: 18px;
+  padding: 12px 10px;
+  color: var(--text-main);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  text-align: left;
+  transition: transform 0.18s ease, border-color 0.18s ease, background 0.18s ease;
+}
+
+.mobile-step-card.active {
+  border-color: rgba(25,118,210,0.42);
+  background: linear-gradient(180deg, rgba(25,118,210,0.16), rgba(99,102,241,0.12));
+  transform: translateY(-1px);
+}
+
+.mobile-step-card.done {
+  background: rgba(76, 175, 80, 0.10);
+}
+
+.mobile-step-card-index {
+  font-size: 0.72rem;
+  color: var(--text-muted);
+}
+
+.mobile-step-card-title {
+  font-size: 0.88rem;
+  font-weight: 700;
+}
+
+.media-upload-card,
+.ratio-preview-card,
+.mobile-designer-studio {
+  overflow: hidden;
+}
+
+.mobile-tool-toggles {
+  display: grid;
+  gap: 12px;
+}
+
+.mobile-switch-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.mobile-tool-panels :deep(.v-expansion-panel) {
+  background: rgba(255,255,255,0.03) !important;
+  border: 1px solid var(--card-border);
+  border-radius: 18px !important;
+  overflow: hidden;
+}
+
+.mobile-pill-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.mobile-pill-grid.compact {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.action-bar-mobile {
+  position: sticky;
+  bottom: 12px;
+  z-index: 6;
+  padding: 12px;
+  border-radius: 22px;
+  background: color-mix(in srgb, var(--main-card-bg) 78%, transparent);
+  backdrop-filter: blur(14px);
+  border: 1px solid var(--card-border);
+  box-shadow: 0 18px 36px rgba(0,0,0,0.18);
+}
+
+@media (max-width: 960px) {
+  .venue-page-shell {
+    padding-top: 0;
+  }
+
+  .venue-builder-page {
+    padding-left: 10px !important;
+    padding-right: 10px !important;
+    padding-top: 12px !important;
+  }
+
+  .venue-main-card {
+    border-radius: 24px !important;
+    padding: 16px !important;
+  }
+
+  .page-hero {
+    position: relative;
+    padding: 6px 2px 2px;
+    gap: 16px !important;
+  }
+
+  .hero-copy,
+  .hero-chip-group {
+    width: 100%;
+  }
+
+  .hero-title {
+    font-size: clamp(1.7rem, 6vw, 2.15rem) !important;
+    line-height: 1.05;
+  }
+
+  .hero-subtitle {
+    max-width: none;
+    font-size: 0.95rem;
+  }
+
+  .hero-chip-group {
+    display: grid !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px !important;
+  }
+
+  .hero-chip-group :deep(.v-chip),
+  .hero-mini-stats :deep(.v-chip) {
+    justify-content: center;
+  }
+
+  .step-one-media-col {
+    order: -1;
+  }
+
+  .step-two-preview-col {
+    order: -1;
+  }
+
+  .ratio-wrapper {
+    min-height: 170px;
+  }
+
+  .clean-section-card {
+    border-radius: 22px !important;
+  }
+
+  .clean-section-card:hover {
+    transform: none;
+  }
+
+  .tool-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .designer-canvas {
+    min-height: 420px;
+    border-radius: 24px;
+  }
+
+  .screen-curve-label {
+    font-size: 1.18rem;
+    bottom: 10px;
+  }
+
+  .screen-curve-label::before,
+  .screen-curve-label::after {
+    width: 56px;
+  }
+
+  .action-bar {
+    align-items: stretch;
+  }
+
+  .action-bar > .v-btn,
+  .action-bar > div {
+    width: 100%;
+  }
+
+  .action-bar > div {
+    display: grid !important;
+    grid-template-columns: 1fr;
+  }
+
+  .action-bar :deep(.v-btn) {
+    min-height: 48px;
+  }
+
+  .review-list :deep(.v-list-item) {
+    padding-left: 0;
+    padding-right: 0;
+  }
+}
+
+@media (min-width: 600px) and (max-width: 960px) {
+  .hero-chip-group {
+    grid-template-columns: repeat(2, max-content);
+  }
+
+  .mobile-pill-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .designer-canvas {
+    min-height: 500px;
+  }
+}
+
+@media (max-width: 599px) {
+  .mobile-stepper-cards {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .hero-mini-stats,
+  .hero-chip-group {
+    gap: 8px !important;
+  }
+
+  .hero-chip-group {
+    grid-template-columns: 1fr;
+  }
+
+  .mobile-switch-grid,
+  .mobile-pill-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .preview-box {
+    aspect-ratio: 4 / 3;
+    border-radius: 20px;
+  }
+
+  .designer-canvas {
+    min-height: 360px;
+  }
+
+  .designer-context-menu {
+    width: min(220px, calc(100vw - 36px));
+  }
 }
 
 </style>

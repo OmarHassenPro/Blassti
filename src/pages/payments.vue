@@ -71,7 +71,83 @@
           </template>
 
           <template v-else>
-            <v-row class="mb-6 stats-grid">
+            <div v-if="isMobile" class="mb-6 mobile-stats-rail">
+              <div class="mobile-stats-scroll">
+                <v-card rounded="xl" class="pa-5 income-card income-card--total stat-card-lift mobile-stat-card">
+                  <div class="d-flex align-start justify-space-between ga-3 mb-4">
+                    <div>
+                      <div class="text-overline mb-2 stat-label">Total income</div>
+                      <div class="text-h4 font-weight-bold mb-1 stat-value">
+                        {{ formatMoney(totalIncome) }}
+                      </div>
+                      <div class="text-medium-emphasis">
+                        Combined event and venue income
+                      </div>
+                    </div>
+
+                    <div class="metric-icon metric-icon--primary">
+                      <v-icon size="24">mdi-wallet-outline</v-icon>
+                    </div>
+                  </div>
+
+                  <div class="mini-progress-track">
+                    <div class="mini-progress-fill mini-progress-fill--primary" :style="{ width: '100%' }" />
+                  </div>
+                </v-card>
+
+                <v-card rounded="xl" class="pa-5 income-card income-card--event stat-card-lift mobile-stat-card">
+                  <div class="d-flex align-start justify-space-between ga-3 mb-4">
+                    <div>
+                      <div class="text-overline mb-2 stat-label">Event income</div>
+                      <div class="text-h4 font-weight-bold mb-1 stat-value">
+                        {{ formatMoney(eventIncomeTotal) }}
+                      </div>
+                      <div class="text-medium-emphasis">
+                        {{ eventTransactions.length }} ticket payment{{ eventTransactions.length === 1 ? '' : 's' }}
+                      </div>
+                    </div>
+
+                    <div class="metric-icon metric-icon--success">
+                      <v-icon size="24">mdi-ticket-percent-outline</v-icon>
+                    </div>
+                  </div>
+
+                  <div class="mini-progress-track">
+                    <div
+                      class="mini-progress-fill mini-progress-fill--success"
+                      :style="{ width: totalIncome > 0 ? `${(eventIncomeTotal / totalIncome) * 100}%` : '0%' }"
+                    />
+                  </div>
+                </v-card>
+
+                <v-card rounded="xl" class="pa-5 income-card income-card--venue stat-card-lift mobile-stat-card">
+                  <div class="d-flex align-start justify-space-between ga-3 mb-4">
+                    <div>
+                      <div class="text-overline mb-2 stat-label">Venue income</div>
+                      <div class="text-h4 font-weight-bold mb-1 stat-value">
+                        {{ formatMoney(venueIncomeTotal) }}
+                      </div>
+                      <div class="text-medium-emphasis">
+                        {{ venueTransactions.length }} venue reservation{{ venueTransactions.length === 1 ? '' : 's' }}
+                      </div>
+                    </div>
+
+                    <div class="metric-icon metric-icon--info">
+                      <v-icon size="24">mdi-home-city-outline</v-icon>
+                    </div>
+                  </div>
+
+                  <div class="mini-progress-track">
+                    <div
+                      class="mini-progress-fill mini-progress-fill--info"
+                      :style="{ width: totalIncome > 0 ? `${(venueIncomeTotal / totalIncome) * 100}%` : '0%' }"
+                    />
+                  </div>
+                </v-card>
+              </div>
+            </div>
+
+            <v-row v-else class="mb-6 stats-grid">
               <v-col cols="12" md="4">
                 <v-card rounded="xl" class="pa-5 income-card income-card--total stat-card-lift">
                   <div class="d-flex align-start justify-space-between ga-3 mb-4">
@@ -215,7 +291,68 @@
                     />
                   </div>
 
-                  <v-row v-if="filteredEventGroups.length">
+                  <div v-if="filteredEventGroups.length && isMobile" class="mobile-group-rail">
+                    <div class="mobile-group-scroll">
+                      <v-card
+                        v-for="group in filteredEventGroups"
+                        :key="group.id"
+                        rounded="xl"
+                        variant="outlined"
+                        class="pa-4 payment-group-card card-lift mobile-group-card"
+                      >
+                        <div class="d-flex align-start justify-space-between ga-3 mb-3">
+                          <div class="min-w-0">
+                            <div class="d-flex align-center ga-2 mb-1">
+                              <div class="card-badge card-badge--success">
+                                <v-icon size="14">mdi-ticket-outline</v-icon>
+                              </div>
+                              <div class="text-subtitle-1 font-weight-bold text-truncate">
+                                {{ group.title }}
+                              </div>
+                            </div>
+
+                            <div class="text-caption text-medium-emphasis">
+                              {{ group.city || 'Unknown city' }}
+                            </div>
+                          </div>
+
+                          <v-chip color="success" variant="tonal" class="amount-chip">
+                            {{ formatMoney(group.total) }}
+                          </v-chip>
+                        </div>
+
+                        <div class="group-stat-row">
+                          <span>Transactions</span>
+                          <strong>{{ group.transactions.length }}</strong>
+                        </div>
+
+                        <div class="group-stat-row">
+                          <span>Tickets sold here</span>
+                          <strong>{{ group.ticketCount }}</strong>
+                        </div>
+
+                        <div class="group-stat-row">
+                          <span>Latest payment</span>
+                          <strong>{{ group.latestDateLabel }}</strong>
+                        </div>
+
+                        <v-btn
+                          block
+                          class="mt-4 action-btn"
+                          color="primary"
+                          variant="outlined"
+                          rounded="lg"
+                          size="large"
+                          @click="openTransactionHistory('event', group)"
+                        >
+                          <v-icon start>mdi-history</v-icon>
+                          View transaction history
+                        </v-btn>
+                      </v-card>
+                    </div>
+                  </div>
+
+                  <v-row v-else-if="filteredEventGroups.length">
                     <v-col
                       v-for="group in filteredEventGroups"
                       :key="group.id"
@@ -312,7 +449,68 @@
                     />
                   </div>
 
-                  <v-row v-if="filteredVenueGroups.length">
+                  <div v-if="filteredVenueGroups.length && isMobile" class="mobile-group-rail">
+                    <div class="mobile-group-scroll">
+                      <v-card
+                        v-for="group in filteredVenueGroups"
+                        :key="group.id"
+                        rounded="xl"
+                        variant="outlined"
+                        class="pa-4 payment-group-card card-lift mobile-group-card"
+                      >
+                        <div class="d-flex align-start justify-space-between ga-3 mb-3">
+                          <div class="min-w-0">
+                            <div class="d-flex align-center ga-2 mb-1">
+                              <div class="card-badge card-badge--info">
+                                <v-icon size="14">mdi-home-city-outline</v-icon>
+                              </div>
+                              <div class="text-subtitle-1 font-weight-bold text-truncate">
+                                {{ group.title }}
+                              </div>
+                            </div>
+
+                            <div class="text-caption text-medium-emphasis">
+                              {{ group.city || 'Unknown city' }}
+                            </div>
+                          </div>
+
+                          <v-chip color="info" variant="tonal" class="amount-chip">
+                            {{ formatMoney(group.total) }}
+                          </v-chip>
+                        </div>
+
+                        <div class="group-stat-row">
+                          <span>Transactions</span>
+                          <strong>{{ group.transactions.length }}</strong>
+                        </div>
+
+                        <div class="group-stat-row">
+                          <span>Reserved hours</span>
+                          <strong>{{ group.totalHours }}</strong>
+                        </div>
+
+                        <div class="group-stat-row">
+                          <span>Latest payment</span>
+                          <strong>{{ group.latestDateLabel }}</strong>
+                        </div>
+
+                        <v-btn
+                          block
+                          class="mt-4 action-btn"
+                          color="primary"
+                          variant="outlined"
+                          rounded="lg"
+                          size="large"
+                          @click="openTransactionHistory('venue', group)"
+                        >
+                          <v-icon start>mdi-history</v-icon>
+                          View transaction history
+                        </v-btn>
+                      </v-card>
+                    </div>
+                  </div>
+
+                  <v-row v-else-if="filteredVenueGroups.length">
                     <v-col
                       v-for="group in filteredVenueGroups"
                       :key="group.id"
@@ -1126,6 +1324,51 @@ function openTransactionHistory(type, group) {
   min-width: 0;
 }
 
+.mobile-stats-rail,
+.mobile-group-rail {
+  position: relative;
+}
+
+.mobile-stats-scroll,
+.mobile-group-scroll {
+  display: flex;
+  gap: 14px;
+  overflow-x: auto;
+  padding-bottom: 6px;
+  scroll-snap-type: x proximity;
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.mobile-stats-scroll::-webkit-scrollbar,
+.mobile-group-scroll::-webkit-scrollbar {
+  display: none;
+}
+
+.mobile-stat-card {
+  min-width: min(86vw, 320px);
+  flex: 0 0 min(86vw, 320px);
+  scroll-snap-align: start;
+}
+
+.mobile-group-card {
+  min-width: min(84vw, 330px);
+  flex: 0 0 min(84vw, 330px);
+  scroll-snap-align: start;
+}
+
+.payments-tablet .stats-grid {
+  row-gap: 2px;
+}
+
+.payments-tablet .payment-group-card {
+  min-height: 100%;
+}
+
+.payments-tablet .search-field {
+  max-width: 100%;
+}
+
 .payments-mobile .page-hero-card,
 .payments-mobile .content-main-card,
 .payments-mobile .login-required-card {
@@ -1149,23 +1392,40 @@ function openTransactionHistory(type, group) {
 
 .hero-chip-group-mobile {
   width: 100%;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
 }
 
 .hero-chip-group-mobile .hero-chip {
   max-width: 100%;
+  justify-content: flex-start;
+}
+
+.hero-chip-group-mobile .hero-chip:last-child {
+  grid-column: 1 / -1;
 }
 
 .summary-pill-group-mobile {
   width: 100%;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
 }
 
 .summary-pill-group-mobile .summary-chip {
-  flex: 1 1 calc(50% - 8px);
+  width: 100%;
   justify-content: center;
+  margin: 0 !important;
 }
 
 .history-dialog-card-mobile {
   min-height: 100vh;
+}
+
+.payments-mobile .section-topbar,
+.payments-mobile .payments-tabs {
+  margin-bottom: 18px !important;
 }
 
 .history-dialog-text-mobile {
@@ -1266,8 +1526,20 @@ function openTransactionHistory(type, group) {
     justify-content: flex-start;
   }
 
+  .hero-chip-group-mobile {
+    grid-template-columns: 1fr;
+  }
+
+  .hero-chip-group-mobile .hero-chip:last-child {
+    grid-column: auto;
+  }
+
   .summary-chip {
     width: 100%;
+  }
+
+  .summary-pill-group-mobile {
+    grid-template-columns: 1fr;
   }
 
   .payments-tabs {

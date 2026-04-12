@@ -4,7 +4,7 @@
 
     <v-main>
       <div class="venue-page-shell" :class="browserThemeClass">
-        <v-container class="py-6 py-md-8" style="max-width: 1240px;">
+        <v-container class="py-4 py-sm-5 py-md-8 venue-page-container" style="max-width: 1240px;">
           <div v-if="venue">
             <div class="page-top-meta mb-3">
               <div class="text-caption text-medium-emphasis breadcrumb-line">
@@ -17,11 +17,11 @@
             <v-card
               rounded="xl"
               variant="flat"
-              class="hero-card mb-6"
+              class="hero-card mb-4 mb-md-6"
             >
               <div class="hero-card__glow"></div>
 
-              <div class="d-flex flex-column flex-md-row align-start align-md-center justify-space-between ga-4">
+              <div class="d-flex flex-column flex-md-row align-start align-md-center justify-space-between ga-4 hero-layout">
                 <div class="hero-copy">
                   <div class="hero-badge mb-3">
                     <v-icon size="16" class="me-2">mdi-map-marker-radius</v-icon>
@@ -99,7 +99,41 @@
               </div>
             </v-card>
 
-            <div class="d-flex align-start venue-layout">
+            <v-card
+              v-if="isMobile"
+              rounded="xl"
+              variant="outlined"
+              class="mb-6 pa-4 surface-card mobile-booking-card"
+            >
+              <div class="d-flex align-center justify-space-between flex-wrap ga-3">
+                <div class="min-width-0">
+                  <div class="section-kicker mb-1">Mobile booking</div>
+                  <div class="text-subtitle-1 font-weight-bold">Reserve this venue faster</div>
+                  <div class="text-body-2 text-medium-emphasis mt-1">
+                    Jump straight to reservations with this venue preselected.
+                  </div>
+                </div>
+
+                <v-btn
+                  color="primary"
+                  rounded="xl"
+                  size="large"
+                  class="mobile-booking-btn"
+                  :disabled="!venue || !venue.id || !venue.availability"
+                  @click="bookVenue"
+                  @contextmenu.prevent="openNavigationMenu($event, getReservationNavigationUrl(), 'reservation')"
+                  @touchstart.passive="startLongPress($event, getReservationNavigationUrl(), 'reservation')"
+                  @touchend="cancelLongPress"
+                  @touchmove="cancelLongPress"
+                  @touchcancel="cancelLongPress"
+                >
+                  <v-icon start>mdi-calendar-check-outline</v-icon>
+                  Book now
+                </v-btn>
+              </div>
+            </v-card>
+
+            <div class="d-flex align-start venue-layout" :class="{ 'venue-layout--tablet': isTablet, 'venue-layout--mobile': isMobile }">
               <!-- LEFT -->
               <div class="venue-left">
                 <v-card variant="outlined" rounded="xl" class="pa-4 pa-md-5 media-card surface-card">
@@ -654,6 +688,7 @@ const venue = computed(() => {
 const currentImageIndex = ref(0)
 
 const isMobile = computed(() => display.smAndDown.value)
+const isTablet = computed(() => display.md.value)
 
 const currentTheme = computed(() => {
   return theme.global.name.value === "light" ? "light" : "dark"
@@ -917,6 +952,28 @@ onBeforeUnmount(() => {
   animation: fadeSlideDown 0.45s ease;
 }
 
+.venue-page-container {
+  position: relative;
+}
+
+.hero-layout {
+  gap: 20px;
+}
+
+.mobile-booking-card {
+  border-color: rgba(var(--v-theme-primary), 0.14);
+  background:
+    linear-gradient(135deg, rgba(var(--v-theme-primary), 0.08), rgba(var(--v-theme-secondary), 0.03)),
+    rgba(var(--v-theme-surface), 0.95);
+}
+
+.mobile-booking-btn {
+  min-height: 46px;
+  font-weight: 800;
+  min-width: 150px;
+}
+
+
 .breadcrumb-line {
   display: inline-flex;
   align-items: center;
@@ -1050,6 +1107,64 @@ onBeforeUnmount(() => {
     0 12px 30px rgba(0, 0, 0, 0.04),
     0 2px 10px rgba(0, 0, 0, 0.02);
 }
+
+.venue-layout--tablet {
+  gap: 20px;
+}
+
+.venue-layout--mobile {
+  gap: 18px;
+}
+
+.hero-stat-card,
+.info-card,
+.media-card,
+.sticky-side-card,
+.mobile-booking-card {
+  border-width: 1px;
+}
+
+.gallery-stage {
+  border-radius: 22px;
+}
+
+.gallery-stage :deep(.v-responsive__content) {
+  height: 100%;
+}
+
+.thumbnail-row {
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding-bottom: 4px;
+  scroll-snap-type: x proximity;
+  -webkit-overflow-scrolling: touch;
+}
+
+.thumbnail-row::-webkit-scrollbar,
+.upcoming-list::-webkit-scrollbar {
+  height: 6px;
+}
+
+.thumbnail-row::-webkit-scrollbar-thumb,
+.upcoming-list::-webkit-scrollbar-thumb {
+  background: rgba(var(--v-theme-on-surface), 0.18);
+  border-radius: 999px;
+}
+
+.thumbnail-card {
+  min-width: 88px;
+  flex: 0 0 88px !important;
+  scroll-snap-align: start;
+}
+
+.upcoming-event-card {
+  scroll-snap-align: start;
+}
+
+.side-highlight-card {
+  border-radius: 22px;
+}
+
 
 .section-headline {
   display: flex;
@@ -1388,9 +1503,32 @@ onBeforeUnmount(() => {
   }
 }
 
+
 @media (max-width: 1260px) {
   .hero-side-stats {
     max-width: 330px;
+  }
+
+  .venue-left {
+    flex-basis: 64%;
+  }
+
+  .venue-right {
+    flex-basis: 36%;
+  }
+}
+
+@media (max-width: 1100px) {
+  .hero-card {
+    padding: 22px;
+  }
+
+  .hero-side-stats {
+    max-width: 100%;
+  }
+
+  .detail-label {
+    width: 150px;
   }
 }
 
@@ -1404,27 +1542,225 @@ onBeforeUnmount(() => {
     flex: 0 0 100%;
   }
 
+  .venue-right {
+    order: -1;
+  }
+
   .sticky-side-card {
     position: static;
+    top: auto;
+  }
+
+  .hero-layout {
+    gap: 18px;
+  }
+
+  .hero-side-stats {
+    max-width: 100%;
   }
 
   .detail-label {
-    width: 145px;
+    width: 135px;
+  }
+
+  .info-grid {
+    gap: 12px;
   }
 
   .main-gallery-row {
-    gap: 8px;
+    gap: 0;
+    position: relative;
+  }
+
+  .main-gallery-row > .gallery-nav-btn {
+    position: absolute;
+    z-index: 3;
+    top: 50%;
+    transform: translateY(-50%);
+    backdrop-filter: blur(8px);
+    box-shadow: 0 10px 20px rgba(0, 0, 0, 0.12);
+  }
+
+  .main-gallery-row > .gallery-nav-btn:first-child {
+    left: 12px;
+  }
+
+  .main-gallery-row > .gallery-nav-btn:last-child {
+    right: 12px;
   }
 
   .gallery-stage,
   .gallery-main-image :deep(img) {
     border-radius: 18px;
   }
+
+  .thumbnail-card {
+    min-width: 100px;
+    flex-basis: 100px !important;
+  }
 }
 
 @media (max-width: 700px) {
+  .venue-page-container {
+    padding-left: 14px !important;
+    padding-right: 14px !important;
+  }
+
+  .page-top-meta {
+    margin-bottom: 10px !important;
+  }
+
   .hero-card {
-    padding: 20px;
+    padding: 18px;
+    border-radius: 24px !important;
+  }
+
+  .hero-title {
+    font-size: 1.7rem !important;
+  }
+
+  .hero-subtitle {
+    margin-bottom: 14px !important;
+  }
+
+  .hero-chip-wrap {
+    gap: 8px !important;
+  }
+
+  .hero-stat-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .hero-stat-box:nth-child(1),
+  .hero-stat-box:nth-child(2) {
+    border-bottom: 1px solid rgba(var(--v-border-color), 0.12);
+  }
+
+  .hero-stat-box:nth-child(1),
+  .hero-stat-box:nth-child(3) {
+    border-right: 1px solid rgba(var(--v-border-color), 0.12);
+  }
+
+  .media-card,
+  .info-card,
+  .sticky-side-card,
+  .mobile-booking-card {
+    border-radius: 24px !important;
+  }
+
+  .section-headline {
+    gap: 12px;
+  }
+
+  .main-gallery-row > .gallery-nav-btn {
+    width: 38px;
+    height: 38px;
+  }
+
+  .main-gallery-row > .gallery-nav-btn:first-child {
+    left: 10px;
+  }
+
+  .main-gallery-row > .gallery-nav-btn:last-child {
+    right: 10px;
+  }
+
+  .gallery-stage,
+  .gallery-main-image {
+    height: 280px !important;
+  }
+
+  .gallery-overlay {
+    padding: 12px;
+  }
+
+  .gallery-overlay-badge {
+    font-size: 0.74rem;
+    max-width: calc(100% - 12px);
+  }
+
+  .thumbnail-toolbar {
+    gap: 10px;
+    align-items: stretch !important;
+  }
+
+  .thumbnail-row {
+    gap: 10px;
+  }
+
+  .thumbnail-card {
+    min-width: 86px;
+    flex-basis: 86px !important;
+    height: 72px !important;
+  }
+
+  .thumbnail-card :deep(.v-responsive),
+  .thumbnail-card :deep(.v-img) {
+    height: 72px !important;
+  }
+
+  .info-row {
+    flex-direction: column;
+    gap: 6px;
+    padding: 12px;
+  }
+
+  .detail-label {
+    width: 100%;
+  }
+
+  .upcoming-list {
+    display: grid !important;
+    grid-auto-flow: column;
+    grid-auto-columns: minmax(280px, 84vw);
+    overflow-x: auto;
+    overflow-y: hidden;
+    padding-bottom: 6px;
+    scroll-snap-type: x proximity;
+  }
+
+  .upcoming-event-card {
+    min-height: 100%;
+  }
+
+  .upcoming-event-content {
+    flex-direction: column;
+    align-items: flex-start !important;
+  }
+
+  .upcoming-right-side {
+    width: 100%;
+    align-items: flex-start !important;
+  }
+
+  .event-view-btn {
+    padding-inline: 0 !important;
+  }
+
+  .mobile-booking-card {
+    position: relative;
+    overflow: hidden;
+  }
+
+  .mobile-booking-card::after {
+    content: "";
+    position: absolute;
+    inset: auto -40px -50px auto;
+    width: 140px;
+    height: 140px;
+    border-radius: 999px;
+    background: radial-gradient(circle, rgba(var(--v-theme-primary), 0.14), transparent 68%);
+    pointer-events: none;
+  }
+}
+
+@media (max-width: 520px) {
+  .hero-card {
+    padding: 16px;
+  }
+
+  .hero-title {
+    font-size: 1.5rem !important;
   }
 
   .hero-stat-grid {
@@ -1442,35 +1778,31 @@ onBeforeUnmount(() => {
     border-bottom: 1px solid rgba(var(--v-border-color), 0.12);
   }
 
-  .info-row {
-    flex-direction: column;
-    gap: 6px;
+  .gallery-stage,
+  .gallery-main-image {
+    height: 240px !important;
   }
 
-  .detail-label {
-    width: 100%;
-  }
-
-  .upcoming-event-content {
-    flex-direction: column;
-    align-items: flex-start !important;
-  }
-
-  .upcoming-right-side {
-    width: 100%;
-    align-items: flex-start !important;
-  }
-
-  .gallery-overlay {
-    padding: 12px;
-  }
-
-  .gallery-overlay-badge {
-    font-size: 0.74rem;
+  .thumbnail-toolbar > .gallery-nav-btn {
+    display: none !important;
   }
 
   .thumbnail-row {
-    gap: 8px;
+    width: 100%;
+  }
+
+  .thumbnail-card {
+    min-width: 82px;
+    flex-basis: 82px !important;
+  }
+
+  .upcoming-list {
+    grid-auto-columns: minmax(260px, 88vw);
+  }
+
+  .mobile-booking-btn {
+    width: 100%;
   }
 }
+
 </style>

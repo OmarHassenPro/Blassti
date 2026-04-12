@@ -5,7 +5,7 @@
     <v-main>
       <div class="event-info-shell" :class="browserThemeClass">
         <v-container class="py-6 py-md-8 px-4 px-md-6 event-info-container">
-          <div v-if="event">
+          <div v-if="event" class="event-page-content">
             <div class="breadcrumb-row mb-3">
               <v-chip
                 size="small"
@@ -31,9 +31,9 @@
               <div class="hero-glow" />
 
               <div class="pa-4 pa-md-6">
-                <div class="d-flex flex-column flex-lg-row align-lg-center justify-space-between ga-4">
+                <div class="d-flex flex-column flex-lg-row align-lg-center justify-space-between ga-4 hero-card-layout">
                   <div class="hero-copy">
-                    <div class="d-flex flex-wrap align-center ga-2 mb-3">
+                    <div class="d-flex flex-wrap align-center ga-2 mb-3 hero-meta-chip-row">
                       <v-chip size="small" color="primary" variant="tonal" rounded="pill">
                         <v-icon start size="16">mdi-ticket-confirmation-outline</v-icon>
                         Event Details
@@ -59,7 +59,7 @@
                     </div>
                   </div>
 
-                  <div class="d-flex flex-wrap ga-3 hero-stat-group">
+                  <div class="d-flex flex-wrap ga-3 hero-stat-group" :class="{ 'hero-stat-group-mobile': isPhone }">
                     <v-sheet
                       rounded="xl"
                       class="hero-stat-card px-4 py-3"
@@ -91,7 +91,37 @@
               </div>
             </v-card>
 
-            <div class="content-grid">
+            <div class="mobile-quick-action-bar" v-if="isPhone">
+              <v-card
+                variant="flat"
+                rounded="xl"
+                class="mobile-quick-action-card pa-3 page-entrance-card page-entrance-card-delay-1"
+                elevation="0"
+              >
+                <div class="d-flex align-center justify-space-between ga-3">
+                  <div class="mobile-quick-action-copy">
+                    <div class="text-caption text-medium-emphasis mb-1">Booking status</div>
+                    <div class="text-subtitle-2 font-weight-bold">{{ bookingHeadline }}</div>
+                    <div class="text-caption text-medium-emphasis mobile-quick-action-text">
+                      {{ bookingStateText }} · {{ event.venue }}
+                    </div>
+                  </div>
+
+                  <v-btn
+                    :color="bookingButtonColor"
+                    rounded="pill"
+                    class="text-none mobile-quick-action-btn"
+                    :disabled="!canBuyTicket"
+                    @click="goToSeatSelection"
+                  >
+                    <v-icon start>{{ bookingButtonIcon }}</v-icon>
+                    Book now
+                  </v-btn>
+                </div>
+              </v-card>
+            </div>
+
+            <div class="content-grid" :class="{ 'content-grid-tablet': isTablet, 'content-grid-phone': isPhone }">
               <!-- LEFT -->
               <div class="left-column">
                 <v-card
@@ -402,7 +432,7 @@
               </div>
 
               <!-- RIGHT -->
-              <div class="right-column">
+              <div class="right-column" :class="{ 'right-column-tablet': isTablet, 'right-column-phone': isPhone }">
                 <v-card
                   variant="flat"
                   rounded="xl"
@@ -528,6 +558,8 @@ const event = computed(() => get_Event_By_Id(route.query.id))
 const currentImageIndex = ref(0)
 const isMobile = computed(() => display.smAndDown.value)
 const isTabletOrDown = computed(() => display.mdAndDown.value)
+const isPhone = computed(() => display.xs.value)
+const isTablet = computed(() => display.sm.value || display.md.value)
 
 watch(
   () => route.query.id,
@@ -813,6 +845,10 @@ onBeforeUnmount(() => {
   pointer-events: none;
 }
 
+.event-page-content {
+  position: relative;
+}
+
 .hero-title {
   letter-spacing: -0.02em;
   line-height: 1.1;
@@ -821,6 +857,23 @@ onBeforeUnmount(() => {
 .hero-subtitle {
   max-width: 760px;
   line-height: 1.75;
+}
+
+.hero-card-layout {
+  position: relative;
+  z-index: 1;
+}
+
+.hero-copy {
+  min-width: 0;
+}
+
+.hero-meta-chip-row {
+  row-gap: 10px !important;
+}
+
+.mobile-quick-action-bar {
+  display: none;
 }
 
 .hero-stat-group {
@@ -845,9 +898,36 @@ onBeforeUnmount(() => {
   align-items: start;
 }
 
+.content-grid-tablet,
+.content-grid-phone {
+  gap: 18px;
+}
+
 .left-column,
 .right-column {
   min-width: 0;
+}
+
+.right-column-tablet {
+  display: grid;
+  grid-template-columns: minmax(0, 1.45fr) minmax(220px, 0.85fr);
+  gap: 16px;
+  align-items: start;
+}
+
+.right-column-tablet .mini-info-card {
+  margin-top: 0 !important;
+  height: 100%;
+}
+
+.right-column-phone {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.right-column-phone .mini-info-card {
+  margin-top: 0 !important;
 }
 
 .gallery-main-wrapper {
@@ -1127,9 +1207,32 @@ onBeforeUnmount(() => {
     grid-template-columns: 1fr;
   }
 
+  .right-column {
+    order: -1;
+  }
+
   .booking-card {
     position: relative;
     top: 0;
+  }
+}
+
+@media (min-width: 701px) and (max-width: 1180px) {
+  .hero-stat-group {
+    width: 100%;
+    justify-content: flex-start;
+  }
+
+  .hero-stat-card {
+    flex: 1 1 calc(33.333% - 10px);
+    min-width: 160px;
+  }
+
+  .gallery-card,
+  .details-card,
+  .booking-card,
+  .mini-info-card {
+    border-radius: 24px !important;
   }
 }
 
@@ -1149,6 +1252,43 @@ onBeforeUnmount(() => {
   .event-info-container {
     padding-left: 14px !important;
     padding-right: 14px !important;
+    padding-bottom: 88px !important;
+  }
+
+  .mobile-quick-action-bar {
+    display: block;
+    margin-bottom: 16px;
+  }
+
+  .mobile-quick-action-card {
+    border: 1px solid rgba(var(--v-border-color), var(--v-border-opacity));
+    position: relative;
+    overflow: hidden;
+  }
+
+  .browser-light .mobile-quick-action-card {
+    background: rgba(255, 255, 255, 0.84);
+    box-shadow: 0 12px 32px rgba(15, 23, 42, 0.06);
+  }
+
+  .browser-dark .mobile-quick-action-card {
+    background: rgba(20, 25, 34, 0.88);
+    box-shadow: 0 16px 38px rgba(0, 0, 0, 0.26);
+  }
+
+  .mobile-quick-action-copy {
+    min-width: 0;
+    flex: 1 1 auto;
+  }
+
+  .mobile-quick-action-text {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .mobile-quick-action-btn {
+    flex-shrink: 0;
   }
 
   .hero-card,
@@ -1160,12 +1300,32 @@ onBeforeUnmount(() => {
     border-radius: 22px !important;
   }
 
+  .hero-card {
+    margin-bottom: 18px !important;
+  }
+
+  .hero-card-layout {
+    gap: 18px !important;
+  }
+
   .hero-title {
     font-size: 2rem !important;
   }
 
   .hero-subtitle {
     line-height: 1.65;
+    font-size: 0.98rem;
+  }
+
+  .hero-meta-chip-row {
+    flex-wrap: nowrap !important;
+    overflow-x: auto;
+    padding-bottom: 4px;
+    scrollbar-width: none;
+  }
+
+  .hero-meta-chip-row::-webkit-scrollbar {
+    display: none;
   }
 
   .hero-stat-group {
@@ -1173,9 +1333,20 @@ onBeforeUnmount(() => {
     gap: 10px !important;
   }
 
+  .hero-stat-group-mobile {
+    display: grid !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    width: 100%;
+  }
+
   .hero-stat-card {
     flex: 1 1 calc(50% - 8px);
     min-width: calc(50% - 8px);
+  }
+
+  .gallery-card,
+  .details-card {
+    margin-top: 0 !important;
   }
 
   .gallery-main-sheet,
@@ -1192,23 +1363,33 @@ onBeforeUnmount(() => {
     overflow-x: auto;
     padding-bottom: 4px;
     scrollbar-width: thin;
+    scroll-snap-type: x proximity;
   }
 
   .thumbnail-card {
     min-width: 84px;
     height: 72px !important;
     flex: 0 0 84px;
+    scroll-snap-align: start;
   }
 
   .thumbnail-arrow {
     width: 40px !important;
     height: 40px !important;
   }
+
+  .booking-card {
+    margin-bottom: 0 !important;
+  }
 }
 
 @media (max-width: 600px) {
   .breadcrumb-row {
     gap: 4px;
+  }
+
+  .breadcrumb-chip {
+    max-width: 100%;
   }
 
   .gallery-nav-btn {
@@ -1234,12 +1415,20 @@ onBeforeUnmount(() => {
     width: 100%;
   }
 
+  .hero-stat-group-mobile {
+    grid-template-columns: 1fr;
+  }
+
   .booking-highlight {
     padding: 14px;
   }
 
   .book-btn {
     min-height: 48px;
+  }
+
+  .description-text {
+    line-height: 1.75;
   }
 }
 

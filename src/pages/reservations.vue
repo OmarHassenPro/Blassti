@@ -34,6 +34,21 @@
               </div>
             </div>
 
+            <div v-if="venue && isTabletViewport" class="mobile-hero-stats mb-6">
+              <div class="mobile-stat-card">
+                <div class="mobile-stat-label">Venue</div>
+                <div class="mobile-stat-value text-truncate">{{ venue.title }}</div>
+              </div>
+              <div class="mobile-stat-card">
+                <div class="mobile-stat-label">Hourly</div>
+                <div class="mobile-stat-value">{{ hourlyPrice.toFixed(2) }} TND</div>
+              </div>
+              <div class="mobile-stat-card">
+                <div class="mobile-stat-label">Daily</div>
+                <div class="mobile-stat-value">{{ dailyPrice.toFixed(2) }} TND</div>
+              </div>
+            </div>
+
             <v-stepper v-model="step" alt-labels flat class="bg-transparent clean-stepper mb-6">
               <v-stepper-header>
                 <v-stepper-item :value="1" title="Pick time" />
@@ -52,7 +67,39 @@
 
             <template v-else>
               <div v-show="step === 1">
-                <v-row>
+                <div v-if="isTabletViewport" class="mobile-step-intro mb-4">
+                  <div class="mobile-step-intro-main">
+                    <div class="text-subtitle-1 font-weight-bold mb-1">Pick your start slot</div>
+                    <div class="text-body-2 text-medium-emphasis">
+                      Browse the timeline, choose a free start, then adjust duration before continuing.
+                    </div>
+                  </div>
+
+                  <div class="mobile-selection-strip mt-3">
+                    <div class="mobile-selection-card">
+                      <span class="mobile-selection-label">Start</span>
+                      <strong>{{ selectedStartLabel }}</strong>
+                    </div>
+                    <div class="mobile-selection-card">
+                      <span class="mobile-selection-label">Mode</span>
+                      <strong>{{ durationUnit === 'days' ? 'Daily' : 'Hourly' }}</strong>
+                    </div>
+                    <div class="mobile-selection-card">
+                      <span class="mobile-selection-label">Estimate</span>
+                      <strong>{{ grandTotal.toFixed(2) }} TND</strong>
+                    </div>
+                  </div>
+
+                  <div class="mobile-legend-strip mt-3">
+                    <div class="mobile-legend-pill"><span class="legend-dot free"></span><span>Free</span></div>
+                    <div class="mobile-legend-pill"><span class="legend-dot selected"></span><span>Start</span></div>
+                    <div class="mobile-legend-pill"><span class="legend-dot admin"></span><span>Admin</span></div>
+                    <div class="mobile-legend-pill"><span class="legend-dot booked"></span><span>Booked</span></div>
+                    <div class="mobile-legend-pill"><span class="legend-dot event"></span><span>Event</span></div>
+                  </div>
+                </div>
+
+                <v-row class="reservation-step-grid">
                   <v-col cols="12" lg="9">
                     <v-card rounded="xl" variant="outlined" class="pa-4 pa-md-5 clean-section-card mb-4 timeline-section-card">
                       <div class="d-flex flex-wrap justify-space-between align-center ga-3 mb-4">
@@ -253,7 +300,7 @@
 
               <div v-show="step === 2">
                 <v-row>
-                  <v-col cols="12" lg="8">
+                  <v-col cols="12" lg="8" class="review-layout-col">
                     <v-card rounded="xl" variant="outlined" class="pa-4 pa-md-5 clean-section-card h-100 review-card">
                       <div class="d-flex align-center justify-space-between flex-wrap ga-3 mb-4">
                         <div class="text-h6 font-weight-bold section-title">Venue details</div>
@@ -330,7 +377,7 @@
                     </v-card>
                   </v-col>
 
-                  <v-col cols="12" lg="4">
+                  <v-col cols="12" lg="4" class="bill-layout-col">
                     <v-card rounded="xl" variant="outlined" class="pa-4 pa-md-5 clean-section-card sticky-panel bill-card">
                       <div class="d-flex align-center justify-space-between ga-3 mb-4">
                         <div class="text-h6 font-weight-bold section-title">Bill</div>
@@ -550,6 +597,56 @@
       <v-snackbar v-model="snackbar.show" :color="snackbar.color" rounded="pill" location="bottom right" timeout="2600">
         {{ snackbar.text }}
       </v-snackbar>
+      <div v-if="venue && isTabletViewport" class="mobile-action-dock" :class="{ 'mobile-action-dock--step2': step === 2 }">
+        <div class="mobile-action-dock__summary">
+          <div class="mobile-action-dock__eyebrow">{{ step === 1 ? 'Reservation setup' : 'Payment ready' }}</div>
+          <div class="mobile-action-dock__title">
+            <template v-if="step === 1">
+              {{ selectedStart ? durationText + ' · ' + grandTotal.toFixed(2) + ' TND' : 'Choose a free slot to continue' }}
+            </template>
+            <template v-else>
+              {{ grandTotal.toFixed(2) }} TND total
+            </template>
+          </div>
+        </div>
+
+        <div class="mobile-action-dock__actions">
+          <v-btn
+            v-if="step > 1"
+            variant="outlined"
+            rounded="lg"
+            class="action-btn"
+            prepend-icon="mdi-arrow-left"
+            @click="step--"
+          >
+            Back
+          </v-btn>
+
+          <v-btn
+            v-if="step === 1"
+            color="primary"
+            rounded="lg"
+            class="action-btn"
+            :disabled="!canContinueFromStep1"
+            append-icon="mdi-arrow-right"
+            @click="step = 2"
+          >
+            Continue
+          </v-btn>
+
+          <v-btn
+            v-else
+            color="primary"
+            rounded="lg"
+            class="action-btn"
+            prepend-icon="mdi-credit-card-check-outline"
+            :disabled="!canProceedToPayment"
+            @click="paymentDialog = true"
+          >
+            Pay now
+          </v-btn>
+        </div>
+      </div>
     </v-container>
   </div>
 </template>
@@ -613,6 +710,8 @@ const browserTheme = ref("dark")
 const mediaQuery = ref(null)
 const isMobileViewport = ref(false)
 const longPressTimer = ref(null)
+
+const isTabletViewport = computed(() => isMobileViewport.value)
 
 const navigationMenu = reactive({
   show: false,
@@ -1785,6 +1884,127 @@ onBeforeUnmount(() => {
   align-items: center;
 }
 
+
+.mobile-hero-stats,
+.mobile-selection-strip,
+.mobile-legend-strip {
+  display: flex;
+  gap: 12px;
+  overflow-x: auto;
+  padding-bottom: 4px;
+  scrollbar-width: none;
+}
+
+.mobile-hero-stats::-webkit-scrollbar,
+.mobile-selection-strip::-webkit-scrollbar,
+.mobile-legend-strip::-webkit-scrollbar {
+  display: none;
+}
+
+.mobile-stat-card,
+.mobile-selection-card,
+.mobile-legend-pill,
+.mobile-step-intro {
+  border: 1px solid transparent;
+}
+
+.mobile-stat-card {
+  min-width: 170px;
+  border-radius: 20px;
+  padding: 14px 16px;
+  backdrop-filter: blur(12px);
+}
+
+.mobile-stat-label,
+.mobile-selection-label,
+.mobile-action-dock__eyebrow {
+  font-size: 0.75rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  opacity: 0.72;
+  display: block;
+  margin-bottom: 6px;
+  font-weight: 700;
+}
+
+.mobile-stat-value,
+.mobile-action-dock__title {
+  font-size: 1rem;
+  font-weight: 800;
+  line-height: 1.25;
+}
+
+.mobile-step-intro {
+  border-radius: 22px;
+  padding: 16px;
+}
+
+.mobile-selection-card {
+  min-width: 190px;
+  border-radius: 18px;
+  padding: 14px;
+}
+
+.mobile-selection-card strong {
+  display: block;
+  line-height: 1.45;
+}
+
+.mobile-legend-pill {
+  min-width: max-content;
+  border-radius: 999px;
+  padding: 10px 14px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 600;
+}
+
+.mobile-action-dock {
+  position: sticky;
+  bottom: 10px;
+  z-index: 12;
+  margin-top: 18px;
+  display: none;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  border-radius: 22px;
+  padding: 14px;
+  backdrop-filter: blur(16px);
+}
+
+.mobile-action-dock__actions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.mobile-action-dock__actions .v-btn {
+  min-height: 46px;
+}
+
+.reservation-page--dark .mobile-stat-card,
+.reservation-page--dark .mobile-selection-card,
+.reservation-page--dark .mobile-legend-pill,
+.reservation-page--dark .mobile-step-intro,
+.reservation-page--dark .mobile-action-dock {
+  background: rgba(255, 255, 255, 0.04);
+  border-color: rgba(255, 255, 255, 0.08);
+  box-shadow: 0 14px 28px rgba(0, 0, 0, 0.18);
+}
+
+.reservation-page--light .mobile-stat-card,
+.reservation-page--light .mobile-selection-card,
+.reservation-page--light .mobile-legend-pill,
+.reservation-page--light .mobile-step-intro,
+.reservation-page--light .mobile-action-dock {
+  background: rgba(255, 255, 255, 0.9);
+  border-color: rgba(21, 32, 51, 0.08);
+  box-shadow: 0 14px 28px rgba(40, 58, 89, 0.08);
+}
+
+
 @media (max-width: 1280px) {
   .sticky-panel {
     position: static;
@@ -1799,6 +2019,42 @@ onBeforeUnmount(() => {
 
   .hero-subtitle {
     font-size: 0.95rem;
+  }
+
+  .reservation-step-grid {
+    row-gap: 14px;
+  }
+
+  .timeline-section-card,
+  .side-setup-card,
+  .review-card,
+  .bill-card {
+    border-radius: 22px !important;
+  }
+
+  .side-setup-card {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+    align-items: start;
+  }
+
+  .side-setup-card > * {
+    min-width: 0;
+  }
+
+  .side-setup-card .section-title,
+  .side-setup-card .legend-list,
+  .side-setup-card .polished-alert,
+  .side-setup-card .mini-summary-card,
+  .side-setup-card .custom-radio-group,
+  .side-setup-card .enhanced-field,
+  .side-setup-card .text-subtitle-2 {
+    grid-column: span 2;
+  }
+
+  .side-setup-card .setup-avatar {
+    justify-self: end;
   }
 
   .timeline-corner,
@@ -1878,6 +2134,7 @@ onBeforeUnmount(() => {
   .timeline-scroller {
     max-height: 62vh;
     border-radius: 18px;
+    scroll-snap-type: x proximity;
   }
 
   .timeline-grid {
@@ -1887,6 +2144,7 @@ onBeforeUnmount(() => {
   .day-header,
   .slot-cell {
     min-width: 166px;
+    scroll-snap-align: start;
   }
 
   .time-label,
@@ -1899,8 +2157,20 @@ onBeforeUnmount(() => {
     padding: 12px 6px;
   }
 
+  .bill-layout-col {
+    order: 1;
+  }
+
+  .review-layout-col {
+    order: 2;
+  }
+
   .bill-row {
     font-size: 0.95rem;
+  }
+
+  .mobile-action-dock {
+    display: flex;
   }
 
   .pay-btn,
@@ -1921,6 +2191,41 @@ onBeforeUnmount(() => {
 
   .reservation-main-card {
     padding: 14px !important;
+  }
+
+  .mobile-stat-card,
+  .mobile-selection-card {
+    min-width: 82%;
+  }
+
+  .mobile-step-intro {
+    padding: 14px;
+  }
+
+  .side-setup-card {
+    grid-template-columns: 1fr;
+  }
+
+  .side-setup-card .section-title,
+  .side-setup-card .legend-list,
+  .side-setup-card .polished-alert,
+  .side-setup-card .mini-summary-card,
+  .side-setup-card .custom-radio-group,
+  .side-setup-card .enhanced-field,
+  .side-setup-card .text-subtitle-2 {
+    grid-column: span 1;
+  }
+
+  .mobile-action-dock {
+    flex-direction: column;
+    align-items: stretch;
+    bottom: 8px;
+  }
+
+  .mobile-action-dock__actions {
+    width: 100%;
+    display: grid;
+    grid-template-columns: 1fr;
   }
 
   .page-hero {
