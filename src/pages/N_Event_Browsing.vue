@@ -477,7 +477,306 @@
                 </div>
               </div>
 
-              <v-row class="event-list-row" :key="resultsAnimationKey">
+              <div
+                v-if="isBelowDesktop && filteredEvents.length"
+                class="mobile-results-layout"
+                :key="`mobile-${resultsAnimationKey}`"
+              >
+                <section class="mobile-featured-block">
+                  <div class="mobile-section-copy">
+                    <div class="text-overline page-kicker mb-1">{{ mobileFeaturedEventLabel }}</div>
+                    <div class="text-subtitle-1 font-weight-bold mobile-results-lead">
+                      Start with the strongest match, then keep browsing the rest without the endless giant-card stack.
+                    </div>
+                  </div>
+
+                  <v-card
+                    v-if="primaryMobileEvent"
+                    class="rounded-xl rounded-xxl pa-3 pa-sm-4 event-card mobile-featured-card"
+                    :class="{
+                      'event-card-muted': isPastEvent(primaryMobileEvent) || primaryMobileEvent.seats_left === 0,
+                      'event-card-mobile': isMobile,
+                      'event-card-tablet': isTablet,
+                      'event-card-phone': isPhone
+                    }"
+                    elevation="0"
+                    @touchstart.passive="handleCardTouchStart($event, primaryMobileEvent)"
+                    @touchend="clearLongPress"
+                    @touchmove="clearLongPress"
+                    @touchcancel="clearLongPress"
+                  >
+                    <div class="mobile-featured-media">
+                      <v-img
+                        :src="primaryMobileEvent.image"
+                        :height="isPhone ? 220 : 280"
+                        class="rounded-xl mobile-featured-image"
+                        cover
+                      >
+                        <template #placeholder>
+                          <div class="w-100 h-100 d-flex align-center justify-center image-placeholder">
+                            <v-icon size="50">mdi-image</v-icon>
+                          </div>
+                        </template>
+                      </v-img>
+
+                      <div class="mobile-featured-gradient"></div>
+
+                      <div class="mobile-featured-badges">
+                        <v-chip
+                          v-if="primaryMobileEvent.featured"
+                          color="primary"
+                          variant="flat"
+                          size="small"
+                          class="status-chip"
+                        >
+                          <v-icon start size="14">mdi-star-four-points-outline</v-icon>
+                          Featured
+                        </v-chip>
+
+                        <v-chip
+                          v-if="primaryMobileEvent.last_call"
+                          color="warning"
+                          variant="flat"
+                          size="small"
+                          class="status-chip"
+                        >
+                          <v-icon start size="14">mdi-timer-sand</v-icon>
+                          Last Call
+                        </v-chip>
+
+                        <v-chip
+                          :color="getAvailabilityColor(primaryMobileEvent)"
+                          variant="flat"
+                          size="small"
+                          class="status-chip"
+                        >
+                          <v-icon start size="14">{{ getAvailabilityIcon(primaryMobileEvent) }}</v-icon>
+                          {{ getAvailabilityLabel(primaryMobileEvent) }}
+                        </v-chip>
+                      </div>
+                    </div>
+
+                    <div class="mobile-featured-content">
+                      <div class="mobile-featured-title-row">
+                        <div class="mobile-featured-title-wrap">
+                          <div class="text-h5 font-weight-bold mobile-featured-title">
+                            {{ primaryMobileEvent.title }}
+                          </div>
+
+                          <div class="text-body-2 text-medium-emphasis d-flex align-center flex-wrap ga-2 mt-2 mobile-featured-location">
+                            <v-icon size="16">mdi-map-marker-outline</v-icon>
+                            <span>{{ primaryMobileEvent.venue }} • {{ primaryMobileEvent.city }}</span>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div class="mobile-featured-meta">
+                        <div class="mobile-meta-card">
+                          <div class="mobile-meta-label">Date</div>
+                          <div class="mobile-meta-value">{{ primaryMobileEvent.date }}</div>
+                        </div>
+
+                        <div class="mobile-meta-card">
+                          <div class="mobile-meta-label">Time</div>
+                          <div class="mobile-meta-value">{{ primaryMobileEvent.time }}</div>
+                        </div>
+
+                        <div class="mobile-meta-card mobile-meta-card--wide">
+                          <div class="mobile-meta-label">Seats left</div>
+                          <div class="mobile-meta-value">{{ primaryMobileEvent.seats_left }}</div>
+                        </div>
+                      </div>
+
+                      <div class="text-body-2 mt-4 event-description mobile-featured-description line-clamp-3">
+                        {{ primaryMobileEvent.description }}
+                      </div>
+
+                      <div
+                        v-if="getArtistNames(primaryMobileEvent).length"
+                        class="text-body-2 mt-3 text-medium-emphasis artist-line mobile-featured-artist"
+                      >
+                        <v-icon size="16" class="me-1">mdi-account-music-outline</v-icon>
+                        <strong>Artist:</strong>&nbsp;{{ getArtistNames(primaryMobileEvent).join(", ") }}
+                      </div>
+
+                      <div class="mobile-featured-actions">
+                        <v-btn
+                          :color="canBuyTicket(primaryMobileEvent) ? 'primary' : (isPastEvent(primaryMobileEvent) ? 'grey-darken-1' : 'error')"
+                          class="action-btn primary-action-btn mobile-featured-primary"
+                          :disabled="!canBuyTicket(primaryMobileEvent)"
+                          @click="goToSeatSelection(primaryMobileEvent)"
+                          @contextmenu.prevent.stop="openSeatSelectionContextMenu($event, primaryMobileEvent)"
+                          @touchstart.passive.stop="handleSeatSelectionTouchStart($event, primaryMobileEvent)"
+                          @touchend.stop="clearLongPress"
+                          @touchmove.stop="clearLongPress"
+                          @touchcancel.stop="clearLongPress"
+                        >
+                          <v-icon start size="18">{{ canBuyTicket(primaryMobileEvent) ? 'mdi-ticket-outline' : (isPastEvent(primaryMobileEvent) ? 'mdi-calendar-remove-outline' : 'mdi-close-circle-outline') }}</v-icon>
+                          {{ canBuyTicket(primaryMobileEvent) ? 'Buy Ticket' : (isPastEvent(primaryMobileEvent) ? 'Event Ended' : 'Sold Out') }}
+                        </v-btn>
+
+                        <v-btn
+                          variant="outlined"
+                          class="action-btn mobile-featured-secondary"
+                          @click="goToMoreInfo(primaryMobileEvent)"
+                          @contextmenu.prevent.stop="openMoreInfoContextMenu($event, primaryMobileEvent)"
+                          @touchstart.passive.stop="handleMoreInfoTouchStart($event, primaryMobileEvent)"
+                          @touchend.stop="clearLongPress"
+                          @touchmove.stop="clearLongPress"
+                          @touchcancel.stop="clearLongPress"
+                        >
+                          <v-icon start size="18">mdi-information-outline</v-icon>
+                          More Info
+                        </v-btn>
+                      </div>
+                    </div>
+                  </v-card>
+                </section>
+
+                <section v-if="secondaryMobileEvents.length" class="mobile-secondary-section">
+                  <div class="d-flex align-center justify-space-between ga-3 mobile-secondary-header">
+                    <div>
+                      <div class="text-subtitle-1 font-weight-bold">Keep browsing</div>
+                      <div class="text-caption text-medium-emphasis">
+                        {{ isTablet ? 'A denser tablet grid keeps more choices visible at once.' : 'Swipe sideways through the rest for a lighter, faster phone flow.' }}
+                      </div>
+                    </div>
+
+                    <v-chip size="small" variant="tonal" class="summary-chip mobile-secondary-count">
+                      <v-icon start size="16">mdi-view-carousel-outline</v-icon>
+                      {{ secondaryMobileEvents.length }} more
+                    </v-chip>
+                  </div>
+
+                  <div
+                    class="mobile-secondary-track"
+                    :class="{ 'mobile-secondary-track--tablet': isTablet }"
+                  >
+                    <v-card
+                      v-for="event in secondaryMobileEvents"
+                      :key="event.id"
+                      class="rounded-xl rounded-xxl pa-3 event-card mobile-compact-card"
+                      :class="{
+                        'event-card-muted': isPastEvent(event) || event.seats_left === 0,
+                        'event-card-mobile': isMobile,
+                        'event-card-tablet': isTablet,
+                        'event-card-phone': isPhone
+                      }"
+                      elevation="0"
+                      @touchstart.passive="handleCardTouchStart($event, event)"
+                      @touchend="clearLongPress"
+                      @touchmove="clearLongPress"
+                      @touchcancel="clearLongPress"
+                    >
+                      <div class="mobile-compact-media">
+                        <v-img
+                          :src="event.image"
+                          :height="isTablet ? 170 : 156"
+                          class="rounded-xl mobile-compact-image"
+                          cover
+                        >
+                          <template #placeholder>
+                            <div class="w-100 h-100 d-flex align-center justify-center image-placeholder">
+                              <v-icon size="40">mdi-image</v-icon>
+                            </div>
+                          </template>
+                        </v-img>
+
+                        <div class="mobile-compact-status">
+                          <v-chip
+                            v-if="event.featured"
+                            color="primary"
+                            variant="flat"
+                            size="x-small"
+                            class="status-chip"
+                          >
+                            <v-icon start size="12">mdi-star-four-points-outline</v-icon>
+                            Featured
+                          </v-chip>
+
+                          <v-chip
+                            :color="getAvailabilityColor(event)"
+                            variant="flat"
+                            size="x-small"
+                            class="status-chip"
+                          >
+                            <v-icon start size="12">{{ getAvailabilityIcon(event) }}</v-icon>
+                            {{ getAvailabilityLabel(event) }}
+                          </v-chip>
+                        </div>
+                      </div>
+
+                      <div class="mobile-compact-content">
+                        <div class="mobile-compact-title">{{ event.title }}</div>
+
+                        <div class="text-body-2 text-medium-emphasis mobile-compact-location">
+                          <v-icon size="15" class="me-1">mdi-map-marker-outline</v-icon>
+                          <span>{{ event.venue }} • {{ event.city }}</span>
+                        </div>
+
+                        <div class="mobile-compact-meta">
+                          <div class="mobile-compact-pill">
+                            <v-icon size="15" class="me-1">mdi-calendar-blank-outline</v-icon>
+                            {{ event.date }} • {{ event.time }}
+                          </div>
+
+                          <div class="mobile-compact-pill">
+                            <v-icon size="15" class="me-1">mdi-seat-outline</v-icon>
+                            {{ event.seats_left }} seats
+                          </div>
+                        </div>
+
+                        <div class="mobile-compact-description line-clamp-2">
+                          {{ event.description }}
+                        </div>
+
+                        <div
+                          v-if="getArtistNames(event).length"
+                          class="mobile-compact-artist text-medium-emphasis"
+                        >
+                          <v-icon size="14" class="me-1">mdi-account-music-outline</v-icon>
+                          {{ getArtistNames(event).join(", ") }}
+                        </div>
+
+                        <div class="mobile-compact-actions">
+                          <v-btn
+                            size="small"
+                            :color="canBuyTicket(event) ? 'primary' : (isPastEvent(event) ? 'grey-darken-1' : 'error')"
+                            class="action-btn primary-action-btn"
+                            :disabled="!canBuyTicket(event)"
+                            @click="goToSeatSelection(event)"
+                            @contextmenu.prevent.stop="openSeatSelectionContextMenu($event, event)"
+                            @touchstart.passive.stop="handleSeatSelectionTouchStart($event, event)"
+                            @touchend.stop="clearLongPress"
+                            @touchmove.stop="clearLongPress"
+                            @touchcancel.stop="clearLongPress"
+                          >
+                            <v-icon start size="16">{{ canBuyTicket(event) ? 'mdi-ticket-outline' : (isPastEvent(event) ? 'mdi-calendar-remove-outline' : 'mdi-close-circle-outline') }}</v-icon>
+                            {{ canBuyTicket(event) ? 'Ticket' : (isPastEvent(event) ? 'Ended' : 'Sold Out') }}
+                          </v-btn>
+
+                          <v-btn
+                            size="small"
+                            variant="outlined"
+                            class="action-btn"
+                            @click="goToMoreInfo(event)"
+                            @contextmenu.prevent.stop="openMoreInfoContextMenu($event, event)"
+                            @touchstart.passive.stop="handleMoreInfoTouchStart($event, event)"
+                            @touchend.stop="clearLongPress"
+                            @touchmove.stop="clearLongPress"
+                            @touchcancel.stop="clearLongPress"
+                          >
+                            <v-icon start size="16">mdi-information-outline</v-icon>
+                            Info
+                          </v-btn>
+                        </div>
+                      </div>
+                    </v-card>
+                  </div>
+                </section>
+              </div>
+
+              <v-row v-else class="event-list-row" :key="`desktop-${resultsAnimationKey}`">
                 <v-col
                   v-for="event in filteredEvents"
                   :key="event.id"
@@ -632,7 +931,6 @@
                   </v-card>
                 </v-col>
               </v-row>
-
               <v-sheet
                 v-if="filteredEvents.length === 0"
                 class="d-flex align-center justify-center mt-4 empty-state-sheet"
@@ -1511,6 +1809,21 @@ const activeFilterChips = computed(() => {
 
 const mobileActiveFilterCount = computed(() => activeFilterChips.value.length)
 
+const primaryMobileEvent = computed(() => {
+  return isBelowDesktop.value ? filteredEvents.value[0] || null : null
+})
+
+const secondaryMobileEvents = computed(() => {
+  return isBelowDesktop.value ? filteredEvents.value.slice(1) : []
+})
+
+const mobileFeaturedEventLabel = computed(() => {
+  if (!primaryMobileEvent.value) return "Top result"
+  if (primaryMobileEvent.value.featured) return "Featured pick"
+  if (primaryMobileEvent.value.last_call) return "Going fast"
+  return "Top result"
+})
+
 const resultsAnimationKey = computed(() => JSON.stringify({
   search: searchQuery.value,
   categories: selectedCategories.value,
@@ -2330,6 +2643,266 @@ const filteredEvents = computed(() => {
   line-height: 1.45;
 }
 
+.mobile-results-layout {
+  display: grid;
+  gap: 24px;
+}
+
+.mobile-featured-block,
+.mobile-secondary-section {
+  display: grid;
+  gap: 16px;
+}
+
+.mobile-section-copy {
+  display: grid;
+  gap: 4px;
+}
+
+.mobile-results-lead {
+  line-height: 1.45;
+  max-width: 720px;
+}
+
+.mobile-featured-card {
+  overflow: hidden;
+}
+
+.mobile-featured-media,
+.mobile-compact-media {
+  position: relative;
+}
+
+.mobile-featured-image,
+.mobile-compact-image {
+  display: block;
+}
+
+.mobile-featured-gradient {
+  position: absolute;
+  inset: 0;
+  border-radius: 20px;
+  background: linear-gradient(180deg, rgba(0, 0, 0, 0.04) 20%, rgba(0, 0, 0, 0.42) 100%);
+  pointer-events: none;
+}
+
+.mobile-featured-badges,
+.mobile-compact-status {
+  position: absolute;
+  left: 14px;
+  right: 14px;
+  bottom: 14px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  pointer-events: none;
+}
+
+.mobile-featured-content {
+  display: grid;
+  gap: 0;
+  padding-top: 16px;
+}
+
+.mobile-featured-title-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 14px;
+}
+
+.mobile-featured-title-wrap {
+  min-width: 0;
+}
+
+.mobile-featured-title {
+  line-height: 1.08;
+  letter-spacing: -0.018em;
+}
+
+.mobile-featured-location {
+  overflow-wrap: anywhere;
+}
+
+.mobile-featured-meta {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  margin-top: 16px;
+}
+
+.mobile-meta-card {
+  padding: 12px 14px;
+  border-radius: 18px;
+  min-width: 0;
+  transition: transform 0.18s ease, background 0.35s ease, border-color 0.35s ease;
+}
+
+.mobile-meta-card:hover {
+  transform: translateY(-1px);
+}
+
+.mobile-meta-card--wide {
+  grid-column: 1 / -1;
+}
+
+.mobile-meta-label {
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  opacity: 0.72;
+}
+
+.mobile-meta-value {
+  margin-top: 6px;
+  font-size: 0.98rem;
+  font-weight: 700;
+  line-height: 1.35;
+}
+
+.browser-light .mobile-meta-card,
+.browser-light .mobile-compact-pill {
+  background: rgba(245, 248, 255, 0.94);
+  border: 1px solid rgba(37, 59, 102, 0.08);
+  color: #1f2c44;
+}
+
+.browser-dark .mobile-meta-card,
+.browser-dark .mobile-compact-pill {
+  background: rgba(18, 27, 42, 0.92);
+  border: 1px solid rgba(145, 170, 220, 0.12);
+  color: #e3ecff;
+}
+
+.mobile-featured-description {
+  line-height: 1.65;
+}
+
+.mobile-featured-artist {
+  line-height: 1.55;
+}
+
+.mobile-featured-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 18px;
+}
+
+.mobile-featured-primary {
+  flex: 1 1 0;
+}
+
+.mobile-featured-secondary {
+  flex: 1 1 0;
+}
+
+.mobile-secondary-header {
+  align-items: flex-start;
+}
+
+.mobile-secondary-track {
+  display: flex;
+  gap: 14px;
+  overflow-x: auto;
+  padding: 2px 2px 8px;
+  margin: -2px;
+  scrollbar-width: none;
+  scroll-snap-type: x proximity;
+}
+
+.mobile-secondary-track::-webkit-scrollbar {
+  display: none;
+}
+
+.mobile-secondary-track--tablet {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  overflow: visible;
+  padding: 0;
+  margin: 0;
+}
+
+.mobile-compact-card {
+  flex: 0 0 min(86vw, 320px);
+  scroll-snap-align: start;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.mobile-secondary-track--tablet .mobile-compact-card {
+  flex: initial;
+}
+
+.mobile-compact-content {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-height: 0;
+  flex: 1;
+}
+
+.mobile-compact-title {
+  font-size: 1.04rem;
+  line-height: 1.18;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+}
+
+.mobile-compact-location,
+.mobile-compact-artist {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  overflow-wrap: anywhere;
+}
+
+.mobile-compact-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.mobile-compact-pill {
+  display: inline-flex;
+  align-items: center;
+  padding: 7px 10px;
+  border-radius: 999px;
+  font-size: 0.82rem;
+  line-height: 1.3;
+}
+
+.mobile-compact-description.line-clamp-2 {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  font-size: 0.93rem;
+  line-height: 1.58;
+}
+
+.mobile-compact-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: auto;
+}
+
+.mobile-compact-actions .action-btn,
+.mobile-featured-actions .action-btn {
+  width: auto;
+}
+
+.mobile-compact-actions .v-btn:first-child {
+  flex: 1 1 0;
+}
+
+.mobile-compact-actions .v-btn:last-child {
+  flex: 0 0 auto;
+}
+
 .filter-column,
 .results-column {
   min-width: 0;
@@ -2486,6 +3059,28 @@ const filteredEvents = computed(() => {
     padding-top: 4px;
   }
 
+  .results-card {
+    padding: 18px !important;
+  }
+
+  .mobile-results-layout {
+    gap: 20px;
+  }
+
+  .mobile-featured-card {
+    padding: 14px !important;
+  }
+
+  .mobile-featured-actions {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  }
+
+  .mobile-secondary-track--tablet {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+  }
+
   .mobile-filter-grid {
     grid-template-columns: 1fr;
   }
@@ -2553,6 +3148,51 @@ const filteredEvents = computed(() => {
 @media (max-width: 600px) {
   .event-page-shell {
     overflow-x: hidden;
+  }
+
+  .results-card {
+    padding: 14px !important;
+  }
+
+  .mobile-results-layout {
+    gap: 18px;
+  }
+
+  .mobile-section-copy {
+    gap: 2px;
+  }
+
+  .mobile-results-lead {
+    font-size: 0.97rem;
+  }
+
+  .mobile-featured-title {
+    font-size: 1.34rem !important;
+  }
+
+  .mobile-featured-meta {
+    grid-template-columns: 1fr;
+  }
+
+  .mobile-meta-card--wide {
+    grid-column: auto;
+  }
+
+  .mobile-featured-actions {
+    grid-template-columns: 1fr;
+  }
+
+  .mobile-secondary-header {
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+
+  .mobile-secondary-track {
+    padding-bottom: 4px;
+  }
+
+  .mobile-compact-card {
+    flex-basis: min(86vw, 300px);
   }
 
   .mobile-browse-toolbar {

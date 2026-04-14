@@ -16,7 +16,8 @@ import {
 const USERS_STORAGE_KEY = "users"
 const CURRENT_USER_STORAGE_KEY = "currentUser"
 const USERS_VERSION_KEY = "users_seed_version"
-const USERS_SEED_VERSION = "v15_real_people_first_person_bios_killcount_update"
+const USERS_SEED_VERSION = "v16_real_people_first_person_bios_killcount_update_nour_elouaer"
+
 export function createAvatar(seed) {
   return `https://api.dicebear.com/7.x/thumbs/svg?seed=${encodeURIComponent(seed)}`
 }
@@ -1006,8 +1007,66 @@ function defaultUsers() {
       profile_picture: createAvatar("Amine Ben Hassouna"),
       description:
         "Best ISS professor. Loves Blassti and thinks it deserves to win this year’s ISS. Kill Count: 1",
+      contacts: {},
+      subscribed_artist_ids: [],
+      joined_event_ids: [],
+      created_event_ids: [],
+      is_admin: false,
+      is_moderator: false,
+      suspension: null,
+    }),
+
+    new User({
+      id: "user-29",
+      account_created_at: "2026-03-19T10:10:00.000Z",
+      first_name: "Nour",
+      last_name: "Ben Khadher",
+      email: "nour.benkhadher@blassti.tn",
+      password: "123",
+      gender: "Female",
+      date_of_birth: "2004-01-01",
+      state: "Tunis",
+      city: "Tunis",
+      agree_terms: true,
+      receive_promos: true,
+      subscribers_count: 0,
+      is_artist: false,
+      artist_type: "",
+      profile_picture: createAvatar("Nour Ben Khadher"),
+      description:
+        "I’m ambitious by nature and always focused on what’s coming next. Bigger things are waiting in the future, and Zayneb will obviously be there because that’s my bestie. Kill Count: 14",
       contacts: {
-        email: "amine.benhassouna@medtech.tn",
+        instagram: "@nour.benkhadher",
+      },
+      subscribed_artist_ids: [],
+      joined_event_ids: [],
+      created_event_ids: [],
+      is_admin: false,
+      is_moderator: false,
+      suspension: null,
+    }),
+
+    new User({
+      id: "user-30",
+      account_created_at: "2026-03-19T10:25:00.000Z",
+      first_name: "Mootez",
+      last_name: "El Ouaer",
+      email: "mootez.elouaer@blassti.tn",
+      password: "123",
+      gender: "Male",
+      date_of_birth: "2004-01-01",
+      state: "Tunis",
+      city: "Tunis",
+      agree_terms: true,
+      receive_promos: true,
+      subscribers_count: 0,
+      is_artist: false,
+      artist_type: "",
+      profile_picture: createAvatar("Mootez El Ouaer"),
+      description:
+        "I’m easygoing, helpful, and not here to do too much. I like things simple, smooth, and low-stress — unless sarcasm improves the moment. Kill Count: 9",
+      contacts: {
+        instagram: "@mootez.elouaer",
       },
       subscribed_artist_ids: [],
       joined_event_ids: [],

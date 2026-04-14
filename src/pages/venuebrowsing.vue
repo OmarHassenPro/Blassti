@@ -444,34 +444,28 @@
             </v-chip>
           </div>
 
-          <v-row v-if="filteredAndSortedVenues.length">
-            <v-col
-              v-for="venue in filteredAndSortedVenues"
-              :key="venue.id"
-              cols="12"
-              sm="6"
-              xl="4"
-              class="venue-grid-col"
-            >
+          <template v-if="filteredAndSortedVenues.length">
+            <div v-if="isMobile" class="mobile-results-shell">
               <v-card
+                v-if="featuredVenue"
                 rounded="xl"
-                class="venue-card h-100 d-flex flex-column"
+                class="venue-card venue-card--featured venue-card--featured-mobile d-flex flex-column mb-4"
                 :class="{
                   'venue-card--compact': isCompactLayout,
                   'venue-card--mobile': isMobile,
-                  'venue-card--unavailable': !venue.availability
+                  'venue-card--unavailable': !featuredVenue.availability
                 }"
-                @click="openVenue(venue)"
-                @contextmenu.prevent="openVenueContextMenu($event, venue)"
-                @touchstart.passive="startVenueLongPress($event, venue)"
+                @click="openVenue(featuredVenue)"
+                @contextmenu.prevent="openVenueContextMenu($event, featuredVenue)"
+                @touchstart.passive="startVenueLongPress($event, featuredVenue)"
                 @touchend="cancelVenueLongPress"
                 @touchmove="cancelVenueLongPress"
                 @touchcancel="cancelVenueLongPress"
               >
-                <div class="venue-image-wrap">
+                <div class="venue-image-wrap venue-image-wrap--featured">
                   <img
-                    :src="venue.image"
-                    :alt="venue.title"
+                    :src="featuredVenue.image"
+                    :alt="featuredVenue.title"
                     class="venue-image"
                   />
 
@@ -481,11 +475,11 @@
                   <div class="venue-image-top">
                     <v-chip
                       size="small"
-                      :color="venue.availability ? 'success' : 'error'"
+                      :color="featuredVenue.availability ? 'success' : 'error'"
                       variant="elevated"
                       rounded="lg"
                     >
-                      {{ venue.availability ? "Available" : "Unavailable" }}
+                      {{ featuredVenue.availability ? "Available" : "Unavailable" }}
                     </v-chip>
                   </div>
 
@@ -497,7 +491,7 @@
                       class="glass-chip"
                     >
                       <v-icon size="15" class="me-1">mdi-map-marker-outline</v-icon>
-                      {{ venue.location }}
+                      {{ featuredVenue.location }}
                     </v-chip>
                   </div>
 
@@ -505,81 +499,207 @@
                     <div class="d-flex align-center justify-space-between flex-wrap ga-2">
                       <div class="text-body-2 d-flex align-center text-white font-weight-medium">
                         <v-icon size="16" class="me-1">mdi-ticket-confirmation-outline</v-icon>
-                        {{ venue.category }}
+                        {{ featuredVenue.category }}
                       </div>
 
                       <div class="mini-price-pill">
-                        {{ venue.price_per_hour }} TND / hr
+                        {{ featuredVenue.price_per_hour }} TND / hr
                       </div>
                     </div>
                   </div>
-
-                  <div class="quick-action-hint">
-                    <v-icon size="16" class="me-1">mdi-cursor-default-click-outline</v-icon>
-                    {{ isTouchDevice ? (isMobile ? "Tap for details" : "Tap to open") : "Click to open" }}
-                  </div>
                 </div>
 
-                <v-card-text class="pa-4 pa-md-5 d-flex flex-column flex-grow-1">
-                  <div class="d-flex align-start justify-space-between ga-3 mb-2">
-                    <div class="text-h6 font-weight-bold venue-title" :class="{ 'text-subtitle-1': isCompactLayout }">
-                      {{ venue.title }}
+                <v-card-text class="pa-4 d-flex flex-column flex-grow-1">
+                  <div class="mobile-featured-header mb-3">
+                    <div>
+                      <div class="text-overline mobile-featured-kicker mb-1">Featured venue</div>
+                      <div class="text-h5 font-weight-bold venue-title mb-2">
+                        {{ featuredVenue.title }}
+                      </div>
                     </div>
 
                     <div class="rating-pill">
                       <v-icon size="15" color="warning">mdi-star</v-icon>
-                      <span>{{ formatRating(venue.review_rating) }}</span>
+                      <span>{{ formatRating(featuredVenue.review_rating) }}</span>
                     </div>
                   </div>
 
-                  <div class="text-body-2 text-medium-emphasis d-flex align-center mb-2">
+                  <div class="text-body-2 text-medium-emphasis d-flex align-center mb-3">
                     <v-icon size="16" class="me-1">mdi-map</v-icon>
-                    {{ truncateText(venue.exact_address, 55) }}
+                    {{ truncateText(featuredVenue.exact_address, 72) }}
                   </div>
 
                   <div class="d-flex flex-wrap ga-2 mb-3">
                     <v-chip size="small" variant="outlined" rounded="lg" class="info-chip">
-                      {{ venue.category }}
+                      {{ featuredVenue.category }}
                     </v-chip>
                     <v-chip size="small" variant="outlined" rounded="lg" class="info-chip">
-                      {{ venue.type }}
+                      {{ featuredVenue.type }}
                     </v-chip>
                   </div>
 
                   <div class="text-body-2 card-description mb-4">
-                    {{ truncateText(venue.description, isMobile ? 88 : isTablet ? 104 : 120) }}
+                    {{ truncateText(featuredVenue.description, 110) }}
                   </div>
 
-                  <div class="venue-meta-grid mb-4">
+                  <div class="mobile-featured-meta mb-4">
                     <div class="meta-item">
                       <div class="meta-label">Capacity</div>
-                      <div class="meta-value">{{ formatNumber(venue.capacity) }}</div>
+                      <div class="meta-value">{{ formatNumber(featuredVenue.capacity) }}</div>
                     </div>
 
                     <div class="meta-item">
                       <div class="meta-label">Price / hour</div>
-                      <div class="meta-value">{{ venue.price_per_hour }} TND</div>
+                      <div class="meta-value">{{ featuredVenue.price_per_hour }} TND</div>
                     </div>
                   </div>
 
-                  <div class="mt-auto">
-                    <div v-if="!isCompactLayout" class="d-flex align-center justify-space-between stat-row mb-2">
-                      <span class="text-body-2 text-medium-emphasis">Capacity</span>
-                      <span class="text-body-2 font-weight-bold">{{ formatNumber(venue.capacity) }}</span>
+                  <div class="d-flex ga-2 venue-action-row mt-auto">
+                    <v-btn
+                      block
+                      rounded="lg"
+                      color="primary"
+                      variant="flat"
+                      size="large"
+                      class="venue-action-btn"
+                      @click.stop="openVenue(featuredVenue)"
+                      @contextmenu.prevent.stop="openVenueContextMenu($event, featuredVenue)"
+                      @touchstart.passive.stop="startVenueLongPress($event, featuredVenue)"
+                      @touchend.stop="cancelVenueLongPress"
+                      @touchmove.stop="cancelVenueLongPress"
+                      @touchcancel.stop="cancelVenueLongPress"
+                    >
+                      <v-icon start>mdi-arrow-top-right</v-icon>
+                      View venue
+                    </v-btn>
+
+                    <v-btn
+                      icon
+                      rounded="lg"
+                      variant="tonal"
+                      color="primary"
+                      class="venue-more-btn"
+                      @click.stop="openVenue(featuredVenue)"
+                      @contextmenu.prevent.stop="openVenueContextMenu($event, featuredVenue)"
+                      @touchstart.passive.stop="startVenueLongPress($event, featuredVenue)"
+                      @touchend.stop="cancelVenueLongPress"
+                      @touchmove.stop="cancelVenueLongPress"
+                      @touchcancel.stop="cancelVenueLongPress"
+                    >
+                      <v-icon>mdi-dots-horizontal</v-icon>
+                    </v-btn>
+                  </div>
+                </v-card-text>
+              </v-card>
+
+              <div v-if="remainingVenues.length" class="mobile-section-head mb-3">
+                <div>
+                  <div class="text-subtitle-1 font-weight-bold">Keep browsing</div>
+                  <div class="text-body-2 text-medium-emphasis">Swipe through the rest instead of fighting one long repetitive list.</div>
+                </div>
+              </div>
+
+              <div v-if="remainingVenues.length" class="mobile-venue-carousel">
+                <v-card
+                  v-for="venue in remainingVenues"
+                  :key="venue.id"
+                  rounded="xl"
+                  class="venue-card venue-card--mobile-rail d-flex flex-column"
+                  :class="{
+                    'venue-card--compact': isCompactLayout,
+                    'venue-card--mobile': isMobile,
+                    'venue-card--unavailable': !venue.availability
+                  }"
+                  @click="openVenue(venue)"
+                  @contextmenu.prevent="openVenueContextMenu($event, venue)"
+                  @touchstart.passive="startVenueLongPress($event, venue)"
+                  @touchend="cancelVenueLongPress"
+                  @touchmove="cancelVenueLongPress"
+                  @touchcancel="cancelVenueLongPress"
+                >
+                  <div class="venue-image-wrap venue-image-wrap--rail">
+                    <img
+                      :src="venue.image"
+                      :alt="venue.title"
+                      class="venue-image"
+                    />
+
+                    <div class="venue-image-overlay"></div>
+                    <div class="venue-image-glow"></div>
+
+                    <div class="venue-image-top">
+                      <v-chip
+                        size="x-small"
+                        :color="venue.availability ? 'success' : 'error'"
+                        variant="elevated"
+                        rounded="lg"
+                      >
+                        {{ venue.availability ? "Available" : "Unavailable" }}
+                      </v-chip>
                     </div>
 
-                    <div v-if="!isCompactLayout" class="d-flex align-center justify-space-between stat-row mb-4">
-                      <span class="text-body-2 text-medium-emphasis">Price / hour</span>
-                      <span class="text-body-2 font-weight-bold">{{ venue.price_per_hour }} TND</span>
+                    <div class="venue-image-top-left">
+                      <v-chip
+                        size="x-small"
+                        variant="flat"
+                        rounded="lg"
+                        class="glass-chip"
+                      >
+                        <v-icon size="14" class="me-1">mdi-map-marker-outline</v-icon>
+                        {{ venue.location }}
+                      </v-chip>
                     </div>
 
-                    <div class="d-flex ga-2 venue-action-row">
+                    <div class="venue-image-bottom">
+                      <div class="d-flex align-center justify-space-between flex-wrap ga-2">
+                        <div class="text-caption d-flex align-center text-white font-weight-medium">
+                          <v-icon size="15" class="me-1">mdi-ticket-confirmation-outline</v-icon>
+                          {{ venue.category }}
+                        </div>
+
+                        <div class="mini-price-pill">
+                          {{ venue.price_per_hour }} TND / hr
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <v-card-text class="pa-4 d-flex flex-column flex-grow-1">
+                    <div class="d-flex align-start justify-space-between ga-3 mb-2">
+                      <div class="text-subtitle-1 font-weight-bold venue-title">
+                        {{ venue.title }}
+                      </div>
+
+                      <div class="rating-pill">
+                        <v-icon size="15" color="warning">mdi-star</v-icon>
+                        <span>{{ formatRating(venue.review_rating) }}</span>
+                      </div>
+                    </div>
+
+                    <div class="text-body-2 text-medium-emphasis d-flex align-center mb-3">
+                      <v-icon size="16" class="me-1">mdi-map</v-icon>
+                      {{ truncateText(venue.exact_address, 44) }}
+                    </div>
+
+                    <div class="d-flex flex-wrap ga-2 mb-3">
+                      <v-chip size="x-small" variant="outlined" rounded="lg" class="info-chip">
+                        {{ venue.type }}
+                      </v-chip>
+                      <v-chip size="x-small" variant="outlined" rounded="lg" class="info-chip">
+                        {{ formatNumber(venue.capacity) }} seats
+                      </v-chip>
+                    </div>
+
+                    <div class="text-body-2 card-description mb-4">
+                      {{ truncateText(venue.description, 72) }}
+                    </div>
+
+                    <div class="d-flex ga-2 venue-action-row mt-auto">
                       <v-btn
                         block
                         rounded="lg"
                         color="primary"
                         variant="flat"
-                        size="large"
                         class="venue-action-btn"
                         @click.stop="openVenue(venue)"
                         @contextmenu.prevent.stop="openVenueContextMenu($event, venue)"
@@ -591,31 +711,186 @@
                         <v-icon start>mdi-arrow-top-right</v-icon>
                         View venue
                       </v-btn>
+                    </div>
+                  </v-card-text>
+                </v-card>
+              </div>
+            </div>
 
-                      <v-btn
-                        icon
+            <v-row v-else>
+              <v-col
+                v-for="(venue, index) in filteredAndSortedVenues"
+                :key="venue.id"
+                cols="12"
+                sm="6"
+                xl="4"
+                :md="isTablet && index === 0 ? 12 : 6"
+                class="venue-grid-col"
+              >
+                <v-card
+                  rounded="xl"
+                  class="venue-card h-100 d-flex flex-column"
+                  :class="{
+                    'venue-card--compact': isCompactLayout,
+                    'venue-card--tablet-featured': isTablet && index === 0,
+                    'venue-card--unavailable': !venue.availability
+                  }"
+                  @click="openVenue(venue)"
+                  @contextmenu.prevent="openVenueContextMenu($event, venue)"
+                  @touchstart.passive="startVenueLongPress($event, venue)"
+                  @touchend="cancelVenueLongPress"
+                  @touchmove="cancelVenueLongPress"
+                  @touchcancel="cancelVenueLongPress"
+                >
+                  <div class="venue-image-wrap" :class="{ 'venue-image-wrap--tablet-featured': isTablet && index === 0 }">
+                    <img
+                      :src="venue.image"
+                      :alt="venue.title"
+                      class="venue-image"
+                    />
+
+                    <div class="venue-image-overlay"></div>
+                    <div class="venue-image-glow"></div>
+
+                    <div class="venue-image-top">
+                      <v-chip
+                        size="small"
+                        :color="venue.availability ? 'success' : 'error'"
+                        variant="elevated"
                         rounded="lg"
-                        variant="tonal"
-                        color="primary"
-                        class="venue-more-btn"
-                        @click.stop="openVenue(venue)"
-                        @contextmenu.prevent.stop="openVenueContextMenu($event, venue)"
-                        @touchstart.passive.stop="startVenueLongPress($event, venue)"
-                        @touchend.stop="cancelVenueLongPress"
-                        @touchmove.stop="cancelVenueLongPress"
-                        @touchcancel.stop="cancelVenueLongPress"
                       >
-                        <v-icon>mdi-dots-horizontal</v-icon>
-                        <v-tooltip activator="parent" location="top">
-                          {{ isTouchDevice ? "Long press for new tab / new window" : "Right-click for new tab / new window" }}
-                        </v-tooltip>
-                      </v-btn>
+                        {{ venue.availability ? "Available" : "Unavailable" }}
+                      </v-chip>
+                    </div>
+
+                    <div class="venue-image-top-left">
+                      <v-chip
+                        size="small"
+                        variant="flat"
+                        rounded="lg"
+                        class="glass-chip"
+                      >
+                        <v-icon size="15" class="me-1">mdi-map-marker-outline</v-icon>
+                        {{ venue.location }}
+                      </v-chip>
+                    </div>
+
+                    <div class="venue-image-bottom">
+                      <div class="d-flex align-center justify-space-between flex-wrap ga-2">
+                        <div class="text-body-2 d-flex align-center text-white font-weight-medium">
+                          <v-icon size="16" class="me-1">mdi-ticket-confirmation-outline</v-icon>
+                          {{ venue.category }}
+                        </div>
+
+                        <div class="mini-price-pill">
+                          {{ venue.price_per_hour }} TND / hr
+                        </div>
+                      </div>
+                    </div>
+
+                    <div class="quick-action-hint">
+                      <v-icon size="16" class="me-1">mdi-cursor-default-click-outline</v-icon>
+                      {{ isTouchDevice ? (isMobile ? "Tap for details" : "Tap to open") : "Click to open" }}
                     </div>
                   </div>
-                </v-card-text>
-              </v-card>
-            </v-col>
-          </v-row>
+
+                  <v-card-text class="pa-4 pa-md-5 d-flex flex-column flex-grow-1" :class="{ 'venue-card-text--tablet-featured': isTablet && index === 0 }">
+                    <div class="d-flex align-start justify-space-between ga-3 mb-2">
+                      <div class="text-h6 font-weight-bold venue-title" :class="{ 'text-subtitle-1': isCompactLayout }">
+                        {{ venue.title }}
+                      </div>
+
+                      <div class="rating-pill">
+                        <v-icon size="15" color="warning">mdi-star</v-icon>
+                        <span>{{ formatRating(venue.review_rating) }}</span>
+                      </div>
+                    </div>
+
+                    <div class="text-body-2 text-medium-emphasis d-flex align-center mb-2">
+                      <v-icon size="16" class="me-1">mdi-map</v-icon>
+                      {{ truncateText(venue.exact_address, isTablet && index === 0 ? 82 : 55) }}
+                    </div>
+
+                    <div class="d-flex flex-wrap ga-2 mb-3">
+                      <v-chip size="small" variant="outlined" rounded="lg" class="info-chip">
+                        {{ venue.category }}
+                      </v-chip>
+                      <v-chip size="small" variant="outlined" rounded="lg" class="info-chip">
+                        {{ venue.type }}
+                      </v-chip>
+                    </div>
+
+                    <div class="text-body-2 card-description mb-4">
+                      {{ truncateText(venue.description, isTablet && index === 0 ? 156 : isTablet ? 92 : 120) }}
+                    </div>
+
+                    <div class="venue-meta-grid mb-4">
+                      <div class="meta-item">
+                        <div class="meta-label">Capacity</div>
+                        <div class="meta-value">{{ formatNumber(venue.capacity) }}</div>
+                      </div>
+
+                      <div class="meta-item">
+                        <div class="meta-label">Price / hour</div>
+                        <div class="meta-value">{{ venue.price_per_hour }} TND</div>
+                      </div>
+                    </div>
+
+                    <div class="mt-auto">
+                      <div v-if="!isCompactLayout" class="d-flex align-center justify-space-between stat-row mb-2">
+                        <span class="text-body-2 text-medium-emphasis">Capacity</span>
+                        <span class="text-body-2 font-weight-bold">{{ formatNumber(venue.capacity) }}</span>
+                      </div>
+
+                      <div v-if="!isCompactLayout" class="d-flex align-center justify-space-between stat-row mb-4">
+                        <span class="text-body-2 text-medium-emphasis">Price / hour</span>
+                        <span class="text-body-2 font-weight-bold">{{ venue.price_per_hour }} TND</span>
+                      </div>
+
+                      <div class="d-flex ga-2 venue-action-row">
+                        <v-btn
+                          block
+                          rounded="lg"
+                          color="primary"
+                          variant="flat"
+                          size="large"
+                          class="venue-action-btn"
+                          @click.stop="openVenue(venue)"
+                          @contextmenu.prevent.stop="openVenueContextMenu($event, venue)"
+                          @touchstart.passive.stop="startVenueLongPress($event, venue)"
+                          @touchend.stop="cancelVenueLongPress"
+                          @touchmove.stop="cancelVenueLongPress"
+                          @touchcancel.stop="cancelVenueLongPress"
+                        >
+                          <v-icon start>mdi-arrow-top-right</v-icon>
+                          View venue
+                        </v-btn>
+
+                        <v-btn
+                          icon
+                          rounded="lg"
+                          variant="tonal"
+                          color="primary"
+                          class="venue-more-btn"
+                          @click.stop="openVenue(venue)"
+                          @contextmenu.prevent.stop="openVenueContextMenu($event, venue)"
+                          @touchstart.passive.stop="startVenueLongPress($event, venue)"
+                          @touchend.stop="cancelVenueLongPress"
+                          @touchmove.stop="cancelVenueLongPress"
+                          @touchcancel.stop="cancelVenueLongPress"
+                        >
+                          <v-icon>mdi-dots-horizontal</v-icon>
+                          <v-tooltip activator="parent" location="top">
+                            {{ isTouchDevice ? "Long press for new tab / new window" : "Right-click for new tab / new window" }}
+                          </v-tooltip>
+                        </v-btn>
+                      </div>
+                    </div>
+                  </v-card-text>
+                </v-card>
+              </v-col>
+            </v-row>
+          </template>
 
           <v-card
             v-else
@@ -972,6 +1247,9 @@ const filteredAndSortedVenues = computed(() => {
   }
 })
 
+const featuredVenue = computed(() => filteredAndSortedVenues.value[0] || null)
+const remainingVenues = computed(() => filteredAndSortedVenues.value.slice(1))
+
 const hasActiveFilters = computed(() => {
   return Boolean(
     normalizedSearch.value ||
@@ -1146,6 +1424,55 @@ function openContextMenuTargetInNewWindow() {
 
 .venue-grid-col {
   display: flex;
+}
+
+.mobile-results-shell {
+  display: flex;
+  flex-direction: column;
+}
+
+.mobile-section-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.mobile-venue-carousel {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(280px, 82vw);
+  gap: 14px;
+  overflow-x: auto;
+  padding: 2px 2px 8px;
+  scroll-snap-type: x proximity;
+  scrollbar-width: none;
+}
+
+.mobile-venue-carousel::-webkit-scrollbar {
+  display: none;
+}
+
+.mobile-venue-carousel > * {
+  scroll-snap-align: start;
+}
+
+.mobile-featured-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 14px;
+}
+
+.mobile-featured-kicker {
+  letter-spacing: 1.5px;
+  color: rgba(var(--v-theme-primary), 0.88);
+}
+
+.mobile-featured-meta {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
 }
 
 .venue-action-row {
@@ -1350,6 +1677,14 @@ function openContextMenuTargetInNewWindow() {
 
   .venue-card--compact .venue-image-wrap {
     min-height: 196px;
+  }
+
+  .venue-image-wrap--featured {
+    min-height: 236px;
+  }
+
+  .mobile-venue-carousel {
+    grid-auto-columns: minmax(272px, 86vw);
   }
 
   .venue-card--compact :deep(.v-card-text) {
@@ -1788,6 +2123,23 @@ function openContextMenuTargetInNewWindow() {
   position: relative;
 }
 
+.venue-card--featured-mobile {
+  min-height: 100%;
+}
+
+.venue-card--mobile-rail {
+  min-width: 0;
+}
+
+.venue-card--tablet-featured {
+  display: grid !important;
+  grid-template-columns: minmax(320px, 1.05fr) minmax(0, 1fr);
+}
+
+.venue-card-text--tablet-featured {
+  padding-inline: 28px !important;
+}
+
 .venue-card::after {
   content: "";
   position: absolute;
@@ -1826,6 +2178,19 @@ function openContextMenuTargetInNewWindow() {
   position: relative;
   height: 230px;
   overflow: hidden;
+}
+
+.venue-image-wrap--featured {
+  height: 268px;
+}
+
+.venue-image-wrap--rail {
+  height: 184px;
+}
+
+.venue-image-wrap--tablet-featured {
+  height: 100%;
+  min-height: 100%;
 }
 
 .venue-image-glow {
@@ -2125,6 +2490,18 @@ function openContextMenuTargetInNewWindow() {
     height: 210px;
   }
 
+  .venue-card--tablet-featured {
+    grid-template-columns: 1fr;
+  }
+
+  .venue-image-wrap--tablet-featured {
+    min-height: 232px;
+  }
+
+  .venue-card-text--tablet-featured {
+    padding-inline: 20px !important;
+  }
+
   .filter-card {
     position: static;
     top: auto;
@@ -2140,8 +2517,13 @@ function openContextMenuTargetInNewWindow() {
     grid-template-columns: 1fr;
   }
 
-  .venue-meta-grid {
+  .venue-meta-grid,
+  .mobile-featured-meta {
     grid-template-columns: 1fr;
+  }
+
+  .mobile-featured-header {
+    flex-direction: column;
   }
 
   .quick-action-hint {
