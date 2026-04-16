@@ -2,7 +2,7 @@ import { reactive } from "vue"
 
 const EVENTS_STORAGE_KEY = "events"
 const EVENTS_VERSION_KEY = "events_seed_version"
-const EVENTS_SEED_VERSION = "v5_events_with_venue_layout_sync"
+const EVENTS_SEED_VERSION = "v6_events_with_thematic_artist_assignments"
 
 function toNumber(value, fallback = 0) {
   const n = Number(value)
@@ -304,7 +304,7 @@ function defaultEvents() {
         "https://cdn.sortiraparis.com/images/80/1665/1120880-ambiance-concert.jpg",
         "https://www.rollingstone.com/wp-content/uploads/2022/10/Post-Pandemic-and-Beyond-Looking-Ahead-to-the-Future-of-Live-Concerts.jpg",
       ],
-      featured_artist_ids: ["user-artist-1"],
+      featured_artist_ids: ["user-7", "user-30", "user-32"],
       age_restriction: "15+",
       tickets_sold: 25400,
       capacity: 30000,
@@ -337,7 +337,7 @@ function defaultEvents() {
         "https://images.unsplash.com/photo-1461896836934-ffe607ba8211?q=80&w=1200&auto=format&fit=crop",
         "https://images.unsplash.com/photo-1486286701208-1d58e9338013?q=80&w=1200&auto=format&fit=crop"
       ],
-      featured_artist_ids: [],
+      featured_artist_ids: ["user-25"],
       age_restriction: "All ages",
       tickets_sold: 60000,
       capacity: 60000,
@@ -369,7 +369,7 @@ function defaultEvents() {
         "https://images.unsplash.com/photo-1460723237483-7a6dc9d0b212?q=80&w=1200&auto=format&fit=crop",
         "https://images.unsplash.com/photo-1503095396549-807759245b35?q=80&w=1200&auto=format&fit=crop"
       ],
-      featured_artist_ids: ["user-artist-4"],
+      featured_artist_ids: ["user-27", "user-33"],
       age_restriction: "All ages",
       tickets_sold: 180,
       capacity: 350,
@@ -401,7 +401,7 @@ function defaultEvents() {
         "https://images.unsplash.com/photo-1464366400600-7168b8af9bc3?q=80&w=1200&auto=format&fit=crop",
         "https://images.unsplash.com/photo-1517457373958-b7bdd4587205?q=80&w=1200&auto=format&fit=crop"
       ],
-      featured_artist_ids: [],
+      featured_artist_ids: ["user-14", "user-22", "user-34"],
       age_restriction: "All ages",
       tickets_sold: 250,
       capacity: 250,
@@ -433,7 +433,7 @@ function defaultEvents() {
         "https://images.unsplash.com/photo-1514525253161-7a46d19cd819?q=80&w=1200&auto=format&fit=crop",
         "https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?q=80&w=1200&auto=format&fit=crop"
       ],
-      featured_artist_ids: ["user-artist-1"],
+      featured_artist_ids: ["user-5", "user-7", "user-10"],
       age_restriction: "15+",
       tickets_sold: 28700,
       capacity: 30000,
@@ -465,7 +465,7 @@ function defaultEvents() {
         "https://images.unsplash.com/photo-1470337458703-46ad1756a187?q=80&w=1200&auto=format&fit=crop",
         "https://images.unsplash.com/photo-1516997121675-4c2d1684aa3e?q=80&w=1200&auto=format&fit=crop"
       ],
-      featured_artist_ids: ["user-artist-2"],
+      featured_artist_ids: ["user-13", "user-17"],
       age_restriction: "18+",
       tickets_sold: 120,
       capacity: 120,
@@ -497,7 +497,7 @@ function defaultEvents() {
         "https://images.unsplash.com/photo-1461896836934-ffe607ba8211?q=80&w=1200&auto=format&fit=crop",
         "https://images.unsplash.com/photo-1486286701208-1d58e9338013?q=80&w=1200&auto=format&fit=crop"
       ],
-      featured_artist_ids: [],
+      featured_artist_ids: ["user-25"],
       age_restriction: "All ages",
       tickets_sold: 39600,
       capacity: 40000,
@@ -529,7 +529,7 @@ function defaultEvents() {
         "https://images.unsplash.com/photo-1519861531473-9200262188bf?q=80&w=1200&auto=format&fit=crop",
         "https://images.unsplash.com/photo-1574623452334-1e0ac2b3ccb4?q=80&w=1200&auto=format&fit=crop"
       ],
-      featured_artist_ids: [],
+      featured_artist_ids: ["user-31"],
       age_restriction: "All ages",
       tickets_sold: 5000,
       capacity: 5000,
@@ -561,7 +561,7 @@ function defaultEvents() {
         "https://images.unsplash.com/photo-1517604931442-7e0c8ed2963c?q=80&w=1200&auto=format&fit=crop",
         "https://images.unsplash.com/photo-1478720568477-152d9b164e26?q=80&w=1200&auto=format&fit=crop"
       ],
-      featured_artist_ids: [],
+      featured_artist_ids: ["user-18", "user-27", "user-33", "user-22"],
       age_restriction: "15+",
       tickets_sold: 420,
       capacity: 420,
@@ -593,7 +593,7 @@ function defaultEvents() {
         "https://images.unsplash.com/photo-1503095396549-807759245b35?q=80&w=1200&auto=format&fit=crop",
         "https://images.unsplash.com/photo-1516280440614-37939bbacd81?q=80&w=1200&auto=format&fit=crop"
       ],
-      featured_artist_ids: ["user-artist-2"],
+      featured_artist_ids: ["user-10", "user-13", "user-32"],
       age_restriction: "15+",
       tickets_sold: 1620,
       capacity: 1800,
@@ -625,7 +625,7 @@ function defaultEvents() {
         "https://images.unsplash.com/photo-1497366754035-f200968a6e72?q=80&w=1200&auto=format&fit=crop",
         "https://images.unsplash.com/photo-1497366412874-3415097a27e7?q=80&w=1200&auto=format&fit=crop"
       ],
-      featured_artist_ids: [],
+      featured_artist_ids: ["user-6", "user-8", "user-16", "user-29"],
       age_restriction: "All ages",
       tickets_sold: 540,
       capacity: 700,
@@ -657,7 +657,7 @@ function defaultEvents() {
         "https://images.unsplash.com/photo-1516450360452-9312f5e86fc7?q=80&w=1200&auto=format&fit=crop",
         "https://images.unsplash.com/photo-1507874457470-272b3c8d8ee2?q=80&w=1200&auto=format&fit=crop"
       ],
-      featured_artist_ids: ["user-artist-3"],
+      featured_artist_ids: ["user-5", "user-17"],
       age_restriction: "18+",
       tickets_sold: 110,
       capacity: 110,
@@ -689,7 +689,7 @@ function defaultEvents() {
         "https://images.unsplash.com/photo-1514525253161-7a46d19cd819?q=80&w=1200&auto=format&fit=crop",
         "https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?q=80&w=1200&auto=format&fit=crop"
       ],
-      featured_artist_ids: ["user-artist-1"],
+      featured_artist_ids: ["user-5", "user-7", "user-30", "user-32"],
       age_restriction: "15+",
       tickets_sold: 30000,
       capacity: 30000,
@@ -721,7 +721,7 @@ function defaultEvents() {
         "https://images.unsplash.com/photo-1464366400600-7168b8af9bc3?q=80&w=1200&auto=format&fit=crop",
         "https://images.unsplash.com/photo-1517457373958-b7bdd4587205?q=80&w=1200&auto=format&fit=crop"
       ],
-      featured_artist_ids: [],
+      featured_artist_ids: ["user-9", "user-14", "user-22", "user-26", "user-34"],
       age_restriction: "All ages",
       tickets_sold: 190,
       capacity: 240,
@@ -752,7 +752,7 @@ function defaultEvents() {
         "https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?q=80&w=1200&auto=format&fit=crop",
         "https://images.unsplash.com/photo-1514525253161-7a46d19cd819?q=80&w=1200&auto=format&fit=crop"
       ],
-      featured_artist_ids: ["user-artist-1"],
+      featured_artist_ids: ["user-7"],
       age_restriction: "15+",
       tickets_sold: 1800,
       capacity: 1800,
@@ -783,7 +783,7 @@ function defaultEvents() {
         "https://images.unsplash.com/photo-1470229722913-7c0e2dbbafd3?q=80&w=1200&auto=format&fit=crop",
         "https://images.unsplash.com/photo-1514525253161-7a46d19cd819?q=80&w=1200&auto=format&fit=crop"
       ],
-      featured_artist_ids: ["user-artist-2"],
+      featured_artist_ids: ["user-13", "user-17"],
       age_restriction: "18+",
       tickets_sold: 250,
       capacity: 250,
@@ -814,7 +814,7 @@ function defaultEvents() {
         "https://images.unsplash.com/photo-1507874457470-272b3c8d8ee2?q=80&w=1200&auto=format&fit=crop",
         "https://images.unsplash.com/photo-1527224857830-43a7acc85260?q=80&w=1200&auto=format&fit=crop"
       ],
-      featured_artist_ids: ["user-artist-3"],
+      featured_artist_ids: ["user-10"],
       age_restriction: "18+",
       tickets_sold: 180,
       capacity: 180,
@@ -845,7 +845,7 @@ function defaultEvents() {
         "https://images.unsplash.com/photo-1518998053901-5348d3961a04?q=80&w=1200&auto=format&fit=crop",
         "https://images.unsplash.com/photo-1503095396549-807759245b35?q=80&w=1200&auto=format&fit=crop"
       ],
-      featured_artist_ids: ["user-artist-4"],
+      featured_artist_ids: ["user-27", "user-33"],
       age_restriction: "All ages",
       tickets_sold: 320,
       capacity: 320,
@@ -876,7 +876,7 @@ function defaultEvents() {
         "https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?q=80&w=1200&auto=format&fit=crop",
         "https://images.unsplash.com/photo-1514525253161-7a46d19cd819?q=80&w=1200&auto=format&fit=crop"
       ],
-      featured_artist_ids: ["user-artist-1"],
+      featured_artist_ids: ["user-7"],
       age_restriction: "15+",
       tickets_sold: 400,
       capacity: 400,
@@ -907,7 +907,7 @@ function defaultEvents() {
         "https://images.unsplash.com/photo-1514933651103-005eec06c04b?q=80&w=1200&auto=format&fit=crop",
         "https://images.unsplash.com/photo-1470337458703-46ad1756a187?q=80&w=1200&auto=format&fit=crop"
       ],
-      featured_artist_ids: ["user-artist-2"],
+      featured_artist_ids: ["user-13", "user-32"],
       age_restriction: "18+",
       tickets_sold: 140,
       capacity: 140,
@@ -938,7 +938,7 @@ function defaultEvents() {
         "https://images.unsplash.com/photo-1527224857830-43a7acc85260?q=80&w=1200&auto=format&fit=crop",
         "https://images.unsplash.com/photo-1507874457470-272b3c8d8ee2?q=80&w=1200&auto=format&fit=crop"
       ],
-      featured_artist_ids: ["user-artist-3"],
+      featured_artist_ids: ["user-5", "user-10"],
       age_restriction: "18+",
       tickets_sold: 120,
       capacity: 120,
@@ -969,7 +969,7 @@ function defaultEvents() {
         "https://images.unsplash.com/photo-1518998053901-5348d3961a04?q=80&w=1200&auto=format&fit=crop",
         "https://images.unsplash.com/photo-1503095396549-807759245b35?q=80&w=1200&auto=format&fit=crop"
       ],
-      featured_artist_ids: ["user-artist-4"],
+      featured_artist_ids: ["user-27", "user-33"],
       age_restriction: "All ages",
       tickets_sold: 350,
       capacity: 350,

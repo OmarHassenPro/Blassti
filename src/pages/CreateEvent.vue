@@ -701,9 +701,9 @@
                       </v-card>
 
                       <v-card rounded="xl" variant="outlined" class="pa-4 clean-section-card section-card-glow mobile-editor-card">
-                        <div class="section-title mb-2 d-flex align-center ga-2"><v-icon size="18">mdi-account-music-outline</v-icon><span>Featured artists</span></div>
+                        <div class="section-title mb-2 d-flex align-center ga-2"><v-icon size="18">mdi-account-music-outline</v-icon><span>Linked users</span></div>
                         <div class="text-caption text-medium-emphasis mb-4">
-                          Add actual users as artists. They will receive a notification when the event is published.
+                          Link any user on the platform. Once the event is published, linked users are automatically treated as artists and they will receive a notification.
                         </div>
 
                         <v-autocomplete
@@ -711,7 +711,7 @@
                           :items="artistUserOptions"
                           item-title="label"
                           item-value="value"
-                          label="Select featured artist(s)"
+                          label="Select linked user(s)"
                           variant="outlined"
                           rounded="lg"
                           chips
@@ -1201,9 +1201,9 @@
                   </v-card>
 
                   <v-card rounded="xl" variant="outlined" class="pa-4 pa-md-6 mt-4 clean-section-card section-card-glow">
-                    <div class="section-title mb-2 d-flex align-center ga-2"><v-icon size="18">mdi-account-music-outline</v-icon><span>Featured artists</span></div>
+                    <div class="section-title mb-2 d-flex align-center ga-2"><v-icon size="18">mdi-account-music-outline</v-icon><span>Linked users</span></div>
                     <div class="text-caption text-medium-emphasis mb-4">
-                      Add actual users as artists. They will receive a notification when the event is published.
+                      Link any user on the platform. Once the event is published, linked users are automatically treated as artists and they will receive a notification.
                     </div>
 
                     <v-autocomplete
@@ -1211,7 +1211,7 @@
                       :items="artistUserOptions"
                       item-title="label"
                       item-value="value"
-                      label="Select featured artist(s)"
+                      label="Select linked user(s)"
                       variant="outlined"
                       rounded="lg"
                       chips
@@ -1463,7 +1463,7 @@
           </v-card-title>
 
           <v-card-text>
-            Your event is now live on Blassti and selected artists were notified.
+            Your event is now live on Blassti and linked users were notified.
           </v-card-text>
 
           <v-card-actions class="justify-end">
@@ -1688,7 +1688,6 @@ const allUsers = computed(() => get_All_Users())
 
 const artistUserOptions = computed(() => {
   return allUsers.value
-    .filter(user => user.id !== currentUser.value?.id)
     .map(user => ({
       label: `${user.full_name} — ${user.email}`,
       value: user.id,
@@ -2232,13 +2231,13 @@ function notifyArtists(eventId, eventTitle, artistIds = []) {
 
     add_Notification({
       user_id: userId,
-      title: "You were added as a featured artist",
-      subtitle: `You were added to ${eventTitle}. Tap to view the event.`,
+      title: "You were linked to an event",
+      subtitle: `You were linked to ${eventTitle}. You are now considered an artist for this event. Tap to view it.`,
       icon: "mdi-microphone-variant",
       path: `/o_eventinfo?id=${eventId}`,
       related_event_id: eventId,
       related_user_id: currentUser.value?.id ?? null,
-      type: "artist_added_to_event",
+      type: "user_linked_to_event",
     })
   })
 }

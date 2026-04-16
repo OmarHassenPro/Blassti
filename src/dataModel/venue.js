@@ -2,7 +2,7 @@ import { reactive } from "vue"
 
 const VENUES_STORAGE_KEY = "venues_v5"
 const VENUES_VERSION_KEY = "venues_seed_version"
-const VENUES_SEED_VERSION = "v8_seeded_venues_with_local_asset_galleries"
+const VENUES_SEED_VERSION = "v9_seeded_venues_with_local_asset_galleries"
 
 const DEFAULT_ADMIN_USER_ID = "admin-user-1"
 

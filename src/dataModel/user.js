@@ -16,7 +16,42 @@ import {
 const USERS_STORAGE_KEY = "users"
 const CURRENT_USER_STORAGE_KEY = "currentUser"
 const USERS_VERSION_KEY = "users_seed_version"
-const USERS_SEED_VERSION = "v18_real_people_first_person_bios_killcount_update_family_added"
+const USERS_SEED_VERSION = "v22_real_people_first_person_bios_artist_type_selectable_limited_choices"
+
+export const ARTIST_TYPE_OPTIONS = [
+  "Singer",
+  "Actor",
+  "Performer",
+  "Social Media Influencer",
+  "Rapper",
+  "Public Speaker",
+  "Soccer Player",
+  "Basketball Player",
+]
+
+const SEEDED_ARTISTS = {
+  "user-5": "Performer",
+  "user-6": "Public Speaker",
+  "user-7": "Singer",
+  "user-8": "Public Speaker",
+  "user-9": "Social Media Influencer",
+  "user-10": "Performer",
+  "user-13": "Performer",
+  "user-14": "Social Media Influencer",
+  "user-16": "Public Speaker",
+  "user-17": "Performer",
+  "user-18": "Actor",
+  "user-22": "Social Media Influencer",
+  "user-25": "Soccer Player",
+  "user-26": "Social Media Influencer",
+  "user-27": "Actor",
+  "user-29": "Public Speaker",
+  "user-30": "Performer",
+  "user-31": "Basketball Player",
+  "user-32": "Rapper",
+  "user-33": "Actor",
+  "user-34": "Social Media Influencer",
+}
 
 export function createAvatar(seed) {
   return `https://api.dicebear.com/7.x/thumbs/svg?seed=${encodeURIComponent(seed)}`
@@ -68,6 +103,11 @@ function normalizeSuspension(suspension = null) {
   }
 }
 
+function normalizeArtistType(value) {
+  const normalizedValue = String(value ?? "").trim()
+  return ARTIST_TYPE_OPTIONS.includes(normalizedValue) ? normalizedValue : ""
+}
+
 export class User {
   constructor({
     id,
@@ -108,7 +148,7 @@ export class User {
     this.receive_promos = receive_promos ?? false
     this.subscribers_count = subscribers_count ?? 0
     this.is_artist = is_artist ?? false
-    this.artist_type = artist_type ?? ""
+    this.artist_type = this.is_artist ? normalizeArtistType(artist_type) : ""
     this.profile_picture =
       profile_picture ?? createAvatar(`${this.first_name}-${this.last_name}-${this.id}`)
     this.description = description ?? ""
@@ -207,8 +247,8 @@ function defaultUsers() {
       agree_terms: true,
       receive_promos: true,
       subscribers_count: 0,
-      is_artist: false,
-      artist_type: "",
+      is_artist: true,
+      artist_type: "Social Media Influencer",
       profile_picture: createAvatar("Omar Hassen"),
       description:
         "Built on ambition, loyalty, and a mind that never slows down. Always chasing more, always planning ahead, and for legal reasons, the “Naim + Omar for eternity” statement is fake and should not reach Louka. Kill Count: CLASSIFIED",
@@ -394,8 +434,8 @@ function defaultUsers() {
       agree_terms: true,
       receive_promos: true,
       subscribers_count: 0,
-      is_artist: false,
-      artist_type: "",
+      is_artist: true,
+      artist_type: "Performer",
       profile_picture: createAvatar("Eya Hamma Missaoui"),
       description:
         "I’m smart, chaotic, and a little aggressive for fun. Inlove with Lufffy 💖. Kill Count: 1251",
@@ -425,8 +465,8 @@ function defaultUsers() {
       agree_terms: true,
       receive_promos: true,
       subscribers_count: 0,
-      is_artist: false,
-      artist_type: "",
+      is_artist: true,
+      artist_type: "Public Speaker",
       profile_picture: createAvatar("Khalil Fakfekh"),
       description:
         "I’m quiet, simple, and smarter than most other users here. I’d rather say one real thing than talk for no reason. Kill Count: 0",
@@ -455,8 +495,8 @@ function defaultUsers() {
       agree_terms: true,
       receive_promos: true,
       subscribers_count: 0,
-      is_artist: false,
-      artist_type: "",
+      is_artist: true,
+      artist_type: "Singer",
       profile_picture: createAvatar("Farah Tababi"),
       description:
         "67 I’m sensitive, dramatic sometimes, and I care a lot about the people close to me. I feel everything fully.67 Kill Count: 6 or 7",
@@ -486,8 +526,8 @@ function defaultUsers() {
       agree_terms: true,
       receive_promos: true,
       subscribers_count: 0,
-      is_artist: false,
-      artist_type: "",
+      is_artist: true,
+      artist_type: "Public Speaker",
       profile_picture: createAvatar("Nader Dakhlia"),
       description:
         "I’d rather stay quiet, work hard, and let results speak for themselves. Not everything needs noise to have value. Kill Count: UNKNOWN",
@@ -516,8 +556,8 @@ function defaultUsers() {
       agree_terms: true,
       receive_promos: true,
       subscribers_count: 0,
-      is_artist: false,
-      artist_type: "",
+      is_artist: true,
+      artist_type: "Performer",
       profile_picture: createAvatar("Djo Youssef Ben Yaflah"),
       description:
         "I’m chill, a little reckless, and I like a good time. I don’t force the vibe, I am the vibe. Kill Count: 69",
@@ -607,8 +647,8 @@ function defaultUsers() {
       agree_terms: true,
       receive_promos: true,
       subscribers_count: 0,
-      is_artist: false,
-      artist_type: "",
+      is_artist: true,
+      artist_type: "Performer",
       profile_picture: createAvatar("Mootez Billah Hmissi"),
       description:
         "Muy de buenas vibras, noches largas y recuerdos aún mejores. España ❤️, EST 🔥🔥🔥. Tranquilo cuando toca, divertido cuando quiero, y siempre listo para pasarla bien. Kill Count: 21",
@@ -637,8 +677,8 @@ function defaultUsers() {
       agree_terms: true,
       receive_promos: true,
       subscribers_count: 0,
-      is_artist: false,
-      artist_type: "",
+      is_artist: true,
+      artist_type: "Social Media Influencer",
       profile_picture: createAvatar("Zayneb Kassentini"),
       description:
         "Soft heart, big(maybe a little too dramatic) reactions, good vibes. I may be a little dramatic, but that’s part of the charm...Shoutout to LALOU Kill Count: 5",
@@ -698,8 +738,8 @@ function defaultUsers() {
       agree_terms: true,
       receive_promos: true,
       subscribers_count: 0,
-      is_artist: false,
-      artist_type: "",
+      is_artist: true,
+      artist_type: "Public Speaker",
       profile_picture: createAvatar("Louay Benjeddou"),
       description:
         "I like being kind, staying positive, and making people feel comfortable around me. Good energy matters. Kill Count: 0",
@@ -728,8 +768,8 @@ function defaultUsers() {
       agree_terms: true,
       receive_promos: true,
       subscribers_count: 0,
-      is_artist: false,
-      artist_type: "",
+      is_artist: true,
+      artist_type: "Performer",
       profile_picture: createAvatar("LALOU 2026"),
       description:
         "LALOU 2026. If you know, you know. Kill Count: UNKNOWN",
@@ -758,8 +798,8 @@ function defaultUsers() {
       agree_terms: true,
       receive_promos: true,
       subscribers_count: 0,
-      is_artist: false,
-      artist_type: "",
+      is_artist: true,
+      artist_type: "Actor",
       profile_picture: createAvatar("Arij Ouanes"),
       description:
         "My mood can switch fast, but at least I’m honest about it. I’d rather be real than easy to deal with. Kill Count: 1",
@@ -879,8 +919,8 @@ function defaultUsers() {
       agree_terms: true,
       receive_promos: true,
       subscribers_count: 0,
-      is_artist: false,
-      artist_type: "",
+      is_artist: true,
+      artist_type: "Social Media Influencer",
       profile_picture: createAvatar("Molka Ben Hamadi"),
       description:
         "I look innocent, speak seven languages, get angry in 0.2 seconds, and I need princess treatment. Approach carefully, compliment generously, and never test my patience. Kill Count: 9999431",
@@ -910,8 +950,8 @@ function defaultUsers() {
       agree_terms: true,
       receive_promos: true,
       subscribers_count: 0,
-      is_artist: false,
-      artist_type: "",
+      is_artist: true,
+      artist_type: "Soccer Player",
       profile_picture: createAvatar("Ahmed El Mouafek"),
       description:
         "I talk about boxing like I’m training for a title fight and football like I own the club. Loud opinions, solid presence. Kill Count: 88",
@@ -941,8 +981,8 @@ function defaultUsers() {
       agree_terms: true,
       receive_promos: true,
       subscribers_count: 0,
-      is_artist: false,
-      artist_type: "",
+      is_artist: true,
+      artist_type: "Social Media Influencer",
       profile_picture: createAvatar("Khadija Smida"),
       description:
         "I mind my own business, but I notice way more than people think. Kill Count: 12",
@@ -972,8 +1012,8 @@ function defaultUsers() {
       agree_terms: true,
       receive_promos: true,
       subscribers_count: 0,
-      is_artist: false,
-      artist_type: "",
+      is_artist: true,
+      artist_type: "Actor",
       profile_picture: createAvatar("Youssef Ben Amara"),
       description:
         "I’ve got the ponytail, the props, the laser pointers, the fake tactical gear, and the kind of inventory that makes people ask zero follow-up questions. I’m actually chill though... probably. Kill Count: Classified",
@@ -1030,8 +1070,8 @@ function defaultUsers() {
       agree_terms: true,
       receive_promos: true,
       subscribers_count: 0,
-      is_artist: false,
-      artist_type: "",
+      is_artist: true,
+      artist_type: "Public Speaker",
       profile_picture: createAvatar("Nour Ben Khadher"),
       description:
         "I’m ambitious by nature and always focused on what’s coming next. Bigger things are waiting in the future, and Zayneb will obviously be there because that’s my bestie. Kill Count: 14",
@@ -1060,8 +1100,8 @@ function defaultUsers() {
       agree_terms: true,
       receive_promos: true,
       subscribers_count: 0,
-      is_artist: false,
-      artist_type: "",
+      is_artist: true,
+      artist_type: "Performer",
       profile_picture: createAvatar("Mootez El Ouaer"),
       description:
         "I’m easygoing, helpful, and not here to do too much. I like things simple, smooth, and low-stress — unless sarcasm improves the moment. Kill Count: 9",
@@ -1090,8 +1130,8 @@ function defaultUsers() {
       agree_terms: true,
       receive_promos: true,
       subscribers_count: 0,
-      is_artist: false,
-      artist_type: "",
+      is_artist: true,
+      artist_type: "Basketball Player",
       profile_picture: createAvatar("Badis Atyaoui"),
       description:
         "Late? Yes. Academically cooked? Never. I pull up eventually and still survive better than most. Kill Count: 2",
@@ -1120,8 +1160,8 @@ function defaultUsers() {
       agree_terms: true,
       receive_promos: true,
       subscribers_count: 0,
-      is_artist: false,
-      artist_type: "",
+      is_artist: true,
+      artist_type: "Rapper",
       profile_picture: createAvatar("Bibo the G.O.A.T"),
       description:
         "O block energy. Calm when I need to be, disrespectfully smooth when I want to be. Kill Count: 27",
@@ -1150,8 +1190,8 @@ function defaultUsers() {
       agree_terms: true,
       receive_promos: true,
       subscribers_count: 0,
-      is_artist: false,
-      artist_type: "",
+      is_artist: true,
+      artist_type: "Actor",
       profile_picture: createAvatar("Malak Belhadj Abdallah"),
       description:
         "I keep it quiet, cute, and simple. No extra noise, no forced energy — just calm vibes and minding my business beautifully. Kill Count: 6",
@@ -1180,8 +1220,8 @@ function defaultUsers() {
       agree_terms: true,
       receive_promos: true,
       subscribers_count: 0,
-      is_artist: false,
-      artist_type: "",
+      is_artist: true,
+      artist_type: "Social Media Influencer",
       profile_picture: createAvatar("Essra Daha"),
       description:
         "I like nice things, easy vibes, and protecting my peace. If it looks like I’m not doing much, that’s because I don’t believe in making life harder than it needs to be. Kill Count: 4",
@@ -1328,14 +1368,25 @@ function hasArtistEvent(userId) {
 
 export function refresh_Artist_Statuses() {
   USER_LIST.forEach(user => {
-    const shouldBeArtist = hasArtistEvent(user.id)
+    const seededArtistType = normalizeArtistType(SEEDED_ARTISTS[user.id] ?? "")
+    const eventArtist = hasArtistEvent(user.id)
+    const shouldBeArtist = Boolean(seededArtistType) || eventArtist || Boolean(user.is_artist)
+
     user.is_artist = shouldBeArtist
 
-    if (!shouldBeArtist) {
+    if (seededArtistType) {
+      user.artist_type = seededArtistType
+    } else if (!user.is_artist) {
       user.artist_type = ""
       if (user.subscribers_count < 0) {
         user.subscribers_count = 0
       }
+    } else {
+      user.artist_type = normalizeArtistType(user.artist_type)
+    }
+
+    if (!user.is_artist) {
+      user.artist_type = ""
     }
   })
 }
@@ -1422,9 +1473,16 @@ export function update_User(id, updatedUserData) {
 
   if (index === -1) return null
 
+  const mergedIsArtist = updatedUserData?.is_artist ?? USER_LIST[index].is_artist
+  const mergedArtistType = mergedIsArtist
+    ? normalizeArtistType(updatedUserData?.artist_type ?? USER_LIST[index].artist_type)
+    : ""
+
   USER_LIST[index] = new User({
     ...USER_LIST[index],
     ...updatedUserData,
+    is_artist: mergedIsArtist,
+    artist_type: mergedArtistType,
     contacts: normalizeContacts({
       ...USER_LIST[index].contacts,
       ...updatedUserData?.contacts,
@@ -1758,7 +1816,7 @@ export function create_Event_For_User(userId, eventData) {
     userId,
     eventId: createdEvent.id,
     eventTitle: createdEvent.title,
-    eventPath: event.route_path,
+    eventPath: createdEvent.route_path,
   })
 
   return {

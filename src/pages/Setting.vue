@@ -327,16 +327,18 @@
                         This account is not marked as an artist because it is not linked to any event yet.
                       </v-alert>
 
-                      <v-text-field
+                      <v-select
                         v-model="form.artist_type"
+                        :items="artistTypeOptions"
                         label="Artist type"
                         variant="outlined"
                         density="comfortable"
                         :disabled="!computedIsArtist"
-                        hint="Singer, DJ, Comedian, Magician..."
+                        hint="Choose one of the allowed artist categories."
                         persistent-hint
                         prepend-inner-icon="mdi-microphone-variant"
                         class="clean-input"
+                        clearable
                       />
                     </v-card>
                   </div>
@@ -1026,6 +1028,7 @@ import { onBeforeRouteLeave, useRouter } from "vue-router"
 import { useDisplay, useTheme } from "vuetify"
 import AppNavbar from "@/components/AppNavbar.vue"
 import {
+  ARTIST_TYPE_OPTIONS,
   PROFILE_AVATAR_OPTIONS,
   createAvatar,
   delete_User,
@@ -1051,6 +1054,12 @@ const LONG_PRESS_DURATION = 550
 
 const currentUser = ref(get_Current_User())
 const genderOptions = ["Male", "Female", "Other"]
+const artistTypeOptions = [...ARTIST_TYPE_OPTIONS]
+
+function normalizeArtistType(value) {
+  const normalized = String(value ?? "").trim()
+  return artistTypeOptions.includes(normalized) ? normalized : ""
+}
 
 const passwordDialog = ref(false)
 const leaveDialog = ref(false)
@@ -1141,7 +1150,7 @@ function createInitialForm(user) {
     city: user?.city || "",
     receive_promos: user?.receive_promos || false,
     description: user?.description || "",
-    artist_type: user?.artist_type || "",
+    artist_type: normalizeArtistType(user?.artist_type),
     profile_picture: user?.profile_picture || "",
     contacts: {
       instagram: user?.contacts?.instagram || "",
@@ -1167,7 +1176,7 @@ function normalizeFormForCompare(value) {
     city: String(value.city || "").trim(),
     receive_promos: Boolean(value.receive_promos),
     description: String(value.description || "").trim(),
-    artist_type: String(value.artist_type || "").trim(),
+    artist_type: normalizeArtistType(value.artist_type),
     profile_picture: value.profile_picture || "",
     contacts: {
       instagram: String(value.contacts?.instagram || "").trim(),
@@ -1372,7 +1381,7 @@ function saveChanges() {
     city: String(form.city).trim(),
     receive_promos: Boolean(form.receive_promos),
     description: String(form.description).trim(),
-    artist_type: computedIsArtist.value ? String(form.artist_type).trim() : "",
+    artist_type: computedIsArtist.value ? normalizeArtistType(form.artist_type) : "",
     profile_picture: form.profile_picture || "",
     contacts: {
       instagram: String(form.contacts.instagram).trim(),
