@@ -26,7 +26,7 @@
             </div>
 
             <div class="text-body-1 text-medium-emphasis hero-subtitle">
-              Pick up to 7 days, drop events into a polished timeline, save the bundle,
+              Pick up to 9 events, drop them into a polished timeline, save the bundle,
               and buy all its tickets in one shot with a bundle discount.
             </div>
 
@@ -37,11 +37,7 @@
               </v-chip>
               <v-chip rounded="pill" variant="tonal" class="hero-chip">
                 <v-icon start size="16">mdi-ticket-percent-outline</v-icon>
-                10% bundle discount
-              </v-chip>
-              <v-chip rounded="pill" variant="tonal" class="hero-chip">
-                <v-icon start size="16">mdi-cellphone</v-icon>
-                Mobile ready
+                10% off after 3 events
               </v-chip>
             </div>
           </div>

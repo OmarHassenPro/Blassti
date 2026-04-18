@@ -5,9 +5,12 @@ import { calculate_Blassti_Fee, get_Blassti_Event_Ticket_Fee_Rate } from "@/data
 
 const BUNDLES_STORAGE_KEY = "blassti_bundles_v1"
 const BUNDLES_VERSION_KEY = "blassti_bundles_version"
-const BUNDLES_VERSION = "v1_timeline_bundle_builder"
+const BUNDLES_VERSION = "v2_bundle_discount_threshold_fee_route_limit9"
 
-export const BUNDLE_DISCOUNT_RATE = 0.10
+export const BUNDLE_DISCOUNT_RATE = 0.13
+export const BUNDLE_BLASSTI_FEE_RATE = 0.03
+export const BUNDLE_MAX_DAYS = 9
+export const BUNDLE_MIN_EVENTS_FOR_DISCOUNT = 3
 
 export const BUNDLE_TIER_OPTIONS = [
   {
@@ -334,13 +337,14 @@ export function estimate_Bundle_Price(bundle, tier = "economy", quantity = 1) {
   const normalizedTier = normalizeTier(tier)
   const safeQuantity = Math.max(1, Math.floor(toNumber(quantity, 1)))
   const events = get_Bundle_Events(bundle)
-  const feeRate = get_Blassti_Event_Ticket_Fee_Rate()
+  const feeRate = BUNDLE_BLASSTI_FEE_RATE
+  const discountEligible = events.length >= BUNDLE_MIN_EVENTS_FOR_DISCOUNT
 
   const items = events.map(event => {
     const priceInfo = getPreferredSeatPrice(event, normalizedTier)
     const subtotal = toNumber(priceInfo.unitPrice * safeQuantity, 0)
-    const discountAmount = subtotal * BUNDLE_DISCOUNT_RATE
-    const discountedSubtotal = subtotal - discountAmount
+    const discountAmount = discountEligible ? subtotal * BUNDLE_DISCOUNT_RATE : 0
+    const discountedSubtotal = Math.max(0, subtotal - discountAmount)
     const feeAmount = calculate_Blassti_Fee(discountedSubtotal, feeRate)
     const finalTotal = discountedSubtotal + feeAmount
 
@@ -359,6 +363,9 @@ export function estimate_Bundle_Price(bundle, tier = "economy", quantity = 1) {
       discounted_subtotal: discountedSubtotal,
       fee_amount: feeAmount,
       total_amount: finalTotal,
+      discount_eligible: discountEligible,
+      effective_discount_rate: discountEligible ? BUNDLE_DISCOUNT_RATE : 0,
+      fee_rate: feeRate,
     }
   })
 
@@ -378,6 +385,10 @@ export function estimate_Bundle_Price(bundle, tier = "economy", quantity = 1) {
     discounted_subtotal: discountedSubtotal,
     fee_amount: feeAmount,
     total_amount: totalAmount,
+    discount_eligible: discountEligible,
+    discount_threshold: BUNDLE_MIN_EVENTS_FOR_DISCOUNT,
+    effective_discount_rate: discountEligible ? BUNDLE_DISCOUNT_RATE : 0,
+    fee_rate: feeRate,
   }
 }
 
