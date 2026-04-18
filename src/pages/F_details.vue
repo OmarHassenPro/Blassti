@@ -275,17 +275,14 @@
                 direction="horizontal"
                 show-arrows
               >
-                <v-tab value="upcoming" class="text-none">
-                  <v-icon start size="18">mdi-calendar-clock-outline</v-icon>
-                  Upcoming
-                </v-tab>
-                <v-tab value="past" class="text-none">
-                  <v-icon start size="18">mdi-history</v-icon>
-                  Past Events
-                </v-tab>
-                <v-tab value="details" class="text-none">
-                  <v-icon start size="18">mdi-card-account-details-outline</v-icon>
-                  Details
+                <v-tab
+                  v-for="tabItem in visibleTabs"
+                  :key="tabItem.value"
+                  :value="tabItem.value"
+                  class="text-none"
+                >
+                  <v-icon start size="18">{{ tabItem.icon }}</v-icon>
+                  {{ tabItem.label }}
                 </v-tab>
               </v-tabs>
             </v-sheet>
@@ -1120,6 +1117,12 @@ const suspensionDays = ref(7)
 const reportReason = ref("Spam")
 const reportOtherReason = ref("")
 
+const allProfileTabs = [
+  { value: "upcoming", label: "Upcoming", icon: "mdi-calendar-clock-outline" },
+  { value: "past", label: "Past Events", icon: "mdi-history" },
+  { value: "details", label: "Details", icon: "mdi-card-account-details-outline" },
+]
+
 const isMobile = computed(() => display.mdAndDown.value)
 const isPhone = computed(() => display.xs.value)
 const isTablet = computed(() => display.sm.value || display.md.value)
@@ -1319,6 +1322,29 @@ const canReport = computed(() => {
   if (isOwnProfile.value) return false
   return true
 })
+
+const visibleTabs = computed(() => {
+  if (viewedUser.value?.is_artist) {
+    return allProfileTabs
+  }
+
+  return allProfileTabs.filter(tabItem => tabItem.value === "details")
+})
+
+watch(
+  () => viewedUser.value?.is_artist,
+  isArtist => {
+    if (!isArtist && tab.value !== "details") {
+      tab.value = "details"
+      return
+    }
+
+    if (isArtist && !visibleTabs.value.some(tabItem => tabItem.value === tab.value)) {
+      tab.value = "details"
+    }
+  },
+  { immediate: true }
+)
 
 const contactEntries = computed(() => {
   const contacts = viewedUser.value?.contacts

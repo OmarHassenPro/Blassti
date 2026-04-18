@@ -24,7 +24,7 @@
         >
           <v-card-text class="pa-5 pa-md-7">
             <v-row align="center" class="ga-0">
-              <v-col cols="12" lg="8">
+              <v-col cols="12">
                 <div class="hero-shell">
                   <div class="d-flex align-start align-md-center flex-column flex-md-row ga-4 hero-main-row">
                     <div class="hero-icon-wrap">
@@ -42,44 +42,6 @@
 
                       <div class="text-subtitle-1 hero-subtitle mb-4">
                         Find or create a carpool for upcoming events
-                      </div>
-
-                      <div class="d-flex flex-column flex-sm-row flex-wrap ga-2 carpool-actions">
-                        <v-chip
-                          size="small"
-                          variant="flat"
-                          class="hero-chip"
-                        >
-                          <v-icon start size="16">mdi-road-variant</v-icon>
-                          Shared rides
-                        </v-chip>
-
-                        <v-chip
-                          size="small"
-                          variant="flat"
-                          class="hero-chip"
-                        >
-                          <v-icon start size="16">mdi-ticket-confirmation-outline</v-icon>
-                          Event-linked
-                        </v-chip>
-
-                        <v-chip
-                          size="small"
-                          variant="flat"
-                          class="hero-chip"
-                        >
-                          <v-icon start size="16">mdi-account-group-outline</v-icon>
-                          Easy joining
-                        </v-chip>
-
-                        <v-chip
-                          size="small"
-                          variant="flat"
-                          class="hero-chip"
-                        >
-                          <v-icon start size="16">mdi-theme-light-dark</v-icon>
-                          Theme synced
-                        </v-chip>
                       </div>
                     </div>
                   </div>
@@ -110,65 +72,6 @@
                     </v-btn>
                   </div>
                 </div>
-              </v-col>
-
-              <v-col cols="12" lg="4">
-                <template v-if="isDesktop">
-                  <v-row class="mt-4 mt-lg-0" dense>
-                    <v-col cols="6">
-                      <v-card class="stat-card" rounded="xl" variant="tonal">
-                        <v-card-text class="pa-4">
-                          <div class="stat-label">Available</div>
-                          <div class="stat-value">{{ availableCarpoolsCount }}</div>
-                        </v-card-text>
-                      </v-card>
-                    </v-col>
-
-                    <v-col cols="6">
-                      <v-card class="stat-card" rounded="xl" variant="tonal">
-                        <v-card-text class="pa-4">
-                          <div class="stat-label">All carpools</div>
-                          <div class="stat-value">{{ searchableCarpools.length }}</div>
-                        </v-card-text>
-                      </v-card>
-                    </v-col>
-
-                    <v-col cols="6">
-                      <v-card class="stat-card" rounded="xl" variant="tonal">
-                        <v-card-text class="pa-4">
-                          <div class="stat-label">Events</div>
-                          <div class="stat-value">{{ eventItems.length }}</div>
-                        </v-card-text>
-                      </v-card>
-                    </v-col>
-
-                    <v-col cols="6">
-                      <v-card class="stat-card" rounded="xl" variant="tonal">
-                        <v-card-text class="pa-4">
-                          <div class="stat-label">Venues</div>
-                          <div class="stat-value">{{ venueFilterItems.length - 1 }}</div>
-                        </v-card-text>
-                      </v-card>
-                    </v-col>
-                  </v-row>
-                </template>
-
-                <template v-else>
-                  <div class="hero-stats-rail mt-5 mt-lg-0">
-                    <v-card
-                      v-for="stat in heroStats"
-                      :key="stat.label"
-                      class="stat-card stat-card--rail"
-                      rounded="xl"
-                      variant="tonal"
-                    >
-                      <v-card-text class="pa-4">
-                        <div class="stat-label">{{ stat.label }}</div>
-                        <div class="stat-value">{{ stat.value }}</div>
-                      </v-card-text>
-                    </v-card>
-                  </div>
-                </template>
               </v-col>
             </v-row>
           </v-card-text>
