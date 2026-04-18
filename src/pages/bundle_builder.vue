@@ -30,7 +30,24 @@
               When you are ready, save it or buy the whole bundle with one payment.
             </div>
 
-            
+            <div class="d-flex flex-wrap justify-center ga-2 mt-5 hero-chip-row">
+              <v-chip rounded="pill" variant="tonal" class="hero-chip">
+                <v-icon start size="16">mdi-calendar-range</v-icon>
+                Up to 7 days
+              </v-chip>
+              <v-chip rounded="pill" variant="tonal" class="hero-chip">
+                <v-icon start size="16">mdi-ticket-percent-outline</v-icon>
+                10% bundle discount
+              </v-chip>
+              <v-chip rounded="pill" variant="tonal" class="hero-chip">
+                <v-icon start size="16">mdi-image-multiple-outline</v-icon>
+                Timeline preview
+              </v-chip>
+              <v-chip rounded="pill" variant="tonal" class="hero-chip">
+                <v-icon start size="16">mdi-seat-outline</v-icon>
+                Random seats on checkout
+              </v-chip>
+            </div>
           </div>
         </div>
       </v-card>
@@ -115,7 +132,7 @@
                 rounded="xl"
                 class="mb-4"
               >
-                Your range has {{ allRangeDates.length }} days. Bundles support up to {{ BUNDLE_MAX_DAYS }}, so choose the exact days you want below.
+                Your range has {{ allRangeDates.length }} days. Bundles support up to 7, so choose the exact days you want below.
               </v-alert>
 
               <div v-if="allRangeDates.length" class="mb-4">
@@ -176,10 +193,6 @@
                 </div>
 
                 <div class="d-flex flex-wrap ga-2">
-                  <v-btn variant="outlined" rounded="lg" class="text-none" @click="goToBundlesPage">
-                    <v-icon start>mdi-close-circle-outline</v-icon>
-                    Cancel
-                  </v-btn>
                   <v-btn variant="outlined" rounded="lg" class="text-none" @click="resetTimeline">
                     <v-icon start>mdi-refresh</v-icon>
                     Reset draft
@@ -242,23 +255,10 @@
                               <div class="text-caption text-medium-emphasis mb-2 text-truncate">
                                 {{ entry.event.time }} • {{ entry.event.city }}
                               </div>
-                              <div class="d-flex align-center justify-space-between ga-2">
-                                <v-chip size="x-small" rounded="pill" variant="tonal" class="timeline-chip">
-                                  <v-icon start size="12">mdi-shape-outline</v-icon>
-                                  {{ entry.event.type }}
-                                </v-chip>
-
-                                <v-btn
-                                  icon
-                                  size="x-small"
-                                  variant="text"
-                                  color="error"
-                                  class="timeline-remove-btn"
-                                  @click.stop="removeEventFromTimeline(index)"
-                                >
-                                  <v-icon size="16">mdi-close-circle-outline</v-icon>
-                                </v-btn>
-                              </div>
+                              <v-chip size="x-small" rounded="pill" variant="tonal" class="timeline-chip">
+                                <v-icon start size="12">mdi-shape-outline</v-icon>
+                                {{ entry.event.type }}
+                              </v-chip>
                             </div>
                           </template>
 
@@ -322,7 +322,7 @@
                     <div class="text-h5 font-weight-black mb-2">{{ formatMoney(draftEconomy.total_amount) }}</div>
                     <div class="text-caption text-medium-emphasis mb-3">Regular seats bundle-wide</div>
                     <div class="price-mini-row"><span>Events</span><strong>{{ draftEconomy.event_count }}</strong></div>
-                    <div class="price-mini-row"><span>Discount</span><strong>{{ draftEconomy.discount_eligible ? `-${formatMoney(draftEconomy.discount_amount)}` : `Unlock at ${BUNDLE_MIN_EVENTS_FOR_DISCOUNT} events` }}</strong></div>
+                    <div class="price-mini-row"><span>Discount</span><strong>-{{ formatMoney(draftEconomy.discount_amount) }}</strong></div>
                   </v-card>
                 </v-col>
 
@@ -335,7 +335,7 @@
                     <div class="text-h5 font-weight-black mb-2">{{ formatMoney(draftSpecial.total_amount) }}</div>
                     <div class="text-caption text-medium-emphasis mb-3">Special seats with smart fallback</div>
                     <div class="price-mini-row"><span>Events</span><strong>{{ draftSpecial.event_count }}</strong></div>
-                    <div class="price-mini-row"><span>Discount</span><strong>{{ draftSpecial.discount_eligible ? `-${formatMoney(draftSpecial.discount_amount)}` : `Unlock at ${BUNDLE_MIN_EVENTS_FOR_DISCOUNT} events` }}</strong></div>
+                    <div class="price-mini-row"><span>Discount</span><strong>-{{ formatMoney(draftSpecial.discount_amount) }}</strong></div>
                   </v-card>
                 </v-col>
 
@@ -348,7 +348,7 @@
                     <div class="text-h5 font-weight-black mb-2">{{ formatMoney(draftLuxury.total_amount) }}</div>
                     <div class="text-caption text-medium-emphasis mb-3">VIP-first pricing</div>
                     <div class="price-mini-row"><span>Events</span><strong>{{ draftLuxury.event_count }}</strong></div>
-                    <div class="price-mini-row"><span>Discount</span><strong>{{ draftLuxury.discount_eligible ? `-${formatMoney(draftLuxury.discount_amount)}` : `Unlock at ${BUNDLE_MIN_EVENTS_FOR_DISCOUNT} events` }}</strong></div>
+                    <div class="price-mini-row"><span>Discount</span><strong>-{{ formatMoney(draftLuxury.discount_amount) }}</strong></div>
                   </v-card>
                 </v-col>
               </v-row>
@@ -380,18 +380,7 @@
                       </div>
                     </div>
 
-                    <div class="d-flex align-center ga-2">
-                      <v-chip size="small" rounded="pill" variant="tonal">{{ entry.event.type }}</v-chip>
-                      <v-btn
-                        icon
-                        size="x-small"
-                        variant="text"
-                        color="error"
-                        @click.stop="removeEventFromTimeline(timelineEntryIndex(entry.date_key))"
-                      >
-                        <v-icon size="16">mdi-close-circle-outline</v-icon>
-                      </v-btn>
-                    </div>
+                    <v-chip size="small" rounded="pill" variant="tonal">{{ entry.event.type }}</v-chip>
                   </div>
                 </v-card>
               </div>
@@ -444,7 +433,7 @@
       </v-card-text>
 
       <v-card-actions class="px-6 pb-6 pt-3 d-flex flex-wrap ga-2 justify-end">
-        <v-btn variant="outlined" rounded="lg" class="text-none" @click="applyFirstMaxDates">Use first 7</v-btn>
+        <v-btn variant="outlined" rounded="lg" class="text-none" @click="applyFirstSevenDates">Use first 7</v-btn>
         <v-btn color="primary" rounded="lg" class="text-none" @click="dateSelectionDialog = false">Done</v-btn>
       </v-card-actions>
     </v-card>
@@ -691,7 +680,7 @@
                   <div class="text-h5 font-weight-black mb-2">{{ formatMoney(activeEstimateFor(option.key).total_amount) }}</div>
                   <div class="text-caption text-medium-emphasis mb-3">{{ option.description }}</div>
                   <div class="price-mini-row"><span>Events</span><strong>{{ activeEstimateFor(option.key).event_count }}</strong></div>
-                  <div class="price-mini-row"><span>Discount</span><strong>{{ activeEstimateFor(option.key).discount_eligible ? `-${formatMoney(activeEstimateFor(option.key).discount_amount)}` : `Unlock at ${BUNDLE_MIN_EVENTS_FOR_DISCOUNT} events` }}</strong></div>
+                  <div class="price-mini-row"><span>Discount</span><strong>-{{ formatMoney(activeEstimateFor(option.key).discount_amount) }}</strong></div>
                 </v-card>
               </v-col>
             </v-row>
@@ -769,21 +758,11 @@
                 </v-chip>
               </div>
 
-              <v-alert
-                v-if="!activeEstimate.discount_eligible"
-                type="info"
-                variant="tonal"
-                rounded="xl"
-                class="mb-4"
-              >
-                Add at least {{ BUNDLE_MIN_EVENTS_FOR_DISCOUNT }} events to unlock the 13% bundle discount. The 3% Blassti fee still applies at checkout.
-              </v-alert>
-
               <div class="summary-stack mb-4">
                 <div class="summary-row"><span>Events included</span><strong>{{ activeEstimate.event_count }}</strong></div>
                 <div class="summary-row"><span>Subtotal</span><strong>{{ formatMoney(activeEstimate.subtotal_before_discount) }}</strong></div>
                 <div class="summary-row"><span>Bundle discount</span><strong>-{{ formatMoney(activeEstimate.discount_amount) }}</strong></div>
-                <div class="summary-row"><span>Blassti fee (3%)</span><strong>{{ formatMoney(activeEstimate.fee_amount) }}</strong></div>
+                <div class="summary-row"><span>Ticket fee estimate</span><strong>{{ formatMoney(activeEstimate.fee_amount) }}</strong></div>
                 <div class="summary-row summary-row--total"><span>Total</span><strong>{{ formatMoney(activeEstimate.total_amount) }}</strong></div>
               </div>
 
@@ -840,7 +819,7 @@
       </v-card-text>
 
       <v-card-actions class="px-6 pb-6 pt-4 d-flex flex-wrap ga-2 justify-end">
-        <v-btn variant="outlined" rounded="lg" class="text-none" @click="goToMainPage">Back to main page</v-btn>
+        <v-btn variant="outlined" rounded="lg" class="text-none" @click="goToBundles">Back to bundles</v-btn>
         <v-btn color="primary" rounded="lg" class="text-none" @click="goToBookings">
           <v-icon start>mdi-ticket-confirmation-outline</v-icon>
           Open my bookings
@@ -861,8 +840,6 @@ import { useDisplay, useTheme } from "vuetify"
 import AppNavbar from "@/components/AppNavbar.vue"
 import {
   BUNDLE_DISCOUNT_RATE,
-  BUNDLE_MAX_DAYS,
-  BUNDLE_MIN_EVENTS_FOR_DISCOUNT,
   BUNDLE_TIER_OPTIONS,
   estimate_Bundle_Price,
   get_Bundle_By_Id,
@@ -1048,10 +1025,10 @@ const rangeWarning = computed(() => {
   if (!startDate.value || !endDate.value) return ""
   if (allRangeDates.value.length === 0) return "Your end date must be after the start date."
   if (requiresDateSelection.value && manualSelectedDates.value.length === 0) {
-    return "Select up to 9 days from the range before building the bundle."
+    return "Select up to 7 days from the range before building the bundle."
   }
-  if (requiresDateSelection.value && manualSelectedDates.value.length > BUNDLE_MAX_DAYS) {
-    return `A bundle can only keep ${BUNDLE_MAX_DAYS} dates.`
+  if (requiresDateSelection.value && manualSelectedDates.value.length > 7) {
+    return "A bundle can only keep 7 dates."
   }
   return ""
 })
@@ -1163,16 +1140,11 @@ watch(
       return
     }
 
-    const filtered = manualSelectedDates.value.filter(date => dates.includes(date))
-    if (!filtered.length) {
-      manualSelectedDates.value = dates.slice(0, BUNDLE_MAX_DAYS)
-    } else {
-      manualSelectedDates.value = filtered.slice(0, BUNDLE_MAX_DAYS)
-    }
+    manualSelectedDates.value = manualSelectedDates.value
+      .filter(date => dates.includes(date))
+      .slice(0, 7)
 
-    if (requiresDateSelection.value) {
-      dateSelectionDialog.value = true
-    }
+    dateSelectionDialog.value = true
   },
   { deep: true }
 )
@@ -1222,8 +1194,8 @@ function syncTimelineEntries(existingEntries = timelineEntries.value) {
   }))
 }
 
-function applyFirstMaxDates() {
-  manualSelectedDates.value = allRangeDates.value.slice(0, BUNDLE_MAX_DAYS)
+function applyFirstSevenDates() {
+  manualSelectedDates.value = allRangeDates.value.slice(0, 7)
 }
 
 function toggleDate(dateKey) {
@@ -1236,8 +1208,8 @@ function toggleDate(dateKey) {
     return
   }
 
-  if (manualSelectedDates.value.length >= BUNDLE_MAX_DAYS) {
-    pushFeedback(`A bundle can only keep ${BUNDLE_MAX_DAYS} days.`, "warning")
+  if (manualSelectedDates.value.length >= 7) {
+    pushFeedback("A bundle can only keep 7 days.", "warning")
     return
   }
 
@@ -1350,7 +1322,7 @@ function validateDraft() {
   }
 
   if (requiresDateSelection.value && timelineDates.value.length === 0) {
-    pushFeedback(`Pick up to ${BUNDLE_MAX_DAYS} dates from the selected range.`, "warning")
+    pushFeedback("Pick up to 7 dates from the selected range.", "warning")
     return false
   }
 
@@ -1459,13 +1431,9 @@ async function checkoutBundle() {
   }
 }
 
-function goToBundlesPage() {
-  router.push("/bundle")
-}
-
-function goToMainPage() {
+function goToBundles() {
   confirmationDialog.value.show = false
-  router.push("/n_mainpage")
+  router.push("/bundle")
 }
 
 function goToBookings() {
