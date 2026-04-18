@@ -19,6 +19,8 @@ declare module 'vue-router/auto-routes' {
    */
   export interface RouteNamedMap {
     '/': RouteRecordInfo<'/', '/', Record<never, never>, Record<never, never>>,
+    '/bundle': RouteRecordInfo<'/bundle', '/bundle', Record<never, never>, Record<never, never>>,
+    '/bundle_builder': RouteRecordInfo<'/bundle_builder', '/bundle_builder', Record<never, never>, Record<never, never>>,
     '/CreateEvent': RouteRecordInfo<'/CreateEvent', '/CreateEvent', Record<never, never>, Record<never, never>>,
     '/F_CarpoolCreate': RouteRecordInfo<'/F_CarpoolCreate', '/F_CarpoolCreate', Record<never, never>, Record<never, never>>,
     '/F_details': RouteRecordInfo<'/F_details', '/F_details', Record<never, never>, Record<never, never>>,
@@ -55,6 +57,14 @@ declare module 'vue-router/auto-routes' {
   export interface _RouteFileInfoMap {
     'src/pages/index.vue': {
       routes: '/'
+      views: never
+    }
+    'src/pages/bundle.vue': {
+      routes: '/bundle'
+      views: never
+    }
+    'src/pages/bundle_builder.vue': {
+      routes: '/bundle_builder'
       views: never
     }
     'src/pages/CreateEvent.vue': {

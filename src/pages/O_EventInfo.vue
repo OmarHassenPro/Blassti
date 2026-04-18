@@ -489,25 +489,7 @@
                   </div>
                 </v-card>
 
-                <v-card
-                  variant="flat"
-                  rounded="xl"
-                  class="mini-info-card pa-4 mt-4 page-entrance-card page-entrance-card-delay-2"
-                  elevation="0"
-                >
-                  <div class="d-flex align-center ga-3">
-                    <v-avatar size="42" class="mini-info-avatar">
-                      <v-icon size="20">mdi-calendar-check-outline</v-icon>
-                    </v-avatar>
-
-                    <div>
-                      <div class="text-subtitle-2 font-weight-bold">Plan ahead</div>
-                      <div class="text-body-2 text-medium-emphasis">
-                        Check the venue details and seat availability before booking.
-                      </div>
-                    </div>
-                  </div>
-                </v-card>
+                
               </div>
             </div>
           </div>

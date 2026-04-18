@@ -124,7 +124,7 @@
             v-bind="props"
             variant="text"
             class="nav-btn"
-            :class="{ 'nav-active': isActiveGroup(['/', '/n_mainpage', '/N_Event_Browsing', '/K_mybookings']) }"
+            :class="{ 'nav-active': isActiveGroup(['/', '/n_mainpage', '/N_Event_Browsing', '/K_mybookings', '/bundle', '/bundle_builder']) }"
           >
             Events
             <v-icon size="18" class="ml-1">mdi-chevron-down</v-icon>
@@ -145,6 +145,13 @@
             prepend-icon="mdi-ticket-confirmation-outline"
             @click="goProtected('/K_mybookings')"
             @contextmenu.prevent="openProtectedRouteContextMenu($event, '/K_mybookings', 'My bookings')"
+          />
+          <v-list-item
+            class="dropdown-item fast-dropdown-item"
+            title="Bundles"
+            prepend-icon="mdi-calendar-multiple-check"
+            @click="goProtected('/bundle')"
+            @contextmenu.prevent="openProtectedRouteContextMenu($event, '/bundle', 'Bundles')"
           />
         </v-list>
       </v-menu>
@@ -657,6 +664,13 @@
               prepend-icon="mdi-ticket-confirmation-outline"
               @click="goProtected('/K_mybookings')"
               @contextmenu.prevent="openProtectedRouteContextMenu($event, '/K_mybookings', 'My bookings')"
+            />
+            <v-list-item
+              class="mobile-nav-child-item"
+              title="Bundles"
+              prepend-icon="mdi-calendar-multiple-check"
+              @click="goProtected('/bundle')"
+              @contextmenu.prevent="openProtectedRouteContextMenu($event, '/bundle', 'Bundles')"
             />
           </v-list-group>
 

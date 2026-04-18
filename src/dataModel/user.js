@@ -16,7 +16,7 @@ import {
 const USERS_STORAGE_KEY = "users"
 const CURRENT_USER_STORAGE_KEY = "currentUser"
 const USERS_VERSION_KEY = "users_seed_version"
-const USERS_SEED_VERSION = "v22_real_people_first_person_bios_artist_type_selectable_limited_choices"
+const USERS_SEED_VERSION = "v25_artist_subscriber_counts_seeded_preserved_custom_users"
 
 export const ARTIST_TYPE_OPTIONS = [
   "Singer",
@@ -36,6 +36,8 @@ const SEEDED_ARTISTS = {
   "user-8": "Public Speaker",
   "user-9": "Social Media Influencer",
   "user-10": "Performer",
+  "user-11": "Rapper",
+  "user-12": "Rapper",
   "user-13": "Performer",
   "user-14": "Social Media Influencer",
   "user-16": "Public Speaker",
@@ -51,6 +53,8 @@ const SEEDED_ARTISTS = {
   "user-32": "Rapper",
   "user-33": "Actor",
   "user-34": "Social Media Influencer",
+  "user-39": "Singer",
+  "user-40": "Public Speaker",
 }
 
 export function createAvatar(seed) {
@@ -246,7 +250,7 @@ function defaultUsers() {
       city: "Monastir",
       agree_terms: true,
       receive_promos: true,
-      subscribers_count: 0,
+      subscribers_count: 11200,
       is_artist: true,
       artist_type: "Social Media Influencer",
       profile_picture: createAvatar("Omar Hassen"),
@@ -433,7 +437,7 @@ function defaultUsers() {
       city: "Monastir",
       agree_terms: true,
       receive_promos: true,
-      subscribers_count: 0,
+      subscribers_count: 4300,
       is_artist: true,
       artist_type: "Performer",
       profile_picture: createAvatar("Eya Hamma Missaoui"),
@@ -464,7 +468,7 @@ function defaultUsers() {
       city: "Tunis",
       agree_terms: true,
       receive_promos: true,
-      subscribers_count: 0,
+      subscribers_count: 2100,
       is_artist: true,
       artist_type: "Public Speaker",
       profile_picture: createAvatar("Khalil Fakfekh"),
@@ -494,7 +498,7 @@ function defaultUsers() {
       city: "Tunis",
       agree_terms: true,
       receive_promos: true,
-      subscribers_count: 0,
+      subscribers_count: 7600,
       is_artist: true,
       artist_type: "Singer",
       profile_picture: createAvatar("Farah Tababi"),
@@ -525,7 +529,7 @@ function defaultUsers() {
       city: "Tunis",
       agree_terms: true,
       receive_promos: true,
-      subscribers_count: 0,
+      subscribers_count: 1800,
       is_artist: true,
       artist_type: "Public Speaker",
       profile_picture: createAvatar("Nader Dakhlia"),
@@ -555,7 +559,7 @@ function defaultUsers() {
       city: "Tunis",
       agree_terms: true,
       receive_promos: true,
-      subscribers_count: 0,
+      subscribers_count: 3900,
       is_artist: true,
       artist_type: "Performer",
       profile_picture: createAvatar("Djo Youssef Ben Yaflah"),
@@ -585,9 +589,9 @@ function defaultUsers() {
       city: "Tunis",
       agree_terms: true,
       receive_promos: true,
-      subscribers_count: 0,
-      is_artist: false,
-      artist_type: "",
+      subscribers_count: 10850,
+      is_artist: true,
+      artist_type: "Singer",
       profile_picture: createAvatar("Yassine Belhaj Hassine"),
       description:
         "I joke a lot, but when it matters I’m serious. I like helping people, and if I care about you, you’ll feel it. Kill Count: 7",
@@ -616,9 +620,9 @@ function defaultUsers() {
       city: "Tunis",
       agree_terms: true,
       receive_promos: false,
-      subscribers_count: 0,
-      is_artist: false,
-      artist_type: "",
+      subscribers_count: 9750,
+      is_artist: true,
+      artist_type: "Singer",
       profile_picture: createAvatar("Yassine Dhafer"),
       description:
         "I get distracted fast, I love music, and I’m mostly here for the vibes. Somehow it all still works out. Kill Count: 0",
@@ -646,7 +650,7 @@ function defaultUsers() {
       city: "Tunis",
       agree_terms: true,
       receive_promos: true,
-      subscribers_count: 0,
+      subscribers_count: 5200,
       is_artist: true,
       artist_type: "Performer",
       profile_picture: createAvatar("Mootez Billah Hmissi"),
@@ -676,7 +680,7 @@ function defaultUsers() {
       city: "Tunis",
       agree_terms: true,
       receive_promos: true,
-      subscribers_count: 0,
+      subscribers_count: 6400,
       is_artist: true,
       artist_type: "Social Media Influencer",
       profile_picture: createAvatar("Zayneb Kassentini"),
@@ -737,7 +741,7 @@ function defaultUsers() {
       city: "Tunis",
       agree_terms: true,
       receive_promos: true,
-      subscribers_count: 0,
+      subscribers_count: 2500,
       is_artist: true,
       artist_type: "Public Speaker",
       profile_picture: createAvatar("Louay Benjeddou"),
@@ -767,7 +771,7 @@ function defaultUsers() {
       city: "Tunis",
       agree_terms: true,
       receive_promos: true,
-      subscribers_count: 0,
+      subscribers_count: 4700,
       is_artist: true,
       artist_type: "Performer",
       profile_picture: createAvatar("LALOU 2026"),
@@ -797,7 +801,7 @@ function defaultUsers() {
       city: "Tunis",
       agree_terms: true,
       receive_promos: true,
-      subscribers_count: 0,
+      subscribers_count: 3300,
       is_artist: true,
       artist_type: "Actor",
       profile_picture: createAvatar("Arij Ouanes"),
@@ -918,7 +922,7 @@ function defaultUsers() {
       city: "Tunis",
       agree_terms: true,
       receive_promos: true,
-      subscribers_count: 0,
+      subscribers_count: 11800,
       is_artist: true,
       artist_type: "Social Media Influencer",
       profile_picture: createAvatar("Molka Ben Hamadi"),
@@ -949,7 +953,7 @@ function defaultUsers() {
       city: "Tunis",
       agree_terms: true,
       receive_promos: true,
-      subscribers_count: 0,
+      subscribers_count: 7100,
       is_artist: true,
       artist_type: "Soccer Player",
       profile_picture: createAvatar("Ahmed El Mouafek"),
@@ -980,7 +984,7 @@ function defaultUsers() {
       city: "Tunis",
       agree_terms: true,
       receive_promos: true,
-      subscribers_count: 0,
+      subscribers_count: 3600,
       is_artist: true,
       artist_type: "Social Media Influencer",
       profile_picture: createAvatar("Khadija Smida"),
@@ -1011,7 +1015,7 @@ function defaultUsers() {
       city: "Tunis",
       agree_terms: true,
       receive_promos: true,
-      subscribers_count: 0,
+      subscribers_count: 2900,
       is_artist: true,
       artist_type: "Actor",
       profile_picture: createAvatar("Youssef Ben Amara"),
@@ -1020,34 +1024,6 @@ function defaultUsers() {
       contacts: {
         instagram: "@youssef.benamara",
       },
-      subscribed_artist_ids: [],
-      joined_event_ids: [],
-      created_event_ids: [],
-      is_admin: false,
-      is_moderator: false,
-      suspension: null,
-    }),
-
-    new User({
-      id: "user-28",
-      account_created_at: "2026-03-18T09:00:00.000Z",
-      first_name: "Amine",
-      last_name: "Ben Hassouna",
-      email: "amine.benhassouna@medtech.tn",
-      password: "123",
-      gender: "Male",
-      date_of_birth: "1985-01-01",
-      state: "Tunis",
-      city: "Tunis",
-      agree_terms: true,
-      receive_promos: false,
-      subscribers_count: 0,
-      is_artist: false,
-      artist_type: "",
-      profile_picture: createAvatar("Amine Ben Hassouna"),
-      description:
-        "Best ISS professor. Loves Blassti and thinks it deserves to win this year’s ISS. Kill Count: 1",
-      contacts: {},
       subscribed_artist_ids: [],
       joined_event_ids: [],
       created_event_ids: [],
@@ -1069,7 +1045,7 @@ function defaultUsers() {
       city: "Tunis",
       agree_terms: true,
       receive_promos: true,
-      subscribers_count: 0,
+      subscribers_count: 4050,
       is_artist: true,
       artist_type: "Public Speaker",
       profile_picture: createAvatar("Nour Ben Khadher"),
@@ -1099,7 +1075,7 @@ function defaultUsers() {
       city: "Tunis",
       agree_terms: true,
       receive_promos: true,
-      subscribers_count: 0,
+      subscribers_count: 5800,
       is_artist: true,
       artist_type: "Performer",
       profile_picture: createAvatar("Mootez El Ouaer"),
@@ -1129,7 +1105,7 @@ function defaultUsers() {
       city: "Tunis",
       agree_terms: true,
       receive_promos: true,
-      subscribers_count: 0,
+      subscribers_count: 6900,
       is_artist: true,
       artist_type: "Basketball Player",
       profile_picture: createAvatar("Badis Atyaoui"),
@@ -1159,7 +1135,7 @@ function defaultUsers() {
       city: "Tunis",
       agree_terms: true,
       receive_promos: true,
-      subscribers_count: 0,
+      subscribers_count: 9400,
       is_artist: true,
       artist_type: "Rapper",
       profile_picture: createAvatar("Bibo the G.O.A.T"),
@@ -1189,7 +1165,7 @@ function defaultUsers() {
       city: "Tunis",
       agree_terms: true,
       receive_promos: true,
-      subscribers_count: 0,
+      subscribers_count: 3100,
       is_artist: true,
       artist_type: "Actor",
       profile_picture: createAvatar("Malak Belhadj Abdallah"),
@@ -1219,7 +1195,7 @@ function defaultUsers() {
       city: "Tunis",
       agree_terms: true,
       receive_promos: true,
-      subscribers_count: 0,
+      subscribers_count: 5500,
       is_artist: true,
       artist_type: "Social Media Influencer",
       profile_picture: createAvatar("Essra Daha"),
@@ -1355,6 +1331,97 @@ function defaultUsers() {
       is_moderator: false,
       suspension: null,
     }),
+
+
+new User({
+  id: "user-39",
+  account_created_at: "2026-04-18T11:20:00.000Z",
+  first_name: "Sirine",
+  last_name: "Maalej",
+  email: "sirine.maalej@blassti.tn",
+  password: "123",
+  gender: "Female",
+  date_of_birth: "2004-01-01",
+  state: "Tunis",
+  city: "Tunis",
+  agree_terms: true,
+  receive_promos: true,
+  subscribers_count: 6200,
+  is_artist: true,
+  artist_type: "Singer",
+  profile_picture: createAvatar("Sirine Maalej"),
+  description:
+    "I like sunny days, random plans, and people who make life feel lighter. Fast learner, laughs a lot, and always down for a moment that turns into a memory. Kill Count: 41",
+  contacts: {
+    instagram: "@sirine.maalej",
+  },
+  subscribed_artist_ids: [],
+  joined_event_ids: [],
+  created_event_ids: [],
+  is_admin: false,
+  is_moderator: false,
+  suspension: null,
+}),
+
+new User({
+  id: "user-40",
+  account_created_at: "2026-04-18T11:35:00.000Z",
+  first_name: "Iheb",
+  last_name: "Khanfir",
+  email: "iheb.khanfir@blassti.tn",
+  password: "123",
+  gender: "Male",
+  date_of_birth: "2004-01-01",
+  state: "Tunis",
+  city: "Tunis",
+  agree_terms: true,
+  receive_promos: true,
+  subscribers_count: 1950,
+  is_artist: true,
+  artist_type: "Public Speaker",
+  profile_picture: createAvatar("Iheb Khanfir"),
+  description:
+    "Chill, low maintenance, and easy to get along with. I’m not complicated, I just like good company and a calm vibe. Kill Count: 1 (by accident)",
+  contacts: {
+    instagram: "@iheb.khanfir",
+  },
+  subscribed_artist_ids: [],
+  joined_event_ids: [],
+  created_event_ids: [],
+  is_admin: false,
+  is_moderator: false,
+  suspension: null,
+}),
+
+new User({
+  id: "user-41",
+  account_created_at: "2026-04-18T11:50:00.000Z",
+  first_name: "Sarra",
+  last_name: "Chaouali",
+  email: "sarra.chaouali@blassti.tn",
+  password: "123",
+  gender: "Female",
+  date_of_birth: "2004-01-01",
+  state: "Tunis",
+  city: "Tunis",
+  agree_terms: true,
+  receive_promos: true,
+  subscribers_count: 0,
+  is_artist: false,
+  artist_type: "",
+  profile_picture: createAvatar("Sarra Chaouali"),
+  description:
+    "I like going out, having fun, and being around people who know how to enjoy life. Good music, good vibes, and a night that turns into a story — that’s my type of thing. Kill Count: 6",
+  contacts: {
+    instagram: "@sarra.chaouali",
+  },
+  subscribed_artist_ids: [],
+  joined_event_ids: [],
+  created_event_ids: [],
+  is_admin: false,
+  is_moderator: false,
+  suspension: null,
+}),
   ]
 }
 
@@ -1393,14 +1460,31 @@ export function refresh_Artist_Statuses() {
 
 function loadUsers() {
   const defaults = defaultUsers()
+  const defaultUserIds = new Set(defaults.map(user => user.id))
+  const defaultUserEmails = new Set(defaults.map(user => user.email.toLowerCase()))
   const savedVersion = localStorage.getItem(USERS_VERSION_KEY)
   const savedUsers = localStorage.getItem(USERS_STORAGE_KEY)
 
   if (savedVersion !== USERS_SEED_VERSION) {
-    localStorage.setItem(USERS_STORAGE_KEY, JSON.stringify(defaults))
+    let preservedCustomUsers = []
+
+    if (savedUsers) {
+      try {
+        const parsedSavedUsers = normalizeUsers(JSON.parse(savedUsers))
+        preservedCustomUsers = parsedSavedUsers.filter(user => {
+          const email = String(user.email ?? "").toLowerCase()
+          return !defaultUserIds.has(user.id) && !defaultUserEmails.has(email)
+        })
+      } catch (error) {
+        console.error("Failed to parse saved users while reseeding defaults.", error)
+      }
+    }
+
+    const mergedUsers = [...defaults, ...preservedCustomUsers].map(user => new User(user))
+
+    localStorage.setItem(USERS_STORAGE_KEY, JSON.stringify(mergedUsers))
     localStorage.setItem(USERS_VERSION_KEY, USERS_SEED_VERSION)
-    localStorage.removeItem(CURRENT_USER_STORAGE_KEY)
-    return defaults
+    return mergedUsers
   }
 
   if (savedUsers) {

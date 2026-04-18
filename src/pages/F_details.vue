@@ -413,10 +413,15 @@
                     <v-card
                       v-for="event in filteredEvents"
                       :key="event.id"
-                      class="mobile-event-card interactive-card"
+                      class="mobile-event-card interactive-card event-card-clickable"
                       rounded="xl"
                       elevation="0"
                       variant="outlined"
+                      role="link"
+                      tabindex="0"
+                      @click="openEvent(event)"
+                      @keydown.enter.prevent="openEvent(event)"
+                      @keydown.space.prevent="openEvent(event)"
                     >
                       <v-img
                         :src="event.image"
@@ -463,13 +468,18 @@
                           {{ event.description }}
                         </div>
 
-                        <div class="d-flex flex-wrap ga-2">
+                        <div class="d-flex flex-wrap ga-2 mb-4">
                           <v-chip size="small" variant="outlined" rounded="pill">
                             {{ event.tickets_sold }} / {{ event.capacity }} sold
                           </v-chip>
                           <v-chip size="small" variant="tonal" color="primary" rounded="pill">
                             {{ event.ticket_types?.length || 0 }} ticket types
                           </v-chip>
+                        </div>
+
+                        <div class="event-cta">
+                          <span>Open event details</span>
+                          <v-icon size="18" icon="mdi-arrow-right" />
                         </div>
                       </v-card-text>
                     </v-card>
@@ -487,10 +497,15 @@
                     class="d-flex"
                   >
                     <v-card
-                      class="event-card tablet-event-card interactive-card flex-grow-1"
+                      class="event-card tablet-event-card interactive-card flex-grow-1 event-card-clickable"
                       rounded="xl"
                       elevation="0"
                       variant="outlined"
+                      role="link"
+                      tabindex="0"
+                      @click="openEvent(event)"
+                      @keydown.enter.prevent="openEvent(event)"
+                      @keydown.space.prevent="openEvent(event)"
                     >
                       <v-img
                         :src="event.image"
@@ -539,13 +554,18 @@
                           {{ event.description }}
                         </div>
 
-                        <div class="mt-4 d-flex flex-wrap ga-2">
+                        <div class="mt-4 d-flex flex-wrap ga-2 mb-4">
                           <v-chip size="small" variant="outlined" rounded="pill">
                             {{ event.tickets_sold }} / {{ event.capacity }} sold
                           </v-chip>
                           <v-chip size="small" variant="tonal" color="primary" rounded="pill">
                             {{ event.ticket_types?.length || 0 }} ticket types
                           </v-chip>
+                        </div>
+
+                        <div class="event-cta">
+                          <span>Open event details</span>
+                          <v-icon size="18" icon="mdi-arrow-right" />
                         </div>
                       </v-card-text>
                     </v-card>
@@ -557,10 +577,15 @@
                 <v-card
                   v-for="event in filteredEvents"
                   :key="event.id"
-                  class="mb-4 event-card interactive-card"
+                  class="mb-4 event-card interactive-card event-card-clickable"
                   rounded="xl"
                   elevation="0"
                   variant="outlined"
+                  role="link"
+                  tabindex="0"
+                  @click="openEvent(event)"
+                  @keydown.enter.prevent="openEvent(event)"
+                  @keydown.space.prevent="openEvent(event)"
                 >
                   <v-row align="stretch" class="ma-0">
                     <v-col cols="12" sm="4" md="3" class="pa-0">
@@ -603,7 +628,7 @@
                         {{ event.description }}
                       </div>
 
-                      <div class="mt-4 d-flex flex-wrap ga-2">
+                      <div class="mt-4 d-flex flex-wrap ga-2 mb-4">
                         <v-chip size="small" variant="outlined" rounded="pill">
                           {{ event.type }}
                         </v-chip>
@@ -636,6 +661,11 @@
                         >
                           Sold out
                         </v-chip>
+                      </div>
+
+                      <div class="event-cta">
+                        <span>Open event details</span>
+                        <v-icon size="18" icon="mdi-arrow-right" />
                       </div>
                     </v-col>
                   </v-row>
@@ -1394,6 +1424,24 @@ const filteredEvents = computed(() => {
   return []
 })
 
+function getEventRoute(event) {
+  if (!event) return null
+
+  const rawPath = String(event.route_path || "").trim()
+  if (rawPath) return rawPath
+
+  const eventId = String(event.id || "").trim()
+  if (!eventId) return null
+
+  return `/o_eventinfo?id=${encodeURIComponent(eventId)}`
+}
+
+function openEvent(event) {
+  const target = getEventRoute(event)
+  if (!target) return
+  router.push(target)
+}
+
 function subscribe() {
   if (!currentUser.value) {
     loginRequiredDialog.value = true
@@ -1562,22 +1610,24 @@ function unsuspendViewedUser() {
 <style scoped>
 .profile-page-app {
   background:
-    radial-gradient(circle at top left, rgba(var(--v-theme-primary), 0.07), transparent 28%),
-    radial-gradient(circle at top right, rgba(var(--v-theme-secondary), 0.05), transparent 26%);
+    radial-gradient(circle at 10% 6%, rgba(var(--v-theme-primary), 0.05), transparent 24%),
+    radial-gradient(circle at 86% 10%, rgba(var(--v-theme-secondary), 0.045), transparent 22%),
+    linear-gradient(180deg, rgba(var(--v-theme-surface), 1), rgba(var(--v-theme-surface), 0.985));
 }
 
 .profile-page-app.theme-light {
   background:
-    radial-gradient(circle at top left, rgba(var(--v-theme-primary), 0.08), transparent 30%),
-    radial-gradient(circle at top right, rgba(var(--v-theme-secondary), 0.06), transparent 28%),
-    linear-gradient(180deg, rgba(var(--v-theme-surface), 1), rgba(var(--v-theme-surface), 0.98));
+    radial-gradient(circle at 12% 7%, rgba(var(--v-theme-primary), 0.055), transparent 24%),
+    radial-gradient(circle at 85% 10%, rgba(var(--v-theme-secondary), 0.05), transparent 22%),
+    radial-gradient(circle at 52% 0%, rgba(148, 163, 184, 0.035), transparent 26%),
+    linear-gradient(180deg, #f8fafc 0%, #f8fafc 28%, rgba(255,255,255,0.995) 100%);
 }
 
 .profile-page-app.theme-dark {
   background:
-    radial-gradient(circle at top left, rgba(var(--v-theme-primary), 0.1), transparent 30%),
-    radial-gradient(circle at top right, rgba(var(--v-theme-secondary), 0.08), transparent 28%),
-    linear-gradient(180deg, rgba(var(--v-theme-background), 1), rgba(var(--v-theme-surface), 0.98));
+    radial-gradient(circle at 12% 8%, rgba(var(--v-theme-primary), 0.09), transparent 25%),
+    radial-gradient(circle at 84% 12%, rgba(var(--v-theme-secondary), 0.07), transparent 23%),
+    linear-gradient(180deg, rgba(var(--v-theme-background), 1), rgba(var(--v-theme-surface), 0.985));
 }
 
 .profile-page-shell {
@@ -1624,9 +1674,13 @@ function unsuspendViewedUser() {
 .profile-hero {
   position: relative;
   overflow: hidden;
+  isolation: isolate;
   border: 1px solid rgba(var(--v-border-color), 0.08);
-  background: rgba(var(--v-theme-surface), 0.9);
-  box-shadow: 0 14px 36px rgba(0, 0, 0, 0.08);
+  background:
+    linear-gradient(180deg, rgba(var(--v-theme-surface), 0.965), rgba(var(--v-theme-surface), 0.94));
+  box-shadow:
+    0 20px 48px rgba(15, 23, 42, 0.07),
+    0 1px 0 rgba(255,255,255,0.5) inset;
 }
 
 .profile-hero::before {
@@ -1634,18 +1688,33 @@ function unsuspendViewedUser() {
   position: absolute;
   inset: 0;
   background:
-    linear-gradient(135deg, rgba(var(--v-theme-primary), 0.08), transparent 36%),
-    linear-gradient(315deg, rgba(var(--v-theme-secondary), 0.05), transparent 34%);
+    radial-gradient(circle at 14% 18%, rgba(var(--v-theme-primary), 0.055), transparent 22%),
+    radial-gradient(circle at 86% 14%, rgba(var(--v-theme-secondary), 0.05), transparent 20%),
+    radial-gradient(circle at 52% 78%, rgba(148, 163, 184, 0.04), transparent 26%);
+  pointer-events: none;
+}
+
+.profile-hero::after {
+  content: "";
+  position: absolute;
+  inset: 1px;
+  border-radius: inherit;
+  background:
+    linear-gradient(120deg, rgba(255,255,255,0.18), transparent 16%, transparent 84%, rgba(255,255,255,0.12));
+  opacity: 0.55;
   pointer-events: none;
 }
 
 .avatar-shell {
   position: relative;
   display: inline-flex;
-  padding: 6px;
+  padding: 7px;
   border-radius: 999px;
-  background: linear-gradient(135deg, rgba(var(--v-theme-primary), 0.25), rgba(var(--v-theme-secondary), 0.16));
-  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.12);
+  background:
+    linear-gradient(135deg, rgba(var(--v-theme-primary), 0.16), rgba(var(--v-theme-secondary), 0.11));
+  box-shadow:
+    0 16px 34px rgba(15, 23, 42, 0.09),
+    0 1px 0 rgba(255,255,255,0.45) inset;
 }
 
 .profile-avatar {
@@ -1653,8 +1722,15 @@ function unsuspendViewedUser() {
 }
 
 .profile-name {
-  line-height: 1.1;
-  letter-spacing: -0.02em;
+  line-height: 1.05;
+  letter-spacing: -0.03em;
+  text-wrap: balance;
+}
+
+.profile-main-column > .text-body-1,
+.profile-main-column > .text-body-2 {
+  position: relative;
+  z-index: 1;
 }
 
 .profile-quick-stats {
@@ -1664,6 +1740,11 @@ function unsuspendViewedUser() {
 .mini-stat {
   min-width: 160px;
   border: 1px solid rgba(var(--v-border-color), 0.08);
+  background:
+    linear-gradient(180deg, rgba(var(--v-theme-surface), 0.9), rgba(var(--v-theme-surface), 0.82)) !important;
+  box-shadow:
+    0 10px 24px rgba(15, 23, 42, 0.05),
+    0 1px 0 rgba(255,255,255,0.28) inset;
 }
 
 .action-column {
@@ -1738,10 +1819,28 @@ function unsuspendViewedUser() {
   transform: translateY(-1px);
 }
 
+.profile-hero,
+.content-card,
+.event-card,
+.mobile-event-card,
+.tabs-shell,
+.mini-stat {
+  will-change: transform, box-shadow;
+}
+
+.profile-hero-row,
+.profile-main-column,
+.action-column-shell {
+  position: relative;
+  z-index: 1;
+}
+
 .content-card {
   border: 1px solid rgba(var(--v-border-color), 0.08);
-  background: rgba(var(--v-theme-surface), 0.94);
-  box-shadow: 0 14px 30px rgba(0, 0, 0, 0.05);
+  background: rgba(var(--v-theme-surface), 0.95);
+  box-shadow:
+    0 14px 30px rgba(15, 23, 42, 0.05),
+    0 1px 0 rgba(255,255,255,0.22) inset;
 }
 
 .details-card,
@@ -1787,9 +1886,12 @@ function unsuspendViewedUser() {
 .event-card {
   overflow: hidden;
   border-color: rgba(var(--v-border-color), 0.08) !important;
-  background: rgba(var(--v-theme-surface), 0.95);
+  background:
+    linear-gradient(180deg, rgba(var(--v-theme-surface), 0.97), rgba(var(--v-theme-surface), 0.93));
   transition: transform 0.24s ease, box-shadow 0.24s ease, border-color 0.24s ease;
-  box-shadow: 0 12px 26px rgba(0, 0, 0, 0.04);
+  box-shadow:
+    0 14px 28px rgba(15, 23, 42, 0.045),
+    0 1px 0 rgba(255,255,255,0.18) inset;
 }
 
 .event-card:hover {
@@ -1937,6 +2039,108 @@ function unsuspendViewedUser() {
 .profile-snackbar :deep(.v-snackbar__wrapper) {
   box-shadow: 0 16px 34px rgba(0, 0, 0, 0.16);
 }
+
+
+.event-card-clickable {
+  cursor: pointer;
+}
+
+.event-card-clickable:focus-visible {
+  outline: 2px solid rgba(var(--v-theme-primary), 0.8);
+  outline-offset: 3px;
+}
+
+.event-cta {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px;
+  border-radius: 999px;
+  font-size: 0.92rem;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  color: rgb(var(--v-theme-primary));
+  background:
+    linear-gradient(135deg, rgba(var(--v-theme-primary), 0.11), rgba(var(--v-theme-secondary), 0.06));
+  border: 1px solid rgba(var(--v-theme-primary), 0.14);
+  transition: transform 0.24s ease, box-shadow 0.24s ease, background-color 0.24s ease;
+}
+
+.event-card:hover .event-cta,
+.mobile-event-card:hover .event-cta {
+  transform: translateX(4px);
+  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.08);
+}
+
+.profile-page-app.theme-light .profile-hero {
+  background:
+    linear-gradient(180deg, rgba(255,255,255,0.97), rgba(255,255,255,0.935));
+  border-color: rgba(148, 163, 184, 0.16);
+  box-shadow:
+    0 22px 48px rgba(15, 23, 42, 0.06),
+    0 1px 0 rgba(255,255,255,0.84) inset;
+}
+
+.profile-page-app.theme-light .profile-hero::before {
+  background:
+    radial-gradient(circle at 12% 18%, rgba(99, 102, 241, 0.06), transparent 21%),
+    radial-gradient(circle at 86% 15%, rgba(45, 212, 191, 0.055), transparent 20%),
+    radial-gradient(circle at 54% 86%, rgba(191, 219, 254, 0.09), transparent 24%);
+}
+
+.profile-page-app.theme-light .content-card,
+.profile-page-app.theme-light .tabs-shell,
+.profile-page-app.theme-light .mobile-event-card,
+.profile-page-app.theme-light .event-card {
+  background:
+    linear-gradient(180deg, rgba(255,255,255,0.975), rgba(248,250,252,0.955));
+  border-color: rgba(148, 163, 184, 0.14) !important;
+  box-shadow:
+    0 16px 34px rgba(15, 23, 42, 0.05),
+    0 1px 0 rgba(255,255,255,0.88) inset;
+}
+
+.profile-page-app.theme-light .details-surface,
+.profile-page-app.theme-light .profile-preview,
+.profile-page-app.theme-light .empty-state {
+  background:
+    linear-gradient(180deg, rgba(255,255,255,0.92), rgba(241,245,249,0.88));
+  border-color: rgba(148, 163, 184, 0.14) !important;
+}
+
+.profile-page-app.theme-light .mini-stat {
+  background:
+    linear-gradient(180deg, rgba(255,255,255,0.95), rgba(248,250,252,0.86)) !important;
+  border-color: rgba(148, 163, 184, 0.16) !important;
+  box-shadow:
+    0 12px 28px rgba(15, 23, 42, 0.045),
+    0 1px 0 rgba(255,255,255,0.9) inset;
+}
+
+.profile-page-app.theme-light .mobile-meta-pill {
+  background: linear-gradient(180deg, rgba(255,255,255,0.92), rgba(241,245,249,0.86));
+  border: 1px solid rgba(148, 163, 184, 0.14);
+}
+
+.profile-page-app.theme-light .event-cta {
+  background:
+    linear-gradient(135deg, rgba(99, 102, 241, 0.08), rgba(45, 212, 191, 0.055));
+  border-color: rgba(99, 102, 241, 0.1);
+}
+
+.profile-page-app.theme-light .event-card:hover,
+.profile-page-app.theme-light .mobile-event-card:hover {
+  box-shadow:
+    0 20px 42px rgba(15, 23, 42, 0.075),
+    0 8px 24px rgba(99, 102, 241, 0.05);
+}
+
+.profile-page-app.theme-dark .event-cta {
+  background:
+    linear-gradient(135deg, rgba(var(--v-theme-primary), 0.18), rgba(var(--v-theme-secondary), 0.10));
+  border-color: rgba(var(--v-theme-primary), 0.18);
+}
+
 
 @media (min-width: 960px) {
   .profile-page-shell {
