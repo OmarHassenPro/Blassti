@@ -480,7 +480,7 @@
               <div
                 v-if="isBelowDesktop && filteredEvents.length"
                 class="mobile-results-layout"
-                :key="`mobile-${resultsAnimationKey}`"
+                
               >
                 <section class="mobile-featured-block">
                   <div class="mobile-section-copy">
@@ -674,6 +674,7 @@
                           :height="isTablet ? 170 : 156"
                           class="rounded-xl mobile-compact-image"
                           cover
+                          loading="lazy"
                         >
                           <template #placeholder>
                             <div class="w-100 h-100 d-flex align-center justify-center image-placeholder">
@@ -776,9 +777,9 @@
                 </section>
               </div>
 
-              <v-row v-else class="event-list-row" :key="`desktop-${resultsAnimationKey}`">
+              <v-row v-else class="event-list-row" >
                 <v-col
-                  v-for="event in filteredEvents"
+                  v-for="event in renderedDesktopEvents"
                   :key="event.id"
                   cols="12"
                   :md="isTablet ? 6 : 12"
@@ -806,6 +807,7 @@
                             height="240"
                             class="rounded-xl event-image"
                             cover
+                            loading="lazy"
                           >
                             <template #placeholder>
                               <div class="w-100 h-100 d-flex align-center justify-center image-placeholder">
@@ -931,6 +933,22 @@
                   </v-card>
                 </v-col>
               </v-row>
+              <div
+                v-if="filteredEvents.length > renderedEventsCount"
+                class="d-flex justify-center mt-5"
+              >
+                <v-btn
+                  color="primary"
+                  variant="tonal"
+                  rounded="xl"
+                  class="load-more-btn"
+                  @click="loadMoreEvents"
+                >
+                  <v-icon start size="18">mdi-chevron-down</v-icon>
+                  Show {{ Math.min(renderBatchSize, filteredEvents.length - renderedEventsCount) }} more
+                </v-btn>
+              </div>
+
               <v-sheet
                 v-if="filteredEvents.length === 0"
                 class="d-flex align-center justify-center mt-4 empty-state-sheet"
@@ -1291,11 +1309,11 @@
 
 <script setup>
 import AppNavbar from "@/components/AppNavbar.vue"
-import { ref, computed, onMounted, onBeforeUnmount } from "vue"
+import { ref, computed, onMounted, onBeforeUnmount, watch } from "vue"
 import { useRouter } from "vue-router"
 import { useDisplay, useTheme } from "vuetify"
 import { get_All_Events, can_Buy_Event_Tickets, is_Event_Past } from "@/dataModel/event"
-import { get_All_Artists, get_User_By_Id } from "@/dataModel/user"
+import { get_All_Artists } from "@/dataModel/user"
 
 const router = useRouter()
 const theme = useTheme()
@@ -1316,6 +1334,8 @@ const toMenu = ref(false)
 const cities = [...new Set(events.map(e => e.city))]
 const locationCity = ref(null)
 const searchQuery = ref("")
+const debouncedSearchQuery = ref("")
+let searchDebounceTimer = null
 const showSoldOutEvents = ref(false)
 const showPastEvents = ref(false)
 const sortBy = ref("soonest")
@@ -1412,11 +1432,64 @@ onMounted(() => {
 
 onBeforeUnmount(() => {
   clearLongPress()
+  if (searchDebounceTimer) {
+    window.clearTimeout(searchDebounceTimer)
+  }
   window.removeEventListener("storage", handleWindowStorage)
 })
 
 const browserThemeClass = computed(() => {
   return isDarkTheme.value ? "browser-dark" : "browser-light"
+})
+
+watch(
+  searchQuery,
+  value => {
+    if (searchDebounceTimer) {
+      window.clearTimeout(searchDebounceTimer)
+    }
+
+    searchDebounceTimer = window.setTimeout(() => {
+      debouncedSearchQuery.value = String(value || "")
+    }, 240)
+  },
+  { immediate: true }
+)
+
+const eventMetaById = computed(() => {
+  const map = new Map()
+
+  events.forEach(event => {
+    const title = String(event.title || "")
+    const description = String(event.description || "")
+    const venue = String(event.venue || "")
+    const city = String(event.city || "")
+    const artistNames = Array.isArray(event.featured_artist_ids)
+      ? event.featured_artist_ids
+          .map(id => artistNameById.value.get(id))
+          .filter(Boolean)
+      : []
+    const searchBlob = [title, description, venue, city, ...artistNames]
+      .join(" ")
+      .toLowerCase()
+
+    const parsedDate = parseEventDate(event.date)
+    const seatsLeft = Number(event.seats_left) || 0
+    const isPast = isPastEvent(event)
+    const canBuy = canBuyTicket(event)
+
+    map.set(event.id, {
+      searchBlob,
+      artistNames,
+      parsedDate,
+      parsedDateMs: parsedDate?.getTime?.() || 0,
+      seatsLeft,
+      isPast,
+      canBuy,
+    })
+  })
+
+  return map
 })
 
 function getPointerPosition(event) {
@@ -1539,7 +1612,16 @@ function isPastEvent(event) {
 }
 
 const availableNowCount = computed(() => {
-  return events.filter(event => !isPastEvent(event) && canBuyTicket(event)).length
+  let count = 0
+
+  events.forEach(event => {
+    const meta = eventMetaById.value.get(event.id)
+    if (meta && !meta.isPast && meta.canBuy) {
+      count += 1
+    }
+  })
+
+  return count
 })
 
 function getAvailabilityLabel(event) {
@@ -1568,6 +1650,16 @@ const artistOptions = computed(() => {
     label: `${artistUser.first_name} ${artistUser.last_name}`.trim(),
     value: artistUser.id
   }))
+})
+
+const artistNameById = computed(() => {
+  const map = new Map()
+
+  artists.forEach(user => {
+    map.set(user.id, `${user.first_name} ${user.last_name}`.trim())
+  })
+
+  return map
 })
 
 const fromDateDisplay = computed(() => formatPickerDate(fromDate.value))
@@ -1628,12 +1720,14 @@ function parseEventDate(dateString) {
 }
 
 function getArtistNames(event) {
-  if (!Array.isArray(event.featured_artist_ids)) return []
+  const meta = eventMetaById.value.get(event?.id)
+  if (meta?.artistNames) return meta.artistNames
+
+  if (!Array.isArray(event?.featured_artist_ids)) return []
 
   return event.featured_artist_ids
-    .map(id => get_User_By_Id(id))
+    .map(id => artistNameById.value.get(id))
     .filter(Boolean)
-    .map(user => `${user.first_name} ${user.last_name}`.trim())
 }
 
 function goToMoreInfo(event) {
@@ -1814,7 +1908,7 @@ const primaryMobileEvent = computed(() => {
 })
 
 const secondaryMobileEvents = computed(() => {
-  return isBelowDesktop.value ? filteredEvents.value.slice(1) : []
+  return isBelowDesktop.value ? filteredEvents.value.slice(1, renderedEventsCount.value) : []
 })
 
 const mobileFeaturedEventLabel = computed(() => {
@@ -1824,19 +1918,47 @@ const mobileFeaturedEventLabel = computed(() => {
   return "Top result"
 })
 
-const resultsAnimationKey = computed(() => JSON.stringify({
-  search: searchQuery.value,
-  categories: selectedCategories.value,
-  from: fromDate.value,
-  to: toDate.value,
-  city: locationCity.value,
-  availability: availability.value,
-  artist: artist.value,
-  ages: ageRestrictions.value,
-  showSoldOut: showSoldOutEvents.value,
-  showPast: showPastEvents.value,
-  sort: sortBy.value
-}))
+const renderBatchSize = computed(() => (isBelowDesktop.value ? 10 : 18))
+const renderedEventCount = ref(renderBatchSize.value)
+
+const filterSignature = computed(() => {
+  return [
+    debouncedSearchQuery.value,
+    selectedCategories.value.join("|"),
+    fromDate.value || "",
+    toDate.value || "",
+    locationCity.value || "",
+    availability.value.available ? "1" : "0",
+    availability.value.almostSold ? "1" : "0",
+    availability.value.soldOut ? "1" : "0",
+    artist.value || "",
+    ageRestrictions.value.allAges ? "1" : "0",
+    ageRestrictions.value.fifteenPlus ? "1" : "0",
+    ageRestrictions.value.eighteenPlus ? "1" : "0",
+    showSoldOutEvents.value ? "1" : "0",
+    showPastEvents.value ? "1" : "0",
+    sortBy.value,
+    isBelowDesktop.value ? "mobile" : "desktop",
+  ].join("__")
+})
+
+watch(filterSignature, () => {
+  renderedEventCount.value = renderBatchSize.value
+})
+
+watch(renderBatchSize, value => {
+  renderedEventCount.value = value
+})
+
+const renderedEventsCount = computed(() => Math.min(renderedEventCount.value, filteredEvents.value.length))
+const renderedDesktopEvents = computed(() => filteredEvents.value.slice(0, renderedEventsCount.value))
+
+function loadMoreEvents() {
+  renderedEventCount.value = Math.min(
+    renderedEventCount.value + renderBatchSize.value,
+    filteredEvents.value.length
+  )
+}
 
 function resetAllFilters() {
   searchQuery.value = ""
@@ -1863,49 +1985,48 @@ function resetAllFilters() {
 const filteredEvents = computed(() => {
   const from = parsePickerDate(fromDate.value)
   const to = parsePickerDate(toDate.value)
+  const fromMs = from ? from.getTime() : null
+  const toMs = to ? to.getTime() : null
+  const normalizedQuery = debouncedSearchQuery.value.trim().toLowerCase()
+  const hasAvailabilityFilters =
+    availability.value.available ||
+    availability.value.almostSold ||
+    availability.value.soldOut
+  const hasAgeFilters =
+    ageRestrictions.value.allAges ||
+    ageRestrictions.value.fifteenPlus ||
+    ageRestrictions.value.eighteenPlus
 
   const filtered = events.filter(event => {
-    const seatsLeft = Number(event.seats_left) || 0
-    const eventDate = parseEventDate(event.date)
-    const eventTitle = String(event.title || "").toLowerCase()
-    const eventDescription = String(event.description || "").toLowerCase()
-    const venueName = String(event.venue || "").toLowerCase()
-    const cityName = String(event.city || "").toLowerCase()
-    const artistNames = getArtistNames(event).join(" ").toLowerCase()
-    const query = searchQuery.value.trim().toLowerCase()
+    const meta = eventMetaById.value.get(event.id)
+    const seatsLeft = meta?.seatsLeft ?? Number(event.seats_left) ?? 0
+    const eventDateMs = meta?.parsedDateMs ?? 0
+    const hasEventDate = Boolean(eventDateMs)
 
     const matchesSearch =
-      !query ||
-      eventTitle.includes(query) ||
-      eventDescription.includes(query) ||
-      venueName.includes(query) ||
-      cityName.includes(query) ||
-      artistNames.includes(query)
+      !normalizedQuery ||
+      (meta?.searchBlob || "").includes(normalizedQuery)
 
     const matchesCategory =
       selectedCategories.value.length === 0 ||
       selectedCategories.value.includes(event.type)
 
     let matchesDate = true
-    if (from && eventDate) {
-      matchesDate = eventDate >= from
-    }
-    if (matchesDate && to && eventDate) {
-      matchesDate = eventDate <= to
-    }
-    if ((from || to) && !eventDate) {
+    if ((fromMs || toMs) && !hasEventDate) {
       matchesDate = false
+    } else {
+      if (fromMs != null && eventDateMs) {
+        matchesDate = eventDateMs >= fromMs
+      }
+      if (matchesDate && toMs != null && eventDateMs) {
+        matchesDate = eventDateMs <= toMs
+      }
     }
 
-    const matchesCity =
-      !locationCity.value || event.city === locationCity.value
+    const matchesCity = !locationCity.value || event.city === locationCity.value
 
     let matchesAvailability = true
-    if (
-      availability.value.available ||
-      availability.value.almostSold ||
-      availability.value.soldOut
-    ) {
+    if (hasAvailabilityFilters) {
       matchesAvailability =
         (availability.value.available && seatsLeft > 20) ||
         (availability.value.almostSold && seatsLeft > 0 && seatsLeft <= 20) ||
@@ -1914,15 +2035,10 @@ const filteredEvents = computed(() => {
 
     const matchesArtist =
       !artist.value ||
-      (Array.isArray(event.featured_artist_ids) &&
-        event.featured_artist_ids.includes(artist.value))
+      (Array.isArray(event.featured_artist_ids) && event.featured_artist_ids.includes(artist.value))
 
     let matchesAge = true
-    if (
-      ageRestrictions.value.allAges ||
-      ageRestrictions.value.fifteenPlus ||
-      ageRestrictions.value.eighteenPlus
-    ) {
+    if (hasAgeFilters) {
       matchesAge =
         (ageRestrictions.value.allAges && event.age_restriction === "All ages") ||
         (ageRestrictions.value.fifteenPlus && event.age_restriction === "15+") ||
@@ -1930,7 +2046,7 @@ const filteredEvents = computed(() => {
     }
 
     const passesSoldOutVisibility = showSoldOutEvents.value || seatsLeft > 0
-    const passesPastVisibility = showPastEvents.value || !isPastEvent(event)
+    const passesPastVisibility = showPastEvents.value || !meta?.isPast
 
     return (
       matchesSearch &&
@@ -1946,15 +2062,17 @@ const filteredEvents = computed(() => {
   })
 
   return [...filtered].sort((a, b) => {
-    const aDate = parseEventDate(a.date)
-    const bDate = parseEventDate(b.date)
-    const aSeats = Number(a.seats_left) || 0
-    const bSeats = Number(b.seats_left) || 0
+    const aMeta = eventMetaById.value.get(a.id)
+    const bMeta = eventMetaById.value.get(b.id)
+    const aDateMs = aMeta?.parsedDateMs ?? 0
+    const bDateMs = bMeta?.parsedDateMs ?? 0
+    const aSeats = aMeta?.seatsLeft ?? Number(a.seats_left) ?? 0
+    const bSeats = bMeta?.seatsLeft ?? Number(b.seats_left) ?? 0
     const titleCompare = String(a.title || "").localeCompare(String(b.title || ""))
 
     switch (sortBy.value) {
       case "latest":
-        return (bDate?.getTime() || 0) - (aDate?.getTime() || 0)
+        return bDateMs - aDateMs
       case "mostSeats":
         return bSeats - aSeats
       case "leastSeats":
@@ -1965,7 +2083,7 @@ const filteredEvents = computed(() => {
         return -titleCompare
       case "soonest":
       default:
-        return (aDate?.getTime() || 0) - (bDate?.getTime() || 0)
+        return aDateMs - bDateMs
     }
   })
 })
@@ -3294,4 +3412,53 @@ const filteredEvents = computed(() => {
     font-size: 2rem !important;
   }
 }
+
+.browser-light .event-page-shell {
+  background:
+    radial-gradient(circle at top left, rgba(76, 110, 245, 0.08), transparent 30%),
+    radial-gradient(circle at top right, rgba(0, 188, 212, 0.05), transparent 24%),
+    linear-gradient(180deg, #f7f9fc 0%, #f2f5fa 44%, #eef2f7 100%);
+}
+
+.browser-light .hero-surface,
+.browser-light .filter-card,
+.browser-light .results-card,
+.browser-light .mobile-featured-card,
+.browser-light .mobile-compact-card,
+.browser-light .mobile-filter-dialog {
+  background: rgba(255, 255, 255, 0.9);
+  border-color: rgba(28, 46, 86, 0.08) !important;
+  box-shadow: 0 14px 34px rgba(17, 27, 48, 0.06);
+}
+
+.browser-light .hero-search-field :deep(.v-field),
+.browser-light .filter-toolbar,
+.browser-light .active-filters-wrap {
+  background: rgba(246, 249, 253, 0.92) !important;
+}
+
+.browser-light .quick-filter-chip,
+.browser-light .filter-chip,
+.browser-light .active-filter-chip,
+.browser-light .filter-count-chip,
+.browser-light .summary-chip,
+.browser-light .mobile-meta-card,
+.browser-light .mobile-compact-pill,
+.browser-light .info-pill {
+  border-color: rgba(28, 46, 86, 0.08) !important;
+  background: rgba(248, 250, 253, 0.96) !important;
+}
+
+.browser-light .event-card:hover,
+.browser-light .mobile-featured-card:hover,
+.browser-light .mobile-compact-card:hover {
+  box-shadow: 0 18px 38px rgba(17, 27, 48, 0.1);
+}
+
+.load-more-btn {
+  min-height: 42px;
+  font-weight: 700;
+  text-transform: none;
+}
+
 </style>
